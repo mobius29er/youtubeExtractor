@@ -69,10 +69,9 @@ pip install -r requirements.txt
 ```
 Create a .env file:
 ```
-env
 YOUTUBE_API_KEY=your-api-key-here
 ```
-▶️ Usage
+▶️ Run
 ```
 python corrected_data_extractor.py
 ```
