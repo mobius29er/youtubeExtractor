@@ -28,7 +28,7 @@ class CorrectedDataExtractor:
     No transcript download (requires video ownership)
     """
     
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, test_mode: bool = False, max_channels: int = 2):
         self.api_key = api_key
         self.youtube = build('youtube', 'v3', developerKey=api_key)
         self.setup_logging()
@@ -388,24 +388,27 @@ class CorrectedDataExtractor:
                 'error': str(e)
             }
     
-    def download_thumbnail(self, video_id: str, thumbnail_url: str, output_dir: str) -> str:
-        """Download video thumbnail"""
+    def download_thumbnail(self, video_id: str, thumbnail_url: str, output_base_dir: str, channel_name: str) -> str:
+        """Download video thumbnail into channel-specific folder using video_id as filename"""
         try:
+            # Create folder structure like: extracted_data/thumbnails/MrBeast/
+            safe_channel_name = channel_name.replace(" ", "_").replace("/", "_")
+            output_dir = os.path.join(output_base_dir, 'thumbnails', safe_channel_name)
             os.makedirs(output_dir, exist_ok=True)
-            
+
             response = requests.get(thumbnail_url)
             if response.status_code == 200:
-                filename = f"{video_id}_thumbnail.jpg"
+                filename = f"{video_id}.jpg"
                 filepath = os.path.join(output_dir, filename)
-                
+
                 with open(filepath, 'wb') as f:
                     f.write(response.content)
-                
+
                 return filepath
-            
+
         except Exception as e:
             self.logger.error(f"Error downloading thumbnail for {video_id}: {e}")
-        
+
         return None
     
     def execute_api_only_extraction(self, output_dir: str = "extracted_data") -> Dict:
@@ -473,9 +476,10 @@ class CorrectedDataExtractor:
                         
                         # Download thumbnail
                         thumbnail_path = self.download_thumbnail(
-                            video['video_id'],
-                            video['thumbnail_url'],
-                            os.path.join(output_dir, 'thumbnails')
+                            video_id=video['video_id'],
+                            thumbnail_url=video['thumbnail_url'],
+                            output_base_dir=output_dir,
+                            channel_name=channel_name
                         )
                         video['thumbnail_local_path'] = thumbnail_path
                         
@@ -710,9 +714,6 @@ def main():
     TEST_MODE = True
     MAX_CHANNELS = 1  # Limit to 1 channel per genre in test mode
 
-    # Initialize extractor
-    extractor = CorrectedDataExtractor(api_key, test_mode=TEST_MODE, max_channels=MAX_CHANNELS)
-
     """Main execution function for corrected data extraction"""
     
     print("📊 Corrected YouTube Data Extractor")
@@ -720,7 +721,7 @@ def main():
     print("=" * 60)
     
     # Initialize extractor
-    extractor = CorrectedDataExtractor(api_key)
+    extractor = CorrectedDataExtractor(api_key, test_mode=TEST_MODE, max_channels=MAX_CHANNELS)
     
     print("\\n📋 What This Extracts (API-Only):")
     print("✅ Complete video metadata (views, likes, comments, etc.)")

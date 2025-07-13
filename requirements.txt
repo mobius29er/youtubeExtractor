@@ -2,6 +2,7 @@
 google-api-python-client==2.125.0
 python-dotenv==1.0.1
 requests==2.31.0
+isodate>=0.6
 
 # Logging & CLI
 rich==13.7.1
@@ -14,7 +15,7 @@ numpy==1.26.4
 scikit-learn==1.4.2
 
 # Visualization
-matplotlib==3.8.4g
+matplotlib==3.8.4
 seaborn==0.13.2
 
 # Image Processing (for thumbnail clustering or face detection)
