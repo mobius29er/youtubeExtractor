@@ -17,6 +17,7 @@ from googleapiclient.errors import HttpError
 import time
 import random
 from dotenv import load_dotenv
+from isodate import parse_duration
 
 load_dotenv()
 PROGRESS_FILE = "extracted_data/progress_tracker.json"
@@ -31,6 +32,10 @@ class CorrectedDataExtractor:
         self.api_key = api_key
         self.youtube = build('youtube', 'v3', developerKey=api_key)
         self.setup_logging()
+
+        # Test mode controls
+        self.test_mode = test_mode
+        self.max_channels = max_channels
         
         # Track extraction progress
         self.quota_used = 0
@@ -240,8 +245,11 @@ class CorrectedDataExtractor:
             except Exception as e:
                 self.logger.error(f"Error getting video details: {e}")
                 continue
-        
-        return detailed_videos
+        filtered_videos = [
+            video for video in detailed_videos
+            if parse_duration(video['duration']).total_seconds() >= 180  # Filter out videos shorter than 3 minutes
+        ]
+        return filtered_videos
     
     def intelligent_video_selection(self, videos: List[Dict], target_count: int = 40) -> Dict:
         """Intelligent video selection: top 10 + bottom 10 + random 20"""
@@ -421,8 +429,12 @@ class CorrectedDataExtractor:
         
         for genre, channels in channels_config.items():
             self.logger.info(f"Processing genre: {genre}")
+            channel_counter = 0
             
             for channel_info in channels:
+                if self.test_mode and channel_counter >= self.max_channels:
+                    self.logger.info(f"🧪 Test mode: only processing first {self.max_channels} channels for genre '{genre}'")
+                    break
                 channel_name = channel_info['name']
                 channel_handle = channel_info['handle']
                 # Skip if already processed
@@ -485,8 +497,8 @@ class CorrectedDataExtractor:
                     self.processed_channels.add(channel_name)
                     self._save_progress()
                     self.logger.info(f"💾 Progress saved to {PROGRESS_FILE}")
+                    channel_counter += 1
 
-                    
                 except Exception as e:
                     self.logger.error(f"❌ Failed to process {channel_name}: {e}")
                     continue
@@ -687,18 +699,25 @@ def main():
         os.remove(PROGRESS_FILE)
     print("🔄 Progress reset! Starting from scratch.\n")
 
-    """Main execution function for corrected data extraction"""
-    
-    print("📊 Corrected YouTube Data Extractor")
-    print("API-only approach for public videos (realistic expectations)")
-    print("=" * 60)
-    
     # Check for API key
     api_key = os.getenv('YOUTUBE_API_KEY')
     if not api_key:
         print("❌ ERROR: YouTube API key not found!")
         print("Please set YOUTUBE_API_KEY environment variable")
         return
+    
+    # Enable test mode here
+    TEST_MODE = True
+    MAX_CHANNELS = 1  # Limit to 1 channel per genre in test mode
+
+    # Initialize extractor
+    extractor = CorrectedDataExtractor(api_key, test_mode=TEST_MODE, max_channels=MAX_CHANNELS)
+
+    """Main execution function for corrected data extraction"""
+    
+    print("📊 Corrected YouTube Data Extractor")
+    print("API-only approach for public videos (realistic expectations)")
+    print("=" * 60)
     
     # Initialize extractor
     extractor = CorrectedDataExtractor(api_key)
