@@ -109,7 +109,9 @@ Inspired by:
 MIT — Go build cool stuff. Tag me if you build something awesome.
 
 🙌 Author
+
 Built by Jeremy Foxx
+
 Creator. Engineer. Catholic. Hacker. Strategist.
 
 ⭐ Star this repo if you believe creators deserve better tools than gut feelings.
