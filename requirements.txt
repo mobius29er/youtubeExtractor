@@ -1,0 +1,34 @@
+# Core Requirements
+google-api-python-client==2.125.0
+python-dotenv==1.0.1
+requests==2.31.0
+
+# Logging & CLI
+rich==13.7.1
+
+# Data Handling & Analysis
+pandas==2.2.2
+numpy==1.26.4
+
+# ML & Clustering
+scikit-learn==1.4.2
+
+# Visualization
+matplotlib==3.8.4g
+seaborn==0.13.2
+
+# Image Processing (for thumbnail clustering or face detection)
+Pillow==10.3.0
+opencv-python==4.9.0.80
+
+# Text Processing (for sentiment, transcript parsing, hooks)
+nltk==3.8.1
+textblob==0.18.0
+
+# Transcription (if you integrate Whisper or other STT later)
+# openai-whisper==20231117
+# ffmpeg-python==0.2.0
+# torch==2.2.2
+
+# Optional LLM Integration (if generating insights or summaries)
+# openai==1.30.1

@@ -1,0 +1,11 @@
+{
+  "summary": {
+    "total_videos": 0,
+    "videos_with_captions": 0,
+    "videos_with_english": 0,
+    "videos_with_auto_captions": 0,
+    "videos_with_manual_captions": 0
+  },
+  "by_channel": {},
+  "transcript_extraction_candidates": []
+}
