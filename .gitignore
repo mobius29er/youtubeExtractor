@@ -36,8 +36,9 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Archive
+# Working Folders
 archive/
+extracted_data/
 
 # Unit test / coverage reports
 htmlcov/
