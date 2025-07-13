@@ -100,13 +100,10 @@ Want to go further?
 💡 Inspiration
 Inspired by:
 
-MrBeast’s creator interviews
-
-ML interpretability studies
-
-YouTube SEO data science
-
-The belief that data + art = audience magic
+- MrBeast’s creator interviews
+- ML interpretability studies
+- YouTube SEO data science
+- The belief that data + art = audience magic
 
 📜 License
 MIT — Go build cool stuff. Tag me if you build something awesome.
