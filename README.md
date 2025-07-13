@@ -66,8 +66,8 @@ cd youtubeExtractor
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
-Create a .env file:
 ```
+Create a .env file:
 ```
 env
 YOUTUBE_API_KEY=your-api-key-here
