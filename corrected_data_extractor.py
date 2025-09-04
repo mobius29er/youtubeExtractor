@@ -9,18 +9,20 @@ import os
 import json
 import csv
 import logging
+import time
+import random
 from datetime import datetime
 from typing import Dict, List, Optional
 import requests
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-import time
-import random
 from dotenv import load_dotenv
 from isodate import parse_duration
+from scipy import stats
 
 load_dotenv()
 PROGRESS_FILE = "extracted_data/progress_tracker.json"
+CHANNEL_ID_CACHE_FILE = "extracted_data/channel_id_cache.json"
 
 class CorrectedDataExtractor:
     """
@@ -69,45 +71,63 @@ class CorrectedDataExtractor:
             json.dump({"processed_channels": list(self.processed_channels)}, f, indent=2)
 
     
-    def get_channel_configuration(self) -> Dict:
-        """Get the 25-channel configuration"""
-        return {
-            "challenge_stunts": [
-                {"name": "MrBeast", "handle": "@MrBeast", "tier": "Large"},
-                {"name": "Zach King", "handle": "@ZachKing", "tier": "Mid"},
-                {"name": "Ryan Trahan", "handle": "@RyanTrahan", "tier": "Mid"},
-                {"name": "Austen Alexander", "handle": "@AustenAlexander", "tier": "Small"},
-                {"name": "Zach D. Films", "handle": "@ZachDFilms", "tier": "New"}
-            ],
-            "catholic": [
-                {"name": "Ascension Presents", "handle": "@AscensionPresents", "tier": "Large"},
-                {"name": "Bishop Robert Barron", "handle": "@BishopRobertBarron", "tier": "Mid"},
-                {"name": "Breaking in the Habit", "handle": "@BreakingInTheHabit", "tier": "Mid"},
-                {"name": "GabiAfterHours", "handle": "@GabiAfterHours", "tier": "Small"},
-                {"name": "The Traditional Thomist", "handle": "@TheTraditionalThomist", "tier": "New"}
-            ],
-            "education_science": [
-                {"name": "Kurzgesagt", "handle": "@kurzgesagt", "tier": "Large"},
-                {"name": "SciShow", "handle": "@SciShow", "tier": "Mid"},
-                {"name": "Veritasium", "handle": "@veritasium", "tier": "Mid"},
-                {"name": "Steve Mould", "handle": "@SteveMould", "tier": "Small"},
-                {"name": "Up and Atom", "handle": "@UpandAtom", "tier": "New"}
-            ],
-            "gaming": [
-                {"name": "Jacksepticeye", "handle": "@jacksepticeye", "tier": "Large"},
-                {"name": "Call Me Kevin", "handle": "@CallMeKevin", "tier": "Mid"},
-                {"name": "RTGame", "handle": "@RTGame", "tier": "Mid"},
-                {"name": "Lets Game It Out", "handle": "@LetsGameItOut", "tier": "Small"},
-                {"name": "DougDoug", "handle": "@DougDoug", "tier": "New"}
-            ],
-            "kids_family": [
-                {"name": "Cocomelon", "handle": "@Cocomelon", "tier": "Large"},
-                {"name": "Vlad and Niki", "handle": "@VladandNiki", "tier": "Mid"},
-                {"name": "Diana and Roma", "handle": "@KidsRoma", "tier": "Mid"},
-                {"name": "Genevieve's Playhouse", "handle": "@GenevievesPlayhouse", "tier": "Small"},
-                {"name": "Tiny Tots Adventures", "handle": "@TinyTotsAdventures", "tier": "New"}
-            ]
-        }
+    # 1. Raw subscriber bucket (global)
+def global_size_bucket(subs):
+    if subs >= 50_000_000:   return "Mega"
+    elif subs >= 10_000_000: return "Large"
+    elif subs >= 1_000_000:  return "Mid"
+    elif subs >= 100_000:    return "Small"
+    else:                    return "New"
+
+# 2. Genre-relative bucket
+def genre_size_bucket(subs, genre, genre_stats):
+    # genre_stats is a dict like {'catholic': [sorted_sub_counts]}
+    percentile = stats.percentileofscore(genre_stats[genre], subs)
+    if percentile >= 95:   return "Large"
+    elif percentile >= 50: return "Mid"
+    elif percentile >= 15: return "Small"
+    else:                  return "New"
+
+def get_channel_configuration() -> Dict:
+    """Get the 25-channel configuration with updated stats and buckets"""
+    return {
+        "challenge_stunts": [
+            {"name": "MrBeast", "handle": "@MrBeast", "subs": 430000000, "global_tier": "Mega", "genre_tier": "Large", "channel_id": "UCX6OQ3DkcsbYNE6H8uQQuVA"},
+            {"name": "Zach King", "handle": "@ZachKing", "subs": 42900000, "global_tier": "Large", "genre_tier": "Mid", "channel_id": "UCq8DICunczvLuJJq414110A"},
+            {"name": "Ryan Trahan", "handle": "@Ryan", "subs": 21500000, "global_tier": "Large", "genre_tier": "Mid", "channel_id": "UCnmGIkw-KdI0W5siakKPKog"},
+            {"name": "Hangtime", "handle": "@Hangtime37", "subs": 2610000, "global_tier": "Mid", "genre_tier": "Small", "channel_id": "UC3wc2MERkKAqNEtaiQslC-A"},
+            {"name": "Money Guy", "handle": "@IamMoneyGuy", "subs": 12700, "global_tier": "New", "genre_tier": "New", "channel_id": "UCQ6iSs2O-HPZzAQJbJSCuAw"}
+        ],
+        "catholic": [
+            {"name": "Ascension Presents", "handle": "@AscensionPresents", "subs": 1160000, "global_tier": "Mid", "genre_tier": "Large", "channel_id": "UCVdGX3N-WIJ5nUvklBTNhAw"},
+            {"name": "Bishop Robert Barron", "handle": "@BishopBarron", "subs": 2310000, "global_tier": "Mid", "genre_tier": "Large", "channel_id": "UCcMjLgeWNwqL2LBGS-iPb1A"},
+            {"name": "The Catholic Talk Show", "handle": "@CatholicTalkShow", "subs": 282000, "global_tier": "Small", "genre_tier": "Mid", "channel_id": "UClYN3WXAFPr0FDHUaLx1g0Q"},
+            {"name": "The Father Leo Show", "handle": "@TheFatherLeoShow", "subs": 117000, "global_tier": "Small", "genre_tier": "Small", "channel_id": "UC8U8cYejgQDPFoiw96dRJDA"},
+            {"name": "Cameron Riecker", "handle": "@CameronRiecker", "subs": 16000, "global_tier": "New", "genre_tier": "New",  "channel_id": "UCj3F_YF4pZ7zthLhGbLjoIQ"}
+        ],
+        "education_science": [
+            {"name": "Kurzgesagt", "handle": "@kurzgesagt", "subs": 24500000, "global_tier": "Large", "genre_tier": "Large", "channel_id": "UCsXVk37bltHxD1rDPwtNM8Q"},
+            {"name": "Veritasium", "handle": "@veritasium", "subs": 18700000, "global_tier": "Large", "genre_tier": "Mid", "channel_id": "UCHnyfMqiRRG1u-2MsSQLbXA"},
+            {"name": "SciShow", "handle": "@SciShow", "subs": 8250000, "global_tier": "Mid", "genre_tier": "Mid", "channel_id": "UCZYTClx2T1of7BRZ86-8fow"},
+            {"name": "Fun Science", "handle": "@FunScienceX", "subs": 796000, "global_tier": "Small", "genre_tier": "Small", "channel_id": "UCTn0kzSoLyz6r6H-psXmgjA"},
+            {"name": "Up and Atom", "handle": "@UpandAtom", "subs": 851000, "global_tier": "New", "genre_tier": "New", "channel_id": "UCSIvk78tK2TiviLQn4fSHaw"}
+        ],
+        "gaming": [
+            {"name": "PewdiePie", "handle": "@PewDiePie", "subs": 110000000, "global_tier": "Mega", "genre_tier": "Large", "channel_id": "UC-lHJZR3Gqxm24_Vd_AJ5Yw"},
+            {"name": "Jacksepticeye", "handle": "@jacksepticeye", "subs": 31000000, "global_tier": "Large", "genre_tier": "Large", "channel_id": "UCYzPXprvl5Y-Sf0g4vX-m6g"},
+            {"name": "Call Me Kevin", "handle": "@CallMeKevin", "subs": 3620000, "global_tier": "Mid", "genre_tier": "Mid", "channel_id": "UCdoPCztTOW7BJUPk2h5ttXA"},
+            {"name": "Bind", "handle": "@Bindmove", "subs": 101000, "global_tier": "Small", "genre_tier": "Small", "channel_id": "UCO9US9tHbfyTD3eGJEbD1Ig"},
+            {"name": "Lizz", "handle": "@LIZZgame", "subs": 73600, "global_tier": "New", "genre_tier": "New", "channel_id": "UC61UVJEH0n-bVh6ml43ig-w"}
+        ],
+        "kids_family": [
+            {"name": "Cocomelon", "handle": "@Cocomelon", "subs": 197000000, "global_tier": "Mega", "genre_tier": "Large", "channel_id": "UCbCmjCuTUZos6Inko4u57UQ"},
+            {"name": "Kids Roma Show", "handle": "@KidsRomaShow", "subs": 43200000, "global_tier": "Large", "genre_tier": "Mid", "channel_id": "UCx790OVgpTC1UVBQIqu3gnQ"},
+            {"name": "Sheriff Labrador - Kids Cartoon", "handle": "@SheriffLabrador", "subs": 8830000, "global_tier": "Mid", "genre_tier": "Mid", "channel_id": "UCXIvAXVdbUDzIFhVwB9RR-g"},
+            {"name": "VeggieTales Official", "handle": "@veggietales", "subs": 808000, "global_tier": "Small", "genre_tier": "Small", "channel_id": "UChddokv0fxIN3BS-KZpxFfA"},
+            {"name": "Miss Honey Bear - Speech Therapist - Read Aloud", "handle": "@MissHoneyBearSLP", "subs": 20300, "global_tier": "New", "genre_tier": "New", "channel_id": "UCWi-JuL1M6WDI8ShtvWlH0A"}
+        ]
+    }
+
     
     def resolve_channel_handle(self, handle: str) -> Optional[str]:
         """Resolve @handle to channel ID"""
@@ -133,18 +153,22 @@ class CorrectedDataExtractor:
         
         return None
     
-    def extract_channel_data(self, handle: str) -> Dict:
-        """Extract basic channel information"""
+    def extract_channel_data(self, channel_info: Dict) -> Dict:
+        """Extract basic channel information - optimized to use pre-included data"""
         try:
-            # Resolve handle to channel ID
-            channel_id = self.resolve_channel_handle(handle)
+            # Use pre-included channel_id instead of resolving handle
+            channel_id = channel_info.get('channel_id')
             if not channel_id:
-                self.logger.error(f"Could not resolve channel handle: {handle}")
-                return {}
+                # Fallback to handle resolution if channel_id not provided
+                self.logger.warning(f"No channel_id provided for {channel_info.get('name')}, falling back to handle resolution")
+                channel_id = self.resolve_channel_handle(channel_info.get('handle', ''))
+                if not channel_id:
+                    self.logger.error(f"Could not resolve channel: {channel_info.get('name')}")
+                    return {}
             
-            # Get channel details
+            # Get only essential data we don't already have (description, thumbnail, uploads playlist)
             response = self.youtube.channels().list(
-                part='snippet,statistics,contentDetails',
+                part='snippet,contentDetails',  # Removed 'statistics' since we have subscriber count
                 id=channel_id
             ).execute()
             
@@ -155,14 +179,18 @@ class CorrectedDataExtractor:
             
             channel = response['items'][0]
             
+            # Use pre-included metrics when available, fallback to API data
             return {
                 'channel_id': channel_id,
-                'handle': handle,
+                'handle': channel_info.get('handle', ''),
+                'name': channel_info.get('name', channel['snippet']['title']),
                 'title': channel['snippet']['title'],
                 'description': channel['snippet']['description'],
-                'subscriber_count': int(channel['statistics'].get('subscriberCount', 0)),
-                'video_count': int(channel['statistics'].get('videoCount', 0)),
-                'view_count': int(channel['statistics'].get('viewCount', 0)),
+                'subscriber_count': channel_info.get('subs', 0),  # Use pre-included subscriber count
+                'global_tier': channel_info.get('global_tier', 'Unknown'),
+                'genre_tier': channel_info.get('genre_tier', 'Unknown'),
+                'video_count': channel_info.get('video_count', 0),  # Can add this to config if needed
+                'view_count': channel_info.get('total_views', 0),   # Can add this to config if needed
                 'thumbnail_url': channel['snippet']['thumbnails']['high']['url'],
                 'uploads_playlist_id': channel['contentDetails']['relatedPlaylists']['uploads']
             }
@@ -447,8 +475,8 @@ class CorrectedDataExtractor:
                 self.logger.info(f"Extracting data for: {channel_name} ({channel_handle})")
                 
                 try:
-                    # Extract channel data
-                    channel_data = self.extract_channel_data(channel_handle)
+                    # Extract channel data - pass full channel_info to use pre-included data
+                    channel_data = self.extract_channel_data(channel_info)
                     if not channel_data:
                         self.logger.warning(f"❌ Could not extract data for {channel_name}")
                         continue
@@ -539,7 +567,7 @@ class CorrectedDataExtractor:
         """Create ML-ready CSV dataset"""
         
         fieldnames = [
-            'video_id', 'channel_name', 'genre', 'tier', 'title', 'view_count',
+            'video_id', 'channel_name', 'genre', 'global_tier', 'genre_tier', 'title', 'view_count',
             'like_count', 'comment_count', 'duration', 'published_at',
             'tags_count', 'title_length', 'description_length',
             'channel_subscriber_count', 'performance_category',
@@ -558,7 +586,8 @@ class CorrectedDataExtractor:
                         'video_id': video['video_id'],
                         'channel_name': channel_name,
                         'genre': channel_data['genre'],
-                        'tier': channel_data['channel_info']['tier'],
+                        'global_tier': channel_data['channel_info'].get('global_tier', 'Unknown'),
+                        'genre_tier': channel_data['channel_info'].get('genre_tier', 'Unknown'),
                         'title': video['title'],
                         'view_count': video.get('view_count', 0),
                         'like_count': video.get('like_count', 0),
@@ -592,7 +621,8 @@ class CorrectedDataExtractor:
                         'video_id': video['video_id'],
                         'channel_name': channel_name,
                         'genre': channel_data['genre'],
-                        'tier': channel_data['channel_info']['tier'],
+                        'global_tier': channel_data['channel_info'].get('global_tier', 'Unknown'),
+                        'genre_tier': channel_data['channel_info'].get('genre_tier', 'Unknown'),
                         'performance_category': video.get('performance_category', 'unknown'),
                         **comment
                     }

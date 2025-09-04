@@ -10,6 +10,7 @@ rich==13.7.1
 # Data Handling & Analysis
 pandas==2.2.2
 numpy==1.26.4
+scipy>=1.11.0
 
 # ML & Clustering
 scikit-learn==1.4.2
