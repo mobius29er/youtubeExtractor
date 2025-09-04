@@ -70,27 +70,26 @@ class CorrectedDataExtractor:
         with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
             json.dump({"processed_channels": list(self.processed_channels)}, f, indent=2)
 
-    
-    # 1. Raw subscriber bucket (global)
-def global_size_bucket(subs):
-    if subs >= 50_000_000:   return "Mega"
-    elif subs >= 10_000_000: return "Large"
-    elif subs >= 1_000_000:  return "Mid"
-    elif subs >= 100_000:    return "Small"
-    else:                    return "New"
+    def global_size_bucket(self, subs):
+        """Raw subscriber bucket (global)"""
+        if subs >= 50_000_000:   return "Mega"
+        elif subs >= 10_000_000: return "Large"
+        elif subs >= 1_000_000:  return "Mid"
+        elif subs >= 100_000:    return "Small"
+        else:                    return "New"
 
-# 2. Genre-relative bucket
-def genre_size_bucket(subs, genre, genre_stats):
-    # genre_stats is a dict like {'catholic': [sorted_sub_counts]}
-    percentile = stats.percentileofscore(genre_stats[genre], subs)
-    if percentile >= 95:   return "Large"
-    elif percentile >= 50: return "Mid"
-    elif percentile >= 15: return "Small"
-    else:                  return "New"
+    def genre_size_bucket(self, subs, genre, genre_stats):
+        """Genre-relative bucket"""
+        # genre_stats is a dict like {'catholic': [sorted_sub_counts]}
+        percentile = stats.percentileofscore(genre_stats[genre], subs)
+        if percentile >= 95:   return "Large"
+        elif percentile >= 50: return "Mid"
+        elif percentile >= 15: return "Small"
+        else:                  return "New"
 
-def get_channel_configuration() -> Dict:
-    """Get the 25-channel configuration with updated stats and buckets"""
-    return {
+    def get_channel_configuration(self) -> Dict:
+        """Get the 25-channel configuration with updated stats and buckets"""
+        return {
         "challenge_stunts": [
             {"name": "MrBeast", "handle": "@MrBeast", "subs": 430000000, "global_tier": "Mega", "genre_tier": "Large", "channel_id": "UCX6OQ3DkcsbYNE6H8uQQuVA"},
             {"name": "Zach King", "handle": "@ZachKing", "subs": 42900000, "global_tier": "Large", "genre_tier": "Mid", "channel_id": "UCq8DICunczvLuJJq414110A"},
@@ -741,8 +740,8 @@ def main():
         return
     
     # Enable test mode here
-    TEST_MODE = True
-    MAX_CHANNELS = 1  # Limit to 1 channel per genre in test mode
+    TEST_MODE = False  # Set to False for full extraction
+    MAX_CHANNELS = 5   # Process all channels per genre
 
     """Main execution function for corrected data extraction"""
     
