@@ -195,7 +195,8 @@ class CorrectedDataExtractor:
             }
             
         except Exception as e:
-            self.logger.error(f"Error extracting channel data for {handle}: {e}")
+            channel_name = channel_info.get('name', 'Unknown')
+            self.logger.error(f"Error extracting channel data for {channel_name}: {e}")
             return {}
     
     def get_all_channel_videos(self, uploads_playlist_id: str) -> List[Dict]:
