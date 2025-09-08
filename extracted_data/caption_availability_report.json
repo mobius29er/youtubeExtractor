@@ -1,10 +1,10 @@
 {
   "summary": {
-    "total_videos": 160,
-    "videos_with_captions": 155,
-    "videos_with_english": 154,
-    "videos_with_auto_captions": 154,
-    "videos_with_manual_captions": 48
+    "total_videos": 373,
+    "videos_with_captions": 342,
+    "videos_with_english": 340,
+    "videos_with_auto_captions": 340,
+    "videos_with_manual_captions": 70
   },
   "by_channel": {
     "VeggieTales Official": {
@@ -40,6 +40,48 @@
       "videos_with_captions": 0,
       "videos_with_english": 0,
       "videos_with_auto_captions": 0,
+      "videos_with_manual_captions": 0
+    },
+    "Hangtime": {
+      "total_videos": 80,
+      "videos_with_captions": 36,
+      "videos_with_english": 36,
+      "videos_with_auto_captions": 36,
+      "videos_with_manual_captions": 0
+    },
+    "Money Guy": {
+      "total_videos": 26,
+      "videos_with_captions": 13,
+      "videos_with_english": 13,
+      "videos_with_auto_captions": 13,
+      "videos_with_manual_captions": 0
+    },
+    "Ascension Presents": {
+      "total_videos": 80,
+      "videos_with_captions": 39,
+      "videos_with_english": 38,
+      "videos_with_auto_captions": 38,
+      "videos_with_manual_captions": 8
+    },
+    "Bishop Robert Barron": {
+      "total_videos": 80,
+      "videos_with_captions": 40,
+      "videos_with_english": 40,
+      "videos_with_auto_captions": 40,
+      "videos_with_manual_captions": 14
+    },
+    "The Catholic Talk Show": {
+      "total_videos": 80,
+      "videos_with_captions": 40,
+      "videos_with_english": 40,
+      "videos_with_auto_captions": 40,
+      "videos_with_manual_captions": 0
+    },
+    "The Father Leo Show": {
+      "total_videos": 80,
+      "videos_with_captions": 19,
+      "videos_with_english": 19,
+      "videos_with_auto_captions": 19,
       "videos_with_manual_captions": 0
     }
   },
@@ -4459,6 +4501,4116 @@
       "title": "Best of Zach King Magic Compilation 2021",
       "channel_name": "Zach King",
       "view_count": 6960247,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "xlbnI3bG5R0",
+      "title": "I Melted Every Candy Into One Piece",
+      "channel_name": "Hangtime",
+      "view_count": 13951598,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "VqpQo5B21Wk",
+      "title": "I Melted Every Gum Into One Piece",
+      "channel_name": "Hangtime",
+      "view_count": 11107438,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "-dDlzPDjzwQ",
+      "title": "I Built a Secret Man-Cave in My House",
+      "channel_name": "Hangtime",
+      "view_count": 10701626,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "dakebYDWN6Q",
+      "title": "I Tried 5 Levels of Waterparks",
+      "channel_name": "Hangtime",
+      "view_count": 7519606,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "5s6rxdCw-jI",
+      "title": "I Mixed Every Soda Into One Drink",
+      "channel_name": "Hangtime",
+      "view_count": 7358889,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "HPooZaUoJFQ",
+      "title": "I Built a Secret Tiny Home in my Van",
+      "channel_name": "Hangtime",
+      "view_count": 6786672,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "KegAD80CrGE",
+      "title": "I Crushed Every Chip Into One Chip",
+      "channel_name": "Hangtime",
+      "view_count": 6531626,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "1T3oBNlDCHQ",
+      "title": "I Melted Every Chocolate Bar Into One",
+      "channel_name": "Hangtime",
+      "view_count": 6531401,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "sAr_k6RW9Lk",
+      "title": "I Flew on the First-Ever Airline Made for Dogs",
+      "channel_name": "Hangtime",
+      "view_count": 6326460,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "sR5GuHvAVaM",
+      "title": "I Mixed Every Sports Drink Into One",
+      "channel_name": "Hangtime",
+      "view_count": 5969337,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "tH0MClbbIhE",
+      "title": "What is a MAN like?",
+      "channel_name": "Hangtime",
+      "view_count": 1370,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "hJ3u9w_7Pn8",
+      "title": "27,150 Reps in 72 Hour Workout (What I Learned)",
+      "channel_name": "Hangtime",
+      "view_count": 1291,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "iboHtC2uBFU",
+      "title": "College Recruits CATCH D1 PUNTS (Challenge) ASU Punter Michael Turk",
+      "channel_name": "Hangtime",
+      "view_count": 1274,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "7ZDeuVyVLq8",
+      "title": "WARNING MESSAGE TO PASTORS AND THE CHURCH IN 2021 \"BRING US THE BIBLE\" (Steven Lawson)",
+      "channel_name": "Hangtime",
+      "view_count": 1218,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "LQt7Wl4rV0A",
+      "title": "OFFSEASON Channel Update! Thanks Slimes!",
+      "channel_name": "Hangtime",
+      "view_count": 1150,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "j-T86bQY3xs",
+      "title": "Unlikely Hero | The REAL 300 Story is From the BIBLE | JUDGES 6-7 with ASU Punter Michael Turk",
+      "channel_name": "Hangtime",
+      "view_count": 1046,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "e1JYYync5z4",
+      "title": "Love Your Enemies?! Why you should overlook offenses & never take revenge w/ ASU Punter Michael Turk",
+      "channel_name": "Hangtime",
+      "view_count": 1045,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "jMihpRxAjAM",
+      "title": "Do all things really work for your good?! Romans 8:28 with ASU Punter Michael Turk",
+      "channel_name": "Hangtime",
+      "view_count": 1044,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "cvfxquUtaDc",
+      "title": "Day in the Life: D1 College Football Player",
+      "channel_name": "Hangtime",
+      "view_count": 2988685,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "HLofb2C4Omk",
+      "title": "I Negotiated A Free Car",
+      "channel_name": "Hangtime",
+      "view_count": 102668,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "KsExQGoeNDc",
+      "title": "Arizona State (ASU) Dorm Tour // Football Player Edition (HD)",
+      "channel_name": "Hangtime",
+      "view_count": 17923,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "QD0oFajP9Gg",
+      "title": "How I Broke the NFL Combine Bench Press Record for Punters | Michael Turk | Hangtime",
+      "channel_name": "Hangtime",
+      "view_count": 15875,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "fZ-FnFVa1-s",
+      "title": "I Hired a Professional for Every Task of my Day",
+      "channel_name": "Hangtime",
+      "view_count": 3215526,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "0Nczmw_0NaU",
+      "title": "I Adopted a Dog Who Was Forgotten",
+      "channel_name": "Hangtime",
+      "view_count": 3671481,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "CRHG5i1nYlc",
+      "title": "REACTING To My PROPOSAL Video With My Fiancé!",
+      "channel_name": "Hangtime",
+      "view_count": 173354,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "I1TrpYgAmj0",
+      "title": "“RED RIVER RIVALRY” GAMEDAY VLOG - OKLAHOMA vs TEXAS (LARGEST COMEBACK IN RRR HISTORY)",
+      "channel_name": "Hangtime",
+      "view_count": 396880,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "I3xHSQjx6Jk",
+      "title": "CHEEZ-IT HOTEL ROOM TOUR (ONLY FOR CHEEZIEST)",
+      "channel_name": "Hangtime",
+      "view_count": 114851,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "1GOzihrULrA",
+      "title": "Trading Penny Challenge On College Campus",
+      "channel_name": "Hangtime",
+      "view_count": 51281,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "YWgGm050IqY",
+      "title": "Something You Need to Hear",
+      "channel_name": "Hangtime",
+      "view_count": 20025,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "cJbkKO55dLU",
+      "title": "It's the first week and I'm already sore",
+      "channel_name": "Hangtime",
+      "view_count": 2120,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "T2fxrCDgJl4",
+      "title": "Punter Workout With Me...",
+      "channel_name": "Hangtime",
+      "view_count": 56185,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "RqFr5kMcuxM",
+      "title": "I Broke Unwritten Rules in a Positive Way",
+      "channel_name": "Hangtime",
+      "view_count": 2647565,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "djtlvBpUsYU",
+      "title": "WHAT WILL I DO NOW... (AND YOU)",
+      "channel_name": "Hangtime",
+      "view_count": 52092,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "XCRtVYBjYJk",
+      "title": "Oregon Football Players Really Did This...🤦‍♂️",
+      "channel_name": "Hangtime",
+      "view_count": 75394,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "EydvgKqpOiU",
+      "title": "GRACE IS BACK... AND THINGS ARE GETTING SERIOUS",
+      "channel_name": "Hangtime",
+      "view_count": 99544,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "yd1vvP4wT5E",
+      "title": "ALL-PRO NFL Punter Matt Turk Gave Me Punting Lessons During a Punt Workout! (Raw Footage) Hangtime",
+      "channel_name": "Hangtime",
+      "view_count": 18110,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "CfAzfCAHh28",
+      "title": "I Tried Youtube Shorts For 30 days (went VIRAL AGAIN xd)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "mI4i35Mxi8s",
+      "title": "$10,860 With One Video That Took 1 HOUR TO MAKE (Just Copy Me)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "YOxeZ73IsOA",
+      "title": "$801,869 With One Faceless Channel - Just Copy Me (Full Guide)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "hqz26Hz0q0Q",
+      "title": "I CLONED $100,000/Mo Youtube Channel With AI (Full Tutorial)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "uW3m5oGEcGc",
+      "title": "How I Make MONETIZABLE shorts by Re-Using Content",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "V5kxMZBLWYA",
+      "title": "I Found 5 Best Youtube Shorts Niches To Get Rich In 2025",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ryuG9j7k9jg",
+      "title": "How to Start a Faceless YouTube Channel with AI... (Easy Method)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "LRadVrttGqI",
+      "title": "How I Make Money With Football Shorts (+10,000$)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "a-yeaMDQN8w",
+      "title": "The RIGHT Way to Upload Shorts in 2025 (For Fast Growth)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "7tQ09ICij8E",
+      "title": "How I Got MONETIZED With ONLY 1 Video. (Easy)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "TgwyDm9iimY",
+      "title": "I Copied a Youtube Channel That Makes $30,000/Mo (Realistic Results)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "jwv6xCzKMr8",
+      "title": "How 16 y.o. Makes 30k/month from Faceless Youtube Channel",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "LLIyjukRCpw",
+      "title": "I tried Youtube shorts for 100 days (and went VIRAL)",
+      "channel_name": "Money Guy",
+      "view_count": 0,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "MsN612nNjig",
+      "title": "Pray with Us: The Chaplet of Divine Mercy",
+      "channel_name": "Ascension Presents",
+      "view_count": 8353128,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "JgtJ-sFzWww",
+      "title": "Pray with Us: The Holy Rosary",
+      "channel_name": "Ascension Presents",
+      "view_count": 6110016,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "jJCbCs-y1_k",
+      "title": "Why Be Catholic and Not Just Christian?",
+      "channel_name": "Ascension Presents",
+      "view_count": 3458432,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 16,
+        "languages": [
+          {
+            "language": "de",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "pt",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "lt",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "sl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "sk",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "nl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "it",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "hr",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "fr",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "pl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "ja",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es-US",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "ro",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "4-9_rxXFu9I",
+      "title": "The Transgender Question",
+      "channel_name": "Ascension Presents",
+      "view_count": 1999001,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 8,
+        "languages": [
+          {
+            "language": "pt-PT",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "hu",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "sl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "nl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "sk",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "it",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": false,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "PpGNzlwSrSs",
+      "title": "Can I Get a Tattoo?",
+      "channel_name": "Ascension Presents",
+      "view_count": 1897382,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 9,
+        "languages": [
+          {
+            "language": "fr-CA",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "sk",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "pl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "pt-BR",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "nl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "it",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "TT4JAxfhgcQ",
+      "title": "Do All Good People go to Heaven?",
+      "channel_name": "Ascension Presents",
+      "view_count": 1642435,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "D2M367Kj-Zg",
+      "title": "Why Can’t Catholics Scatter Their Ashes?",
+      "channel_name": "Ascension Presents",
+      "view_count": 1515978,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "fucgiDu-Fd0",
+      "title": "Pray with Us: The Sorrowful Mysteries of the Rosary with Fr. Mike Schmitz (Tuesdays & Fridays)",
+      "channel_name": "Ascension Presents",
+      "view_count": 1460162,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "mib825ROL7M",
+      "title": "Fr. Mike on Evangelization: Telling the Story of God’s Love",
+      "channel_name": "Ascension Presents",
+      "view_count": 1436309,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "GCmumpsrwBE",
+      "title": "Making a Good Confession",
+      "channel_name": "Ascension Presents",
+      "view_count": 1327532,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 11,
+        "languages": [
+          {
+            "language": "pl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "pt-PT",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "ro",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "zh-TW",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "hr",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "it",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "id",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "sk",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "Khb_WpEjy70",
+      "title": "World Meeting of Families - Sarah Christmyer",
+      "channel_name": "Ascension Presents",
+      "view_count": 864,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "e9nN4WnzErY",
+      "title": "World Meeting of Families -- Archbishop Chaput Opening Remarks",
+      "channel_name": "Ascension Presents",
+      "view_count": 864,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Z2FR9UodWcw",
+      "title": "World Meeting of Familes - Kevin Heider",
+      "channel_name": "Ascension Presents",
+      "view_count": 812,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "mHgat4diFuU",
+      "title": "World Meeting of Families - Father José Robles-Sánchez",
+      "channel_name": "Ascension Presents",
+      "view_count": 809,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Th8CZqwi8zM",
+      "title": "World Youth Day 2019: Via Crucis (Day 6)",
+      "channel_name": "Ascension Presents",
+      "view_count": 734,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Kw7Fb3OVKuk",
+      "title": "World Meeting of Families - Matthew Pinto",
+      "channel_name": "Ascension Presents",
+      "view_count": 720,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "XrYwgbuqOF8",
+      "title": "World Meeting of Families - Deacon Harold",
+      "channel_name": "Ascension Presents",
+      "view_count": 678,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "5-UiI8L7Zvw",
+      "title": "World Meeting of Families - Kara Klein",
+      "channel_name": "Ascension Presents",
+      "view_count": 665,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "942O0Y_iG9E",
+      "title": "World Meeting of Families - Scott Mirkin, ESM Productions",
+      "channel_name": "Ascension Presents",
+      "view_count": 452,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "LihpH7M2_kE",
+      "title": "Coping With Major Losses: 4 Practical Tips from Fr. Mike",
+      "channel_name": "Ascension Presents",
+      "view_count": 30151,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "sGeIanrc01U",
+      "title": "How to “Carry Your Cross”",
+      "channel_name": "Ascension Presents",
+      "view_count": 17262,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "pnmiaMMnv_U",
+      "title": "I Asked Jesus for a Miracle—Here's What Happened",
+      "channel_name": "Ascension Presents",
+      "view_count": 30364,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ByDqzk41t_0",
+      "title": "Is Self-Control a Virtue?",
+      "channel_name": "Ascension Presents",
+      "view_count": 20658,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "r3PcVAOogVU",
+      "title": "How to Deal with Your Partner’s Sexual Sin",
+      "channel_name": "Ascension Presents",
+      "view_count": 294378,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "2Sr3TPRwvNs",
+      "title": "If You're Discouraged, You Need These 3 Things",
+      "channel_name": "Ascension Presents",
+      "view_count": 27612,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "qe3aWwK0JjY",
+      "title": "Polish Priest Saves The Day",
+      "channel_name": "Ascension Presents",
+      "view_count": 8941,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "es-419",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "VzU1-JkXNoA",
+      "title": "Would It Just Be Easier Not to Be Christian?",
+      "channel_name": "Ascension Presents",
+      "view_count": 98020,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "zs5uItTxhZs",
+      "title": "Is It Okay to Be a Foodie?",
+      "channel_name": "Ascension Presents",
+      "view_count": 14410,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "8qQBy3AzGRM",
+      "title": "How to Be Excellent (NOT a Perfectionist)",
+      "channel_name": "Ascension Presents",
+      "view_count": 57613,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "tUAmYMbMYBA",
+      "title": "What You Have NOT Been Told About Baptism",
+      "channel_name": "Ascension Presents",
+      "view_count": 40551,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "0FzRVaz3--g",
+      "title": "If You're Tired of Needing God",
+      "channel_name": "Ascension Presents",
+      "view_count": 55600,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "ko",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "i1EKpCuVxBY",
+      "title": "How the Holy Spirit Guides the Election of the Pope",
+      "channel_name": "Ascension Presents",
+      "view_count": 36187,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "zurYP8yj26U",
+      "title": "Why We Love Natural Family Planning",
+      "channel_name": "Ascension Presents",
+      "view_count": 114227,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "4s69tj1wnco",
+      "title": "Cross the Finish Line Strong This Lent",
+      "channel_name": "Ascension Presents",
+      "view_count": 21964,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Q0cT36aO0s0",
+      "title": "Speak Your Neighbor's Love Language",
+      "channel_name": "Ascension Presents",
+      "view_count": 15488,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "8XZh8MNLC4s",
+      "title": "A Faith Life with No Regrets",
+      "channel_name": "Ascension Presents",
+      "view_count": 16750,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "ro",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "4j-P5E9kZkI",
+      "title": "Do We Deserve God's Love ?",
+      "channel_name": "Ascension Presents",
+      "view_count": 47605,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 3,
+        "languages": [
+          {
+            "language": "sk",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "_yJUm22abq0",
+      "title": "When You Don’t Meet Your Own Expectations",
+      "channel_name": "Ascension Presents",
+      "view_count": 21447,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ry7FbjkN-p0",
+      "title": "The Sorrowful Mysteries",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 4872430,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ckUJRg04jyg",
+      "title": "The Joyful Mysteries",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 4412057,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "WoJ1hQTVdSo",
+      "title": "The Glorious Mysteries",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 4375734,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "hjxKG4mR3U4",
+      "title": "Bishop Barron Presents | Shia LaBeouf - Padre Pio and the Friars",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 2919555,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 3,
+        "languages": [
+          {
+            "language": "en-US",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "pt-BR",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "UzCPu_lEhe8",
+      "title": "The Real Presence of Jesus in the Eucharist // Bishop Barron at 2020 Religious Education Congress",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 2914386,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 5,
+        "languages": [
+          {
+            "language": "cs",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "it",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "en-US",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "b2EjBt2PFpc",
+      "title": "The Luminous Mysteries",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 2908213,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "pJNjtA-Awb4",
+      "title": "The Stations of the Cross with Bishop Barron",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 1639772,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "lt",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "IED3S-vJ5AU",
+      "title": "Bishop Barron on The Devil",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 1214737,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 11,
+        "languages": [
+          {
+            "language": "pl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "zh-HK",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "pt",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "ko",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "hr",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "ja",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "hu",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "zh-Hans",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "fr",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "VyT3tiPxlPE",
+      "title": "Bishop Barron and Jonathan Roumie: A Conversation",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 1127320,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "8KQcm0Mi5To",
+      "title": "Ideas Have Consequences: The Philosophers Who Shaped 2020",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 1010561,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "id",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "jOCm6n_8WMM",
+      "title": "Fr. Joseph Fessio: Under the Direction of then-Professor Ratzinger",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 8795,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "JDUnyK6xxIs",
+      "title": "Bishop Barron on The Vatican and New Media",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 8396,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "inV3aAwDc2U",
+      "title": "Patrick J. Deneen: A Right to Pursue the Good",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 8283,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "211e_XshnGM",
+      "title": "The Word on Fire Institute Winter 2020 Journal “Hope” – Now Available",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 7577,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "RsVUYS2tBQ4",
+      "title": "Congressman Ro Khanna: The Highest Calling of Humanity",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 6511,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ZU23T-BLNiw",
+      "title": "Interview on the Word on Fire Institute",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 5924,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "KBZnNbUPBms",
+      "title": "Congressman Ro Khanna: Challenging Ideals",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 5588,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "r4qehpTUlhA",
+      "title": "Congressman Ro Khanna: The Market Economy",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 4853,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "tmIsV64xxqk",
+      "title": "Congressman Ro Khanna: Breaking Up Silicon Valley",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 4382,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "PHnrBUin_bs",
+      "title": "Congressman Ro Khanna: Healing A Divided Nation",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 4203,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "B7a9gJx87bQ",
+      "title": "Give as God Gives - Bishop Barron's Sunday Sermon",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 198927,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 3,
+        "languages": [
+          {
+            "language": "es-419",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "KUK0CzRz2PI",
+      "title": "Bishop Barron’s Top 5 YouTube Videos of the Decade",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 70733,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "PwOgRYwzSQY",
+      "title": "Zechariah's Vision — Bishop Barron’s Sunday Sermon",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 124926,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "lhTt3-Ggefk",
+      "title": "Bishop Barron on “Last Days in the Desert”",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 57321,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Ev8TK2JldRg",
+      "title": "Do You Really Want What God Wants?﻿ — Bishop Barron’s Sunday Sermon",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 364124,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 3,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "9sLTCUCD0S8",
+      "title": "Bishop Barron on St. Paul’s Masterclass in Evangelization",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 48122,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 4,
+        "languages": [
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "pl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "ro",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "b63sfWCmf1o",
+      "title": "What Role do the Saints Play in Advent? (Advent Reflections)",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 16519,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "pHm-GB0J78Y",
+      "title": "New Year's Reflection from Bishop Barron",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 45808,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "4iO_UCOI9Q0",
+      "title": "Understanding Genesis: Abraham and Isaac",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 97834,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "rBpvNs2g9G4",
+      "title": "Bishop Barron on Fleming Rutledge's “The Crucifixion”",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 57275,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "UuyAYSpvwnc",
+      "title": "The Future of the Word on Fire Show",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 30548,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Adzc683Tbnw",
+      "title": "Bishop Barron on Mark's Gospel and the Victory of God",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 57748,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "FT0f1HssiIk",
+      "title": "Bishop Barron on Being a Priest Today",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 81208,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "pl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "KufcHq30DWo",
+      "title": "Have You Stopped Listening to Jesus? — Bishop Barron’s Sunday Sermon",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 392586,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 3,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "CvqWTx8ykzg",
+      "title": "Why Is There So Much Disorder In The Universe?",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 105191,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "nl",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "4KzTGbYBRhM",
+      "title": "Bishop Barron’s Easter Homily",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 65256,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "LPfiRqRcv9A",
+      "title": "Surrender to the Spirit - Bishop Barron's Sunday Sermon",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 311388,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 3,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "9MBW1SBQuA8",
+      "title": "Bishop Barron on St. Paul and the Mission of the Church",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 69313,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "ja",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "qnH93ksmQ1w",
+      "title": "Jonathan Pageau: The Center of the City",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 8895,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "rAGyNe9hytc",
+      "title": "Understanding Genesis: Adam, Eve, and the Fall",
+      "channel_name": "Bishop Robert Barron",
+      "view_count": 149874,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "5sn0vcFPjL4",
+      "title": "15 Things That Need To Stop Happening During Mass | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 1647009,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "AAereZ_PBQE",
+      "title": "7 Things You Didn't Know About Holy Water | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 982816,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "eo35yQ1om7I",
+      "title": "Catholic Priests Talk About Near Death Experiences | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 687022,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "rrdI16xLY-o",
+      "title": "5 Things You Didn't Know About The Crucifix | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 596905,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "XICMjdXZmrs",
+      "title": "5 Things You Should Never Say To A Priest | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 521079,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "in1tAqFgNsY",
+      "title": "7 Secrets Catholic Exorcists Want You To Know | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 517507,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "VqWK7ftAFkw",
+      "title": "5 Things You Didn't Know About The Rosary | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 392042,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "3jo9giGsQWY",
+      "title": "10 Things You Didn't Know About Guardian Angels | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 342196,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "fN1pCmp1s20",
+      "title": "Which Actor Plays The Best Jesus? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 329798,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "nyefFKSi4Fc",
+      "title": "What Did Jesus Christ Actually Look Like? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 313583,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "qbRq5BRJ4AU",
+      "title": "Guess Who Can't Name All 20 Mysteries of the Rosary?",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 2958,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "zziDlLNFAME",
+      "title": "What the Church Teaches About Voting",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 2842,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "VlJfZgBJ-sA",
+      "title": "Why Selling The Vatican To Feed The World Is A Stupid Idea | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 2700,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "aYTQPVl1ukM",
+      "title": "Can We Pull The Super Rare Pope Leo XIV Topps FoilFractor? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 2587,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "bP4wo74zUaA",
+      "title": "HeWo - The PERFECT Gift For Young Catholic Kids! | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 2575,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "y8WGCo4GRLk",
+      "title": "Which Party's Stance on Immigration Most Aligns with Church Teaching?",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 2407,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "pCD8XOuvD7Y",
+      "title": "The Wells of Salvation: Building Water Wells for Families in Africa | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 2143,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "JfB5osdWSTA",
+      "title": "From Anti-Catholic Pastor to Catholic Apologist | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 1554,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "S4uNtWFNviU",
+      "title": "How To Be Featured On Our 100th Episode! | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 1504,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "09oj2E5zZ7I",
+      "title": "Give A Kid's FIRST EVER Christmas Gift! | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 1252,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "I48XEUAnrKg",
+      "title": "The Occult & Black Magic With Jimmy Akin | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 108611,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "E0AjhHkFmC8",
+      "title": "Interview With A Real Catholic Exorcist | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 85302,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ffhW3BMSr8U",
+      "title": "Was Mary Sinless? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 11809,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "g06LgMDT_QU",
+      "title": "Black Sabbath: The Unlikely Source Of The First Christian Rock Song | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 57652,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Jtb-l2GuBIM",
+      "title": "10 Things You Didn't Know About Vatican City | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 22413,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "fwtuqC8RDUA",
+      "title": "Why Are So Many People Sad & Depressed? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 38836,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "p-uCInAEVdE",
+      "title": "The Funniest Catholic Jokes & The Catholic Card Game | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 32645,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "WGThpFO-rd0",
+      "title": "The Didache: The Ancient Teaching Of The 12 Apostles | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 55226,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "5F_NwGxtYWk",
+      "title": "Supporting The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 3219,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "2aggWhHbib0",
+      "title": "Doubting God's Plan? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 34093,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "tfFfdIwhN5o",
+      "title": "Why Every Catholic Needs To Go To Rome In 2025 | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 19750,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "peBFkFStAUM",
+      "title": "The Meaning of Numbers In The Bible Explained | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 16605,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "7MBRkRv8x34",
+      "title": "What Is This Rosary Made Out Of? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 23087,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "BBZQZnNteW8",
+      "title": "7 Badass Catholic Saints | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 77492,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "2ISTxdKbP4o",
+      "title": "The Differences Between Catholic Religious Orders | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 225408,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "mFEDaazcppU",
+      "title": "9 Things Every Catholic Should Know About Novenas | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 28059,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "LbIT3P0jyvU",
+      "title": "Is the Republican Party Really Pro-Life?",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 3670,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "WcCZMH9KRew",
+      "title": "Israel Holy Land Pilgrimage: Nazareth, Galilee, Bethlehem, Jerusalem & More | Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 35585,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "_NeMRnToWsE",
+      "title": "8 Black Catholics Everyone Should Know | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 11964,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "RRhONMqimFA",
+      "title": "Why Do Catholics Confess Sins To A Priest? | The Catholic Talk Show",
+      "channel_name": "The Catholic Talk Show",
+      "view_count": 53345,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "zWGRU4VFsNk",
+      "title": "Avoid These 5 Mistakes at Mass to Deepen Your Catholic Worship During the Liturgy!",
+      "channel_name": "The Father Leo Show",
+      "view_count": 958922,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "_0ZuAspmlDI",
+      "title": "How to Give Better Confessions;  Tips from a Catholic Priest Who's Heard It All",
+      "channel_name": "The Father Leo Show",
+      "view_count": 399634,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "_XgaOa6wp_w",
+      "title": "Media Entertainment Lies & Misrepresentations about the Catholic Church: Praise to Religious Nuns",
+      "channel_name": "The Father Leo Show",
+      "view_count": 386484,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "r1WhC6VQ_oU",
+      "title": "Holy Water Guns, Clown Dances During Communion, and other odd Abuses at the Altar.",
+      "channel_name": "The Father Leo Show",
+      "view_count": 310704,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "RFjmLjbGEXo",
+      "title": "A Trans Funeral at St.Patrick's Cathedral Condemned by New York Archdiocese.",
+      "channel_name": "The Father Leo Show",
+      "view_count": 271280,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "VeRQ87tkAng",
+      "title": "Why Does Pastor Steven Anderson Revile Catholicism? Father Leo’s Dinner Invitation to the Pastor...",
+      "channel_name": "The Father Leo Show",
+      "view_count": 221379,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "PggsoqTEsoE",
+      "title": "Are Muslims Praying Outside Churches an Act of Intimidation? Where is the Balance Between Faiths?",
+      "channel_name": "The Father Leo Show",
+      "view_count": 212430,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "EX8OGlFFE9E",
+      "title": "\"The Chosen\" TV Series & the Catholic Church: Praise, Concerns, Reflections & Theological Accuracy",
+      "channel_name": "The Father Leo Show",
+      "view_count": 142861,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "SmeWfTCYXmU",
+      "title": "Unveiling the Truth About Mary: Debunking Netflix's Shameful Portrayal of Our Blessed Mother.",
+      "channel_name": "The Father Leo Show",
+      "view_count": 134753,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "r8YGFY27s_A",
+      "title": "Vandalism, Violent Attacks, Pride Flags, and Dancing in Church. When the Liturgy Loses Its Focus.",
+      "channel_name": "The Father Leo Show",
+      "view_count": 127743,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "hjly3d_ImhI",
+      "title": "Reaching Inner-City Kids Through Catholic Hip-Hop Music, Tattoos, & God Stepping into our Messiness",
+      "channel_name": "The Father Leo Show",
+      "view_count": 1421,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "_MW2qZSKxUU",
+      "title": "Is Confession Useless?",
+      "channel_name": "The Father Leo Show",
+      "view_count": 1409,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "iTG40LDvHT8",
+      "title": "Christmas Conspiracies: Pagan Roots, False Claims, and Catholic Traditions",
+      "channel_name": "The Father Leo Show",
+      "view_count": 1377,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "50ed60KMwA8",
+      "title": "Satanic & Anti-Christian artwork allowed in school. You can't make this stuff up!",
+      "channel_name": "The Father Leo Show",
+      "view_count": 1313,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "jmruHSs7fKg",
+      "title": "Is this the future of American Education?",
+      "channel_name": "The Father Leo Show",
+      "view_count": 1192,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "WE2jXg7_wjc",
+      "title": "College Students on the Frontlines of the Pro-Life Movement, Defending Life for the Unborn!",
+      "channel_name": "The Father Leo Show",
+      "view_count": 1145,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "bHIw3tgQq9Q",
+      "title": "Confused kids don't understand basic biology.",
+      "channel_name": "The Father Leo Show",
+      "view_count": 585,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "rfzVHu5r3rI",
+      "title": "This is why you HAVE TO see  \"CABRINI\" - An interview with Executive Producer, Eustace Wolfington",
+      "channel_name": "The Father Leo Show",
+      "view_count": 7893,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "0-wm4YVkWx8",
+      "title": "The Mayan Rite, its Significance and Cultural Expressions in the Catholic Church",
+      "channel_name": "The Father Leo Show",
+      "view_count": 8886,
       "caption_info": {
         "has_captions": true,
         "caption_count": 1,
