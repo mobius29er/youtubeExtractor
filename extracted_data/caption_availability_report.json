@@ -1,11 +1,1687 @@
 {
   "summary": {
-    "total_videos": 0,
-    "videos_with_captions": 0,
-    "videos_with_english": 0,
-    "videos_with_auto_captions": 0,
-    "videos_with_manual_captions": 0
+    "total_videos": 80,
+    "videos_with_captions": 80,
+    "videos_with_english": 80,
+    "videos_with_auto_captions": 80,
+    "videos_with_manual_captions": 10
   },
-  "by_channel": {},
-  "transcript_extraction_candidates": []
+  "by_channel": {
+    "VeggieTales Official": {
+      "total_videos": 80,
+      "videos_with_captions": 40,
+      "videos_with_english": 40,
+      "videos_with_auto_captions": 40,
+      "videos_with_manual_captions": 10
+    },
+    "Miss Honey Bear - Speech Therapist - Read Aloud": {
+      "total_videos": 80,
+      "videos_with_captions": 40,
+      "videos_with_english": 40,
+      "videos_with_auto_captions": 40,
+      "videos_with_manual_captions": 0
+    }
+  },
+  "transcript_extraction_candidates": [
+    {
+      "video_id": "LtHr7gluh08",
+      "title": "VeggieTales: The Hairbrush Song - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 24986996,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 4,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "es",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "hi",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "CmIKR458M0A",
+      "title": "VeggieTales: His Cheeseburger - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 14727199,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "l1vSBNmKrSI",
+      "title": "VeggieTales | Noah's Ark",
+      "channel_name": "VeggieTales Official",
+      "view_count": 13692890,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "_uv8Ej4CEoQ",
+      "title": "VeggieTales: Song of the Cebu | Silly Songs with Larry",
+      "channel_name": "VeggieTales Official",
+      "view_count": 13027311,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "XaWU1CmrJNc",
+      "title": "VeggieTales: The Pirates Who Don't Do Anything - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 12348407,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "n5uujMb_hbo",
+      "title": "VeggieTales: BellyButton - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 11778207,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "jEUJTo6-stg",
+      "title": "VeggieTales: Pizza Angel - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 9610813,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "tpcf_qD3GW4",
+      "title": "VeggieTales: Endangered Love (Barbara Manatee) - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 9389084,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "bUkpE16b56g",
+      "title": "VeggieTales: The Yodeling Veterinarian of the Alps - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 8050792,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "j1FGaCNN1aw",
+      "title": "VeggieTales: I Love My Lips Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 6892787,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "Gpep6VtXafg",
+      "title": "PODCAST 🎧 Respect | Very Veggie Silly Stories Podcast | S02 E06 | VeggieTales",
+      "channel_name": "VeggieTales Official",
+      "view_count": 13252,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "zebv68Y4Ixc",
+      "title": "VeggieTales | Moo Shoo | Silly Songs With Larry | Silly Songs | Kids Cartoon | Videos For Kids",
+      "channel_name": "VeggieTales Official",
+      "view_count": 13207,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "2D8lBR_T3BU",
+      "title": "VeggieTales | Best Friends Forever | VeggieTales Silly Songs With Larry | Kids Cartoon",
+      "channel_name": "VeggieTales Official",
+      "view_count": 12710,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Ec5RKZE9g1g",
+      "title": "PODCAST 🎧 Loyalty | Very Veggie Silly Stories Podcast | S02 E07 | VeggieTales",
+      "channel_name": "VeggieTales Official",
+      "view_count": 12679,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "4SYPnm2V2s0",
+      "title": "PODCAST 🎧 Hospitality | Very Veggie Silly Stories Podcast | S02 E04 | VeggieTales",
+      "channel_name": "VeggieTales Official",
+      "view_count": 12489,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "gv-VFJpXlX4",
+      "title": "Be UNIQUELY YOU! 🫵 Meet the Gourds: Jimmy and Jerry 🍐 VeggieTales",
+      "channel_name": "VeggieTales Official",
+      "view_count": 11813,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "XRhmJUlc8fk",
+      "title": "VeggieTales | The Blues with Larry | 1 Hour Silly Songs With Larry | Kids Cartoon | Kids Videos",
+      "channel_name": "VeggieTales Official",
+      "view_count": 11808,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "-S7xdo0DelY",
+      "title": "VeggieTales | The Blues with Larry | 1 Hour Silly Songs With Larry | Kids Cartoon | Kids Videos",
+      "channel_name": "VeggieTales Official",
+      "view_count": 9141,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "bpwUdcr8HDQ",
+      "title": "VeggieTales 🎵 All the Songs From Jonah: A VeggieTales Movie 🐳",
+      "channel_name": "VeggieTales Official",
+      "view_count": 7559,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "XX3KYaJ0LQc",
+      "title": "The Silly Song Spectacular 🎤😜 VeggieTales | Water Buffalo, Hairbrush, Bubble Rap, Sippy Cup + MORE!",
+      "channel_name": "VeggieTales Official",
+      "view_count": 3886,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "umEE_0IAZJQ",
+      "title": "VeggieTales | Mr Lunt's Best Moments | VeggieTales Special Clip | Kids Cartoon |",
+      "channel_name": "VeggieTales Official",
+      "view_count": 130541,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "GkCC0zTKqmo",
+      "title": "Love Songs With Mr Lunt ❤️Valentines Day ❤️Silly Songs With Larry ❤️Kids Cartoon ❤️Videos For Kids",
+      "channel_name": "VeggieTales Official",
+      "view_count": 31875,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "QDSvt4GhVV0",
+      "title": "Don't Judge Others | 3-2-1 Penguins! | Full Episode",
+      "channel_name": "VeggieTales Official",
+      "view_count": 110205,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "eNX-eAs3wNg",
+      "title": "VeggieTales | Pizza Angel | VeggieTales Silly Songs With Larry | Kids Cartoon | Videos For Kids",
+      "channel_name": "VeggieTales Official",
+      "view_count": 271403,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "YQVsc9LPy9c",
+      "title": "VeggieTales Christmas Silly Songs 🎄Silly Songs With Larry 🎄Christmas Videos For Kids",
+      "channel_name": "VeggieTales Official",
+      "view_count": 57095,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "C5Sl2n2M1kU",
+      "title": "VeggieTales 🍅 The End of Silliness? 🍅 Sing Along to Your Favorite Songs 🎵",
+      "channel_name": "VeggieTales Official",
+      "view_count": 301908,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "MBcnW--mbs8",
+      "title": "VeggieTales | Song Of The Cebu | VeggieTales Silly Songs With Larry",
+      "channel_name": "VeggieTales Official",
+      "view_count": 472996,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "WiMmVFSJDUg",
+      "title": "VeggieTales Silly Song Karaoke: BellyButton",
+      "channel_name": "VeggieTales Official",
+      "view_count": 851880,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "5r8Wbtn9F3c",
+      "title": "3-2-1 Penguins Full Episodes | Comedy of Errors | Kids Shows | Kids Videos",
+      "channel_name": "VeggieTales Official",
+      "view_count": 98361,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "GlarOU4DB9A",
+      "title": "Save The Space Lighthouse💥 | Runaway Pride At Lightstation Kilowatt | 3, 2, 1 Penguins! Full Episode",
+      "channel_name": "VeggieTales Official",
+      "view_count": 53720,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "_waDFuN7SPA",
+      "title": "VeggieTales Silly Songs | BFF | Silly Songs With Larry Compilation | Cartoons For Kids",
+      "channel_name": "VeggieTales Official",
+      "view_count": 1356608,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "cdOq77iFWdc",
+      "title": "VeggieTales | The Yodeling Veterinarian of the Alps | Silly Songs With Larry | Videos For Kids",
+      "channel_name": "VeggieTales Official",
+      "view_count": 23229,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "_ATok0Zw13s",
+      "title": "Behind the Music of \"Sweetpea Beauty\"",
+      "channel_name": "VeggieTales Official",
+      "view_count": 50590,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "vDbFyPToWX4",
+      "title": "VeggieTales | Silly Songs with Larry: Monkey",
+      "channel_name": "VeggieTales Official",
+      "view_count": 51931,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "YO6R4xZjaRA",
+      "title": "VeggieTales | What's The Real Name of Santa? | Christmas Special",
+      "channel_name": "VeggieTales Official",
+      "view_count": 192505,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "MK_Q8ecvPTk",
+      "title": "VeggieTales | Songs from 'The League of Incredible Vegetables'",
+      "channel_name": "VeggieTales Official",
+      "view_count": 43472,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "GF-XYBVwR5Q",
+      "title": "VeggieTales: I Love My Lips - Silly Song",
+      "channel_name": "VeggieTales Official",
+      "view_count": 6325584,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 2,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "standard"
+          },
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": true
+      }
+    },
+    {
+      "video_id": "R9Q16TL4a_A",
+      "title": "VeggieTales | Josh and the Big Wall Clip | 25th Anniversary | Kids Cartoon | Kids Movies",
+      "channel_name": "VeggieTales Official",
+      "view_count": 157241,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "3quzAXmg3Ks",
+      "title": "Learning to Be Patient | Trouble on Planet Wait-Your-Turn | 3, 2, 1 Penguins! Full Episode",
+      "channel_name": "VeggieTales Official",
+      "view_count": 93667,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "2aZZyBUODck",
+      "title": "LarryBoy Theme Song | VeggieTales | Full Screen | Kids Cartoons",
+      "channel_name": "VeggieTales Official",
+      "view_count": 864455,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ePkmFhcN9EU",
+      "title": "Brown Bear, Brown Bear What Do You See? | Support Toddler Talking & Early Language Skills",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 706419,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "MkY2h-kOEOU",
+      "title": "Pete the Cat: The Wheels on the Bus | Gentle Read-Aloud by a Speech Therapist for Early Language",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 203072,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "GjdUC4RLfzs",
+      "title": "The Cow Who Clucked | Gentle Read-Aloud by a Speech Therapist for Early Language Skills",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 199085,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "xdRcLE9jl2c",
+      "title": "The Very Hungry Caterpillar | Gentle Read-Aloud by a Speech Therapist for Early Language",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 181596,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "l-KqQ1cSiA0",
+      "title": "Ms. Rachel’s Book Read by a Speech Therapist | Calm Storytime for Toddler Language Support",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 160140,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "kcR7zdDiU5I",
+      "title": "Get your TODDLERS TALKING with ENGAGING read aloud!",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 135755,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "PTHON5pJQrU",
+      "title": "Speech Therapist Reads \"The Very Busy Spider\" | Early Language Skills | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 111248,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "TK-rKguozMU",
+      "title": "Speech Therapist Reads \"Chicka Chicka Boom Boom\" | Learn ABCs | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 109637,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "xDA6j0W69Ag",
+      "title": "Speech Therapist Reads \"Baby Bear, Baby Bear, What Do You See?\" | Early Language Skills | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 104530,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "IisDTzIR7Ag",
+      "title": "Teach Your Baby First Words | Calm Language Learning with Colors, Animals & Body Parts",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 77823,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "M6o_QyA3Lik",
+      "title": "Speech Therapist Reads \"How To Read A Story\" | Early Language Skills | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 4322,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "n6tFulaqC0M",
+      "title": "Speech Therapist Reads \"The Polar Express\" | Guilt-Free Screen Time | Holiday Books for Kids",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 4274,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ea4Th-qNyE4",
+      "title": "Speech Therapist Reads \"The Night Before Christmas\" | Guilt-Free Screen Time| Holiday Books for Kids",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 3953,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "irCk8dMh7Ao",
+      "title": "Help Your Child Talk & Learn with This Fun Guessing Game! | Surprise Toy Compilation",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 3913,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "H_dkSgnmGy4",
+      "title": "Speech Therapist Reads \"How the Grinch Stole Christmas\" | Guilt-Free | Holiday Books for Kids",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 3906,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "2SUTCeKQGWE",
+      "title": "How Do You Feel? | 30-Minute Calm Storytime to Support Emotions & Self-Regulation",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 3235,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "xQiKbr2IJRA",
+      "title": "EXPAND LANGUAGE with this LOVING & ENGAGING Storytime! + SURPRISE TOY!",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 3080,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "-t8ER4hmQTs",
+      "title": "The Rabbit Listened Read Aloud | Help Your Child With Big Feelings | Miss Honey Bear",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 2684,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "tzv7Z3w2oCE",
+      "title": "Speech Therapist Reads \"Career Day\" | Early Language Skills | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 2667,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "NidPk4aODwo",
+      "title": "Teaching Toddlers to Talk with this Classic Children's Book",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 2580,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "86XUAl70MuE",
+      "title": "Learn Colors for Babies (44 Minutes) | Babies Love Colors Read-Aloud | Miss Honey Bear",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 11401,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "3Vq2H-8VNcM",
+      "title": "Speech Therapist Reads \"I Can Do It Even If I'm Scared\" | Guilt-Free | Evidence-Based Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 12589,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "632IKLrSW8k",
+      "title": "HELP with Toddler Separation Anxiety | Useful for Daycare, School, & More!",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 9745,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "LY4y8OJ_HWk",
+      "title": "Bing! Bang! Chugga! Beep! Read Aloud | Toddler Storytime for First Words",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 11021,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "6lSKivyDu9Q",
+      "title": "Speech Therapist Reads \"The Runaway Bunny\" | Early Language Skills | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 5314,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "ybEsgj_OyDg",
+      "title": "Slow-Paced Interactive Chicka Chicka Boom Boom Read-Aloud | Fun ABC Book for Kids",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 17629,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "cVVA3uC24mI",
+      "title": "Where Is the Very Hungry Caterpillar? | Interactive Lift-the-Flap Book Read-Aloud for Toddlers",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 30919,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "Rr1v3GzSYLo",
+      "title": "LEARN the importance of PATIENCE with this FUN children's book!",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 31601,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "4arWP1wah-I",
+      "title": "TEACH Your Toddler to Say ‘I LOVE YOU’ with this Beloved Children’s Book!",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 9024,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "V5g46fBndDg",
+      "title": "Speech Therapist Reads \"Dragons Love Tacos\" | Early Language Skills | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 7366,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "BM5uIXRjvjU",
+      "title": "Teach Baby First Words: Yes & No | No No Yes Yes Read-Aloud | Miss Honey Bear",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 10573,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "3vzU3h3JWzs",
+      "title": "Speech Therapist Reads \"We're Going On A Bear Hunt\" | Guilt-Free | Evidence-Based Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 7534,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "xPy_gzKfSHY",
+      "title": "Where Is Baby’s Belly Button? | Toddler Read Aloud to Learn Body Parts",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 16810,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "FEFAuQeBX-Y",
+      "title": "Speech Therapist Reads \"There's A Monster In Your Book\" | Early Language Skills | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 4913,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "s-1XM6FNxI0",
+      "title": "Pete the Cat Read-Alouds for Toddlers | 60 Minutes of Calm Storytime & Language Learning",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 18293,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "qaoSxSTahlk",
+      "title": "Beach Day with \"The Very Hungry Caterpillar\" | Toddler Word Learning & Fun Activities",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 12088,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "gCpnNlqavHw",
+      "title": "Speech Therapist Reads \"Room on the Broom\" | Get Toddlers Talking | Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 8949,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "U7wynrpwiP8",
+      "title": "Speech Therapist Reads Halloween Books! | Holiday Stories | Evidence-Based Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 11993,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "icDiaYQyECQ",
+      "title": "Gentle Read-Aloud for Toddlers | Language-Rich Story About Love & Connection",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 12176,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    },
+    {
+      "video_id": "WdXH9KicuBU",
+      "title": "Help Your Child Learn Gratitude | Early Language Development Read Aloud",
+      "channel_name": "Miss Honey Bear - Speech Therapist - Read Aloud",
+      "view_count": 10547,
+      "caption_info": {
+        "has_captions": true,
+        "caption_count": 1,
+        "languages": [
+          {
+            "language": "en",
+            "name": "",
+            "track_kind": "asr"
+          }
+        ],
+        "has_english": true,
+        "has_auto_generated": true,
+        "has_manual": false
+      }
+    }
+  ]
 }
