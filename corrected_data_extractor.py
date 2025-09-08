@@ -26,50 +26,7 @@ CHANNEL_ID_CACHE_FILE = "extracted_data/channel_id_cache.json"
 
 class CorrectedDataExtractor:
     """
-        # Load existing caption report if file exists
-        report_file = f"{output_dir}/caption_availability_report.json"
-        if os.path.exists(report_file):
-            try:
-                with open(report_file, 'r', encoding='utf-8') as f:
-                    caption_report = json.load(f)
-            except Exception as e:
-                self.logger.warning(f"Could not load existing caption report: {e}")
-                caption_report = {
-                    'summary': {
-                        'total_videos': 0,
-                        'videos_with_captions': 0,
-                        'videos_with_english': 0,
-                        'videos_with_auto_captions': 0,
-                        'videos_with_manual_captions': 0
-                    },
-                    'by_channel': {},
-                    'transcript_extraction_candidates': []
-                }
-        else:
-            caption_report = {
-                'summary': {
-                    'total_videos': 0,
-                    'videos_with_captions': 0,
-                    'videos_with_english': 0,
-                    'videos_with_auto_captions': 0,
-                    'videos_with_manual_captions': 0
-                },
-                'by_channel': {},
-                'transcript_extraction_candidates': []
-            }
-        
-        # Add new channels only (skip existing ones)
-        for channel_name, channel_data in results['data'].items():
-            if channel_name in caption_report['by_channel']:
-                continue  # Skip existing channels
-                
-            channel_stats = {
-                'total_videos': 0,
-                'videos_with_captions': 0,
-                'videos_with_english': 0,
-                'videos_with_auto_captions': 0,
-                'videos_with_manual_captions': 0
-            }xtraction system - API-only for public videos
+    YouTube Data Extraction system - API-only for public videos
     No transcript download (requires video ownership)
     """
     
@@ -498,6 +455,8 @@ class CorrectedDataExtractor:
                 with open(complete_data_file, 'r', encoding='utf-8') as f:
                     results = json.load(f)
                 self.logger.info(f"📂 Loaded existing data: {results['channels_processed']} channels, {results['videos_selected']} videos")
+                # Initialize quota tracking from existing data
+                self.quota_used = results.get('quota_used', 0)
                 # Update extraction date to show this is a continuation
                 results['extraction_date'] = datetime.now().isoformat()
             except Exception as e:
