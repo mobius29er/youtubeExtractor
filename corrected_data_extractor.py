@@ -26,7 +26,50 @@ CHANNEL_ID_CACHE_FILE = "extracted_data/channel_id_cache.json"
 
 class CorrectedDataExtractor:
     """
-    Corrected data extraction system - API-only for public videos
+        # Load existing caption report if file exists
+        report_file = f"{output_dir}/caption_availability_report.json"
+        if os.path.exists(report_file):
+            try:
+                with open(report_file, 'r', encoding='utf-8') as f:
+                    caption_report = json.load(f)
+            except Exception as e:
+                self.logger.warning(f"Could not load existing caption report: {e}")
+                caption_report = {
+                    'summary': {
+                        'total_videos': 0,
+                        'videos_with_captions': 0,
+                        'videos_with_english': 0,
+                        'videos_with_auto_captions': 0,
+                        'videos_with_manual_captions': 0
+                    },
+                    'by_channel': {},
+                    'transcript_extraction_candidates': []
+                }
+        else:
+            caption_report = {
+                'summary': {
+                    'total_videos': 0,
+                    'videos_with_captions': 0,
+                    'videos_with_english': 0,
+                    'videos_with_auto_captions': 0,
+                    'videos_with_manual_captions': 0
+                },
+                'by_channel': {},
+                'transcript_extraction_candidates': []
+            }
+        
+        # Add new channels only (skip existing ones)
+        for channel_name, channel_data in results['data'].items():
+            if channel_name in caption_report['by_channel']:
+                continue  # Skip existing channels
+                
+            channel_stats = {
+                'total_videos': 0,
+                'videos_with_captions': 0,
+                'videos_with_english': 0,
+                'videos_with_auto_captions': 0,
+                'videos_with_manual_captions': 0
+            }xtraction system - API-only for public videos
     No transcript download (requires video ownership)
     """
     
@@ -448,15 +491,36 @@ class CorrectedDataExtractor:
         os.makedirs(output_dir, exist_ok=True)
         channels_config = self.get_channel_configuration()
         
-        results = {
-            'extraction_date': datetime.now().isoformat(),
-            'extraction_type': 'api_only_public_videos',
-            'transcript_note': 'Caption availability checked, but content requires yt-dlp or similar',
-            'channels_processed': 0,
-            'videos_selected': 0,
-            'quota_used': 0,
-            'data': {}
-        }
+        # Load existing results if available (for resumable extraction)
+        complete_data_file = f"{output_dir}/api_only_complete_data.json"
+        if os.path.exists(complete_data_file):
+            try:
+                with open(complete_data_file, 'r', encoding='utf-8') as f:
+                    results = json.load(f)
+                self.logger.info(f"📂 Loaded existing data: {results['channels_processed']} channels, {results['videos_selected']} videos")
+                # Update extraction date to show this is a continuation
+                results['extraction_date'] = datetime.now().isoformat()
+            except Exception as e:
+                self.logger.warning(f"⚠️ Could not load existing data: {e}. Starting fresh.")
+                results = {
+                    'extraction_date': datetime.now().isoformat(),
+                    'extraction_type': 'api_only_public_videos',
+                    'transcript_note': 'Caption availability checked, but content requires yt-dlp or similar',
+                    'channels_processed': 0,
+                    'videos_selected': 0,
+                    'quota_used': 0,
+                    'data': {}
+                }
+        else:
+            results = {
+                'extraction_date': datetime.now().isoformat(),
+                'extraction_type': 'api_only_public_videos',
+                'transcript_note': 'Caption availability checked, but content requires yt-dlp or similar',
+                'channels_processed': 0,
+                'videos_selected': 0,
+                'quota_used': 0,
+                'data': {}
+            }
         
         for genre, channels in channels_config.items():
             self.logger.info(f"Processing genre: {genre}")
@@ -468,8 +532,9 @@ class CorrectedDataExtractor:
                     break
                 channel_name = channel_info['name']
                 channel_handle = channel_info['handle']
-                # Skip if already processed
-                if channel_name in self.processed_channels:
+                
+                # Skip if already processed (check both progress tracker and existing data)
+                if channel_name in self.processed_channels or channel_name in results['data']:
                     self.logger.info(f"🔁 Skipping {channel_name} (already processed)")
                     continue
                 self.logger.info(f"Extracting data for: {channel_name} ({channel_handle})")
@@ -574,9 +639,14 @@ class CorrectedDataExtractor:
             'has_captions', 'has_english_captions', 'has_auto_captions', 'has_manual_captions'
         ]
         
-        with open(filename, 'w', newline='', encoding='utf-8') as f:
+        # Check if file exists to determine if we need header
+        file_exists = os.path.exists(filename)
+        mode = 'a' if file_exists else 'w'
+        
+        with open(filename, mode, newline='', encoding='utf-8') as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
+            if not file_exists:
+                writer.writeheader()
             
             for channel_name, channel_data in results['data'].items():
                 for video in channel_data['videos']:
@@ -614,7 +684,25 @@ class CorrectedDataExtractor:
         
         all_comments = []
         
+        # Load existing comments if file exists
+        comments_file = f"{comments_dir}/all_comments_raw.json"
+        if os.path.exists(comments_file):
+            try:
+                with open(comments_file, 'r', encoding='utf-8') as f:
+                    all_comments = json.load(f)
+            except Exception as e:
+                self.logger.warning(f"Could not load existing comments: {e}")
+                all_comments = []
+        else:
+            all_comments = []
+        
+        # Add new comments
         for channel_name, channel_data in results['data'].items():
+            # Skip channels that already have comments in the file
+            existing_channels = set(comment.get('channel_name') for comment in all_comments)
+            if channel_name in existing_channels:
+                continue
+                
             for video in channel_data['videos']:
                 for comment in video.get('comments', []):
                     comment_record = {
@@ -652,7 +740,23 @@ class CorrectedDataExtractor:
         """Save clean metadata without comments"""
         
         clean_data = {}
+        # Load existing metadata if file exists
+        metadata_file = f"{output_dir}/metadata_only.json"
+        if os.path.exists(metadata_file):
+            try:
+                with open(metadata_file, 'r', encoding='utf-8') as f:
+                    clean_data = json.load(f)
+            except Exception as e:
+                self.logger.warning(f"Could not load existing metadata: {e}")
+                clean_data = {}
+        else:
+            clean_data = {}
+        
+        # Add new channels only (skip existing ones)
         for channel_name, channel_data in results['data'].items():
+            if channel_name in clean_data:
+                continue  # Skip existing channels
+                
             clean_videos = []
             for video in channel_data['videos']:
                 clean_video = {k: v for k, v in video.items() 
