@@ -6,7 +6,29 @@ Welcome to `youtubeExtractor`, the ultimate open-source system for extracting **
 
 ---
 
-## 🚀 Project Purpose
+## � Project Structure
+
+```
+📦 YouTube Extractor
+├── 📄 corrected_data_extractor.py    # Main data extraction script
+├── 📄 requirements.txt               # Python dependencies
+├── 📄 .env                          # API keys (not in git)
+├── 📁 extracted_data/               # Raw extracted data
+│   ├── api_only_complete_data.json  # Complete dataset (560 videos)
+│   ├── api_only_ml_dataset.csv      # ML-ready CSV format
+│   ├── thumbnails/                  # Downloaded thumbnails
+│   └── comments_raw/                # Raw comment data
+├── 📁 scripts/                      # Organized utility scripts
+│   ├── analysis/                    # Data analysis & ML tools
+│   ├── cleanup/                     # Data cleaning utilities  
+│   ├── verification/                # Data validation tools
+│   └── utilities/                   # General helper scripts
+├── 📁 docs/                         # Documentation
+├── 📁 colab/                        # Jupyter/Colab notebooks
+└── 📁 archive/                      # Development history
+```
+
+## �🚀 Project Purpose
 
 > “Why do some creators go viral while others fade?”  
 > This project analyzes the top 25 YouTube creators across 5 major genres to find out.
