@@ -45,6 +45,15 @@ class CorrectedDataExtractor:
         self.errors_encountered = []
         self.processed_channels = self._load_progress()
         
+    def _sanitize_error_message(self, error_msg: str) -> str:
+        """Remove API keys and sensitive information from error messages"""
+        import re
+        # Remove API keys from URLs (matches key=AIza... pattern)
+        sanitized = re.sub(r'key=AIza[a-zA-Z0-9_-]+', 'key=[REDACTED]', error_msg)
+        # Also remove any other potential API key patterns
+        sanitized = re.sub(r'AIza[a-zA-Z0-9_-]{35}', '[API_KEY_REDACTED]', sanitized)
+        return sanitized
+        
     def setup_logging(self):
         """Setup logging for extraction process"""
         logging.basicConfig(
@@ -413,7 +422,7 @@ class CorrectedDataExtractor:
                 'has_english': False,
                 'has_auto_generated': False,
                 'has_manual': False,
-                'error': str(e)
+                'error': self._sanitize_error_message(str(e))
             }
     
     def download_thumbnail(self, video_id: str, thumbnail_url: str, output_base_dir: str, channel_name: str) -> str:
