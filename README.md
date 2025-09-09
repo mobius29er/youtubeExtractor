@@ -11,6 +11,7 @@ Welcome to `youtubeExtractor`, the ultimate open-source system for extracting **
 ```
 📦 YouTube Extractor
 ├── 📄 corrected_data_extractor.py    # Main data extraction script
+├── 📄 api_server.py                 # FastAPI backend server
 ├── 📄 requirements.txt               # Python dependencies
 ├── 📄 .env                          # API keys (not in git)
 ├── 📁 extracted_data/               # Raw extracted data
@@ -18,6 +19,15 @@ Welcome to `youtubeExtractor`, the ultimate open-source system for extracting **
 │   ├── api_only_ml_dataset.csv      # ML-ready CSV format
 │   ├── thumbnails/                  # Downloaded thumbnails
 │   └── comments_raw/                # Raw comment data
+├── 📁 frontend/                     # Interactive React Dashboard
+│   ├── 📄 package.json              # Node.js dependencies
+│   ├── 📁 src/                      # React components
+│   │   ├── App.jsx                  # Main app component
+│   │   ├── Dashboard.jsx            # Metrics overview
+│   │   ├── DataVisualization.jsx    # Interactive charts
+│   │   └── ExtractionStatus.jsx     # Real-time monitoring
+│   └── 📁 public/                   # Static assets
+├── 📄 setup_dashboard.bat/.sh       # Quick setup scripts
 ├── 📁 scripts/                      # Organized utility scripts
 │   ├── analysis/                    # Data analysis & ML tools
 │   ├── cleanup/                     # Data cleaning utilities  
@@ -117,6 +127,35 @@ Want to go further?
 - Analyze thumbnails with CLIP/Vision Transformers
 - Cluster video types using K-Means or t-SNE
 - Normalize engagement using views/subscribers and like/comment ratios
+
+## 🎨 Interactive Dashboard
+
+Experience your YouTube data through a modern, responsive web dashboard:
+
+### Features
+- 📊 **Real-time Metrics**: Live overview of extraction progress and data statistics
+- 📈 **Interactive Charts**: Visualize views, engagement, and performance data with dynamic charts
+- 🎯 **Channel Analytics**: Track individual channel performance and video metrics
+- 🌙 **Dark/Light Theme**: Customizable interface that adapts to your preference
+- 📱 **Responsive Design**: Works seamlessly on desktop, tablet, and mobile devices
+
+### Quick Start
+```bash
+# Windows
+setup_dashboard.bat
+
+# Linux/Mac
+./setup_dashboard.sh
+```
+
+The dashboard will be available at:
+- Frontend: http://localhost:3000
+- API Server: http://localhost:8000
+
+### Technology Stack
+- **Frontend**: React 18 + Vite, Tailwind CSS, Recharts
+- **Backend**: FastAPI with Python
+- **Features**: Interactive charts, real-time updates, responsive design
 
 💡 Inspiration
 Inspired by:

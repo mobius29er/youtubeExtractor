@@ -40,6 +40,56 @@ pip-delete-this-directory.txt
 archive/
 extracted_data/
 
+# Node.js / Frontend Dependencies
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/build/
+node_modules/
+dist/
+build/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Frontend environment files
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# Frontend logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/pnpm-debug.log*
+frontend/lerna-debug.log*
+
+# Vite build artifacts
+.vite/
+vite.config.js.timestamp-*
+
+# ESLint cache
+.eslintcache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/
