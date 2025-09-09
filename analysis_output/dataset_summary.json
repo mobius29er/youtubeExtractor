@@ -1,0 +1,30 @@
+{
+  "dataset_shape": [
+    560,
+    15
+  ],
+  "total_channels": 14,
+  "total_videos": 560,
+  "extraction_date": "2025-09-08T07:42:21.220837",
+  "channel_distribution": {
+    "VeggieTales Official": 40,
+    "Miss Honey Bear - Speech Therapist - Read Aloud": 40,
+    "MrBeast": 40,
+    "Zach King": 40,
+    "Hangtime": 40,
+    "Ascension Presents": 40,
+    "Bishop Robert Barron": 40,
+    "The Catholic Talk Show": 40,
+    "The Father Leo Show": 40,
+    "Ryan Trahan": 40,
+    "Cameron Riecker": 40,
+    "Kurzgesagt": 40,
+    "Veritasium": 40,
+    "SciShow": 40
+  },
+  "performance_distribution": {
+    "random_sample": 280,
+    "top_performer": 140,
+    "bottom_performer": 140
+  }
+}

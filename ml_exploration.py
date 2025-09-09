@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
 Quick ML Data Exploration for YouTube Dataset
-Ready-to-run analysis of your 160-video dataset
+Ready-to-run analysis of your clean dataset
 """
 import pandas as pd
 import numpy as np
+from pathlib import Path
+
+# Fix matplotlib backend issues
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pathlib import Path
 
 def load_and_explore():
     """Load the dataset and perform initial exploration"""
@@ -131,7 +135,7 @@ def load_and_explore():
     return df
 
 def quick_visualizations(df):
-    """Generate key visualizations"""
+    """Generate key visualizations"""        
     print("\n📊 GENERATING QUICK VISUALIZATIONS...")
     
     # Create output directory
@@ -186,18 +190,12 @@ def quick_visualizations(df):
     
     print("\n🎯 ANALYSIS COMPLETE!")
     print("  • Dataset is ML-ready with excellent diversity")
-    print("  • 4 channels spanning nano (20K) to mega (430M) subscribers") 
+    print("  • Multiple genres spanning different subscriber counts") 
     print("  • Strong feature set for performance prediction")
     print("  • Visualizations saved to analysis_output/")
 
 if __name__ == '__main__':
     df = load_and_explore()
     
-    # Generate visualizations (requires matplotlib/seaborn)
-    try:
-        quick_visualizations(df)
-    except ImportError:
-        print("\n📊 Install matplotlib & seaborn for visualizations:")
-        print("  pip install matplotlib seaborn")
-    except Exception as e:
-        print(f"\n⚠️ Visualization error: {e}")
+    # Generate visualizations if plotting libraries are available
+    quick_visualizations(df)

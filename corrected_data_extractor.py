@@ -492,9 +492,29 @@ class CorrectedDataExtractor:
                 channel_name = channel_info['name']
                 channel_handle = channel_info['handle']
                 
-                # Skip if already processed (check both progress tracker and existing data)
-                if channel_name in self.processed_channels or channel_name in results['data']:
-                    self.logger.info(f"🔁 Skipping {channel_name} (already processed)")
+                # Skip if already processed AND complete (has 40 videos)
+                skip_channel = False
+                if channel_name in self.processed_channels and channel_name in results['data']:
+                    # Check if channel has complete data (40 videos) - check both possible structures
+                    channel_data = results['data'][channel_name]
+                    video_count = 0
+                    
+                    # Check for videos in 'videos' key (direct storage)
+                    if 'videos' in channel_data:
+                        video_count = len(channel_data['videos'])
+                    # Check for videos in 'selection_result' structure  
+                    elif 'selection_result' in channel_data and 'selected_videos' in channel_data['selection_result']:
+                        video_count = len(channel_data['selection_result']['selected_videos'])
+                    
+                    if video_count >= 40:
+                        skip_channel = True
+                        self.logger.info(f"🔁 Skipping {channel_name} (complete with {video_count} videos)")
+                    else:
+                        self.logger.info(f"🔄 Reprocessing {channel_name} (incomplete: {video_count}/40 videos)")
+                else:
+                    self.logger.info(f"🆕 Processing {channel_name} (new channel)")
+                
+                if skip_channel:
                     continue
                 self.logger.info(f"Extracting data for: {channel_name} ({channel_handle})")
                 
