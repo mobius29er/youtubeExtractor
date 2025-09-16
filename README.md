@@ -1,41 +1,58 @@
-# 📺 YouTube Extractor — ML-Ready Insights for Creators
+# 📺 YouTube Extractor — ML-Ready Dataset from 1,000 Creator Videos
 
-Welcome to `youtubeExtractor`, the ultimate open-source system for extracting **machine learning-ready datasets** from 1,000+ public YouTube videos. Designed for creators, researchers, and data scientists, this tool helps uncover **what makes YouTube videos successful**—using real data, not guesswork.
+Welcome to `youtubeExtractor`, a comprehensive system for extracting **machine learning-ready datasets** from YouTube. Successfully extracted **1,000 videos from 25 top creators** across 8 genres, this tool provides real data insights for creators, researchers, and data scientists.
 
-🔥 **Powered by Python, the YouTube Data API, and your brain.**
+🔥 **Powered by Python, YouTube Data API v3, and intelligent video selection algorithms.**
 
 ---
 
-## � Project Structure
+## 📊 **Current Dataset Status**
+
+✅ **COMPLETE**: 1,000 videos successfully extracted  
+✅ **25 channels** × **40 videos each** = perfect dataset balance  
+✅ **8 genres** represented with top creators in each category  
+✅ **Intelligent sampling**: Top 10 + Bottom 10 + 20 random middle videos per channel  
+✅ **All data cleaned and organized** with archived partial extractions
+
+### **Final Dataset Composition:**
+- **Challenge/Stunts**: MrBeast, Zach King, Ryan Trahan, Hangtime, Ed Pratt
+- **Catholic**: Ascension Presents, Bishop Robert Barron, The Catholic Talk Show, The Father Leo Show  
+- **Education/Science**: Kurzgesagt, Veritasium, SciShow, Fun Science, Up and Atom
+- **Gaming**: PewdiePie, Jacksepticeye, Call Me Kevin, Lizz
+- **Kids/Family**: Cocomelon, Kids Roma Show, Sheriff Labrador, VeggieTales Official, Miss Honey Bear
+
+---
+
+## 🏗️ **Project Structure**
 
 ```
 📦 YouTube Extractor
-├── 📄 corrected_data_extractor.py    # Main data extraction script
-├── 📄 api_server.py                 # FastAPI backend server
-├── 📄 requirements.txt               # Python dependencies
-├── 📄 .env                          # API keys (not in git)
-├── 📁 extracted_data/               # Raw extracted data
-│   ├── api_only_complete_data.json  # Complete dataset (560 videos)
-│   ├── api_only_ml_dataset.csv      # ML-ready CSV format
-│   ├── thumbnails/                  # Downloaded thumbnails
-│   └── comments_raw/                # Raw comment data
-├── 📁 frontend/                     # Interactive React Dashboard
-│   ├── 📄 package.json              # Node.js dependencies
-│   ├── 📁 src/                      # React components
-│   │   ├── App.jsx                  # Main app component
-│   │   ├── Dashboard.jsx            # Metrics overview
-│   │   ├── DataVisualization.jsx    # Interactive charts
-│   │   └── ExtractionStatus.jsx     # Real-time monitoring
-│   └── 📁 public/                   # Static assets
-├── 📄 setup_dashboard.bat/.sh       # Quick setup scripts
-├── 📁 scripts/                      # Organized utility scripts
-│   ├── analysis/                    # Data analysis & ML tools
-│   ├── cleanup/                     # Data cleaning utilities  
-│   ├── verification/                # Data validation tools
+├── � src/                          # Core application code
+│   ├── corrected_data_extractor.py  # Main extraction engine
+│   ├── api_server.py                # FastAPI backend server
+│   └── dataset_analyzer.py          # Analysis utilities
+├── 📁 extracted_data/               # Complete dataset output
+│   ├── api_only_complete_data.json  # Full dataset (1,000 videos)
+│   ├── api_only_ml_dataset.csv      # ML-ready CSV format  
+│   ├── metadata_only.json           # Clean metadata subset
+│   ├── caption_availability_report.json # Caption analysis
+│   ├── thumbnails/                  # Downloaded thumbnails (25 channels)
+│   ├── thumbnails_archive/          # Extra thumbnails from previous runs
+│   ├── partial_channels_archive/    # Archived incomplete channels
+│   └── comments_raw/                # Raw comment data by channel
+├── 📁 scripts/                      # Organized utilities
+│   ├── analysis/                    # Data analysis & ML exploration
+│   ├── cleanup/                     # Data cleaning & organization tools
+│   ├── verification/                # Dataset validation utilities
 │   └── utilities/                   # General helper scripts
-├── 📁 docs/                         # Documentation
-├── 📁 colab/                        # Jupyter/Colab notebooks
-└── 📁 archive/                      # Development history
+├── 📁 frontend/                     # Interactive React dashboard
+│   ├── package.json                 # Node.js dependencies
+│   └── src/                         # React components & visualizations
+├── 📁 config/                       # Configuration files
+│   └── channel_lists/               # Channel definitions by genre
+├── 📁 docs/                         # Comprehensive documentation
+├── 📁 notebooks/                    # Jupyter analysis notebooks
+└── � requirements.txt              # Python dependencies
 ```
 
 ## �🚀 Project Purpose
