@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """
 Comprehensive analysis of the YouTube extraction dataset
 """
@@ -39,7 +40,7 @@ def analyze_dataset():
 
     # Load CSV for additional metrics
     try:
-        csv_data = pd.read_csv('extracted_data/api_only_ml_dataset.csv')
+        csv_data = pd.read_csv('extracted_data/api_only_ml_SAFE.csv') if os.path.exists('extracted_data/api_only_ml_SAFE.csv') else pd.read_csv('extracted_data/api_only_ml_dataset.csv')
         print(f'📊 CSV DATASET METRICS:')
         print(f'  • Total Rows: {len(csv_data):,}')
         print(f'  • Unique Channels: {csv_data["channel_name"].nunique()}')
@@ -93,6 +94,25 @@ def analyze_dataset():
         print(f'  • Total Size: {total_size / (1024*1024):.2f} MB')
         
         # Check for specific file types
+
+def safe_int(value, default=0):
+    """Safely convert value to int"""
+    if isinstance(value, int):
+                return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return default
+
+def safe_float(value, default=0.0):
+    """Safely convert value to float"""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
         json_files = list(extracted_path.glob('*.json'))
         csv_files = list(extracted_path.glob('*.csv'))
         thumbnail_dir = extracted_path / 'thumbnails'

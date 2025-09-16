@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -19,8 +19,37 @@ import { TrendingUp, PieChart as PieIcon, BarChart3, Activity } from 'lucide-rea
 
 const DataVisualization = ({ data, loading, darkMode }) => {
   const [activeChart, setActiveChart] = useState('engagement');
+  const [chartData, setChartData] = useState(null);
+  const [chartLoading, setChartLoading] = useState(false);
 
-  if (loading) {
+  useEffect(() => {
+    loadVisualizationData();
+  }, []);
+
+  const loadVisualizationData = async () => {
+    try {
+      setChartLoading(true);
+      // Use Vite proxy instead of direct localhost call
+      const response = await fetch('/api/visualization');
+      if (response.ok) {
+        const vizData = await response.json();
+        console.log('✅ Visualization data loaded:', vizData);
+        setChartData(vizData);
+      } else {
+        console.warn('⚠️ API failed, using fallback data');
+        // Fallback to mock data
+        setChartData(mockChartData);
+      }
+    } catch (error) {
+      console.error('❌ Error loading visualization data:', error);
+      // Fallback to mock data
+      setChartData(mockChartData);
+    } finally {
+      setChartLoading(false);
+    }
+  };
+
+  if (loading || chartLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -99,7 +128,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       case 'engagement':
         return (
           <ResponsiveContainer {...chartProps}>
-            <BarChart data={mockChartData.engagement}>
+            <BarChart data={chartData?.engagement || mockChartData.engagement}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="name" 
@@ -126,7 +155,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           <ResponsiveContainer {...chartProps}>
             <PieChart>
               <Pie
-                data={mockChartData.genres}
+                data={chartData?.genres || mockChartData.genres}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -135,7 +164,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {mockChartData.genres.map((entry, index) => (
+                {(chartData?.genres || mockChartData.genres).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
@@ -147,7 +176,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       case 'performance':
         return (
           <ResponsiveContainer {...chartProps}>
-            <LineChart data={mockChartData.performance}>
+            <LineChart data={chartData?.performance || mockChartData.performance}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 dataKey="timeframe" 
@@ -183,7 +212,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       case 'correlation':
         return (
           <ResponsiveContainer {...chartProps}>
-            <ScatterChart data={mockChartData.correlation}>
+            <ScatterChart data={chartData?.correlation || mockChartData.correlation}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 type="number"

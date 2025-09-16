@@ -1,0 +1,544 @@
+{
+    "challenge_stunts": [
+        {
+            "name": "MrBeast",
+            "handle": "@mrbeast",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Stokes Twins",
+            "handle": "@stokestwins",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Alan's Universe",
+            "handle": "@alansuniverse",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Dude\u202fPerfect",
+            "handle": "@dudeperfect",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "JuegaGerman",
+            "handle": "@juegagerman",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "music": [
+        {
+            "name": "T\u2011Series",
+            "handle": "@tseries",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Cocomelon \u2013 Nursery Rhymes",
+            "handle": "@cocomelonnurseryrhymes",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Zee Music Company",
+            "handle": "@zeemusiccompany",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Blackpink",
+            "handle": "@blackpink",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "BANGTANTV",
+            "handle": "@bangtantv",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Hybe Labels",
+            "handle": "@hybelabels",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "T\u2011Series Bhakti Sagar",
+            "handle": "@tseriesbhaktisagar",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Tips Official",
+            "handle": "@tipsofficial",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Justin Bieber",
+            "handle": "@justinbieber",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Shemaroo Filmi Gaane",
+            "handle": "@shemaroofilmigaane",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "El Reino Infantil",
+            "handle": "@elreinoinfantil",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Canal KondZilla",
+            "handle": "@canalkondzilla",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Sony Music India",
+            "handle": "@sonymusicindia",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Wave Music",
+            "handle": "@wavemusic",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Eminem Music",
+            "handle": "@eminemmusic",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Taylor Swift",
+            "handle": "@taylorswift",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Marshmello",
+            "handle": "@marshmello",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Ed Sheeran",
+            "handle": "@edsheeran",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "SonyMusicIndiaVEVO",
+            "handle": "@sonymusicindiavevo",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Saregama Music",
+            "handle": "@saregamamusic",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Ariana Grande",
+            "handle": "@arianagrande",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Billie Eilish",
+            "handle": "@billieeilish",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Ishtar Music",
+            "handle": "@ishtarmusic",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Bad\u202fBunny",
+            "handle": "@badbunny",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "entertainment": [
+        {
+            "name": "SET India",
+            "handle": "@setindia",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "\uae40\ud504\ub85cKIMPRO",
+            "handle": "@kimpro",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "WWE",
+            "handle": "@wwe",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Sony SAB",
+            "handle": "@sonysab",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Zee TV",
+            "handle": "@zeetv",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "A4",
+            "handle": "@a4",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "ZAMZAM ELECTRONICS\u2026",
+            "handle": "@zamzamelectronics",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Alejo Igoa",
+            "handle": "@alejoigoa",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "UR \u00b7 Cristiano",
+            "handle": "@urcristiano",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "KL\u202fBRO Biju Rithvik",
+            "handle": "@klbrobijurithvik",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "HAR\u202fPAL GEO",
+            "handle": "@harpalgeo",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Fede Vigevani",
+            "handle": "@fedevigevani",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "ARY\u202fDigital\u202fHD",
+            "handle": "@arydigitalhd",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "ISSEI / \u3044\u3063\u305b\u3044",
+            "handle": "@issei",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "YOLO\u202fAVENTURAS",
+            "handle": "@yoloaventuras",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Anaya Kandhal",
+            "handle": "@anayakandhal",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Zhong",
+            "handle": "@zhong",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Shemaroo",
+            "handle": "@shemaroo",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "PANDA BOI",
+            "handle": "@pandaboi",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "ToRung",
+            "handle": "@torung",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "StarPlus",
+            "handle": "@starplus",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Get Movies",
+            "handle": "@getmovies",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Alfredo Larin",
+            "handle": "@alfredolarin",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "ABS\u2011CBN Entertainment",
+            "handle": "@abscbnentertainment",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Real fools shorts\u2026",
+            "handle": "@realfoolsshorts",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "HUM TV",
+            "handle": "@humtv",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Juan de Dios Pantoja",
+            "handle": "@juandediospantoja",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Dangal TV Channel",
+            "handle": "@dangaltvchannel",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "kids_family": [
+        {
+            "name": "Vlad and\u202fNiki",
+            "handle": "@vladandniki",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Kids Diana Show",
+            "handle": "@kidsdianashow",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Like Nastya",
+            "handle": "@likenastya",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "ChuChu TV",
+            "handle": "@chuchutv",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Pinkfong",
+            "handle": "@pinkfong",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Toys and Colors",
+            "handle": "@toysandcolors",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Infobells \u2013 Hindi",
+            "handle": "@infobellshindi",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "LooLoo Kids",
+            "handle": "@loolookids",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Billion Surprise Toys",
+            "handle": "@billionsurprisetoys",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "JioHotStar Kids",
+            "handle": "@jiohotstarkids",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "LUCCAS TOON",
+            "handle": "@luccastoon",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Masha and the Bear",
+            "handle": "@mashaandthebear",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "gaming": [
+        {
+            "name": "PewDiePie",
+            "handle": "@pewdiepie",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Mikecrack",
+            "handle": "@mikecrack",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Jess No Limit",
+            "handle": "@jessnolimit",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "BETER B\u00d6C\u00dcK",
+            "handle": "@beterbck",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "other": [
+        {
+            "name": "Goldmines",
+            "handle": "@goldmines",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "5\u2011Minute Crafts",
+            "handle": "@5minutecrafts",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Colors TV",
+            "handle": "@colorstv",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "YRF",
+            "handle": "@yrf",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Movieclips",
+            "handle": "@movieclips",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "shfa",
+            "handle": "@shfa",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "shfa2",
+            "handle": "@shfa2",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "news": [
+        {
+            "name": "Aaj Tak",
+            "handle": "@aajtak",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "education_science": [
+        {
+            "name": "Topper Guild",
+            "handle": "@topperguild",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "Mark Rober",
+            "handle": "@markrober",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "\u0906\u091a\u093e\u0930\u094d\u092f \u092a\u094d\u0930\u0936\u093e\u0928\u094d\u0924",
+            "handle": "@",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        },
+        {
+            "name": "\u041c\u0430\u0448\u0430 \u0438 \u041c\u0435\u0434\u0432\u0435\u0434\u044c",
+            "handle": "@",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "spiritual": [
+        {
+            "name": "Bispo Bruno Leonardo",
+            "handle": "@bispobrunoleonardo",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ],
+    "shorts": [
+        {
+            "name": "MrBeast 2",
+            "handle": "@mrbeast2",
+            "tier": "Mega",
+            "channel_id": "TBD"
+        }
+    ]
+}

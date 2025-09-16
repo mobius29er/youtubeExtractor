@@ -2,6 +2,7 @@ import json
 import pandas as pd
 
 # Check the main data file
+import os
 with open('extracted_data/api_only_complete_data.json', 'r', encoding='utf-8') as f:
     data = json.load(f)
 
@@ -42,7 +43,7 @@ for channel in progress['processed_channels']:
 
 # Check CSV file
 try:
-    df = pd.read_csv('extracted_data/api_only_ml_dataset.csv')
+    df = pd.read_csv('extracted_data/api_only_ml_SAFE.csv') if os.path.exists('extracted_data/api_only_ml_SAFE.csv') else pd.read_csv('extracted_data/api_only_ml_dataset.csv')
     print(f"\n=== CSV DATASET ===")
     print(f"Total rows: {len(df)}")
     print(f"Unique videos: {df['video_id'].nunique()}")

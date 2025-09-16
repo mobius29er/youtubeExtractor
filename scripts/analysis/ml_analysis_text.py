@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """
 YouTube Dataset ML Analysis (No Matplotlib Dependencies)
 Text-based comprehensive analysis of your clean dataset
@@ -14,7 +15,7 @@ def load_and_explore():
     print("=" * 50)
     
     # Load the ML dataset
-    df = pd.read_csv('extracted_data/api_only_ml_dataset.csv')
+    df = pd.read_csv('extracted_data/api_only_ml_SAFE.csv') if os.path.exists('extracted_data/api_only_ml_SAFE.csv') else pd.read_csv('extracted_data/api_only_ml_dataset.csv')
     
     print(f"📊 DATASET OVERVIEW:")
     print(f"  • Shape: {df.shape[0]:,} rows × {df.shape[1]} columns")
@@ -193,6 +194,25 @@ def load_and_explore():
     Path('analysis_output').mkdir(exist_ok=True)
     
     # Create summary with safe numeric conversions
+
+def safe_int(value, default=0):
+    """Safely convert value to int"""
+    if isinstance(value, int):
+                return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return default
+
+def safe_float(value, default=0.0):
+    """Safely convert value to float"""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
     df_clean = df.dropna(subset=['view_count', 'like_count', 'comment_count'])
     
     analysis_summary = {

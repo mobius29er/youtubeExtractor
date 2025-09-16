@@ -21,6 +21,64 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.card {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgb(229, 231, 235);
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 25px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.card-dark {
+  background-color: rgb(31, 41, 55);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgb(75, 85, 99);
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.card-dark:hover {
+  box-shadow: 0 25px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background-color: rgb(37, 99, 235);
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: rgb(29, 78, 216);
+}
+
+.btn-secondary {
+  background-color: rgb(229, 231, 235);
+  color: rgb(55, 65, 81);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: rgb(209, 213, 219);
+}
+
+.glass-effect {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .text-shadow {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

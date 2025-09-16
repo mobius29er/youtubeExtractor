@@ -1,11 +1,11 @@
 {
   "dataset_shape": [
-    560,
-    15
+    1010,
+    20
   ],
-  "total_channels": 14,
-  "total_videos": 560,
-  "extraction_date": "2025-09-08T07:42:21.220837",
+  "total_channels": 27,
+  "total_videos": 1010,
+  "extraction_date": "2025-09-13T23:54:05.794057",
   "channel_distribution": {
     "VeggieTales Official": 40,
     "Miss Honey Bear - Speech Therapist - Read Aloud": 40,
@@ -20,11 +20,25 @@
     "Cameron Riecker": 40,
     "Kurzgesagt": 40,
     "Veritasium": 40,
-    "SciShow": 40
+    "SciShow": 40,
+    "Fun Science": 40,
+    "PewdiePie": 40,
+    "Up and Atom": 40,
+    "Jacksepticeye": 40,
+    "Call Me Kevin": 40,
+    "Floydson": 40,
+    "Lizz": 40,
+    "Cocomelon": 40,
+    "Kids Roma Show": 40,
+    "Sheriff Labrador - Kids Cartoon": 40,
+    "Evan Raugust": 29,
+    "Money Guy": 14,
+    "Bind": 7
   },
   "performance_distribution": {
-    "random_sample": 280,
-    "top_performer": 140,
-    "bottom_performer": 140
+    "random_sample": 489,
+    "top_performer": 250,
+    "bottom_performer": 250,
+    "unknown": 21
   }
 }

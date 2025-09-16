@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 """
 Comprehensive Dataset Verification Script
 Validates integrity, consistency, and accuracy of all YouTube extraction datasets
@@ -61,7 +62,7 @@ def verify_datasets():
     # 2. VERIFY CSV DATA
     print("\n📊 2. VERIFYING CSV DATASET")
     try:
-        csv_data = pd.read_csv('extracted_data/api_only_ml_dataset.csv')
+        csv_data = pd.read_csv('extracted_data/api_only_ml_SAFE.csv') if os.path.exists('extracted_data/api_only_ml_SAFE.csv') else pd.read_csv('extracted_data/api_only_ml_dataset.csv')
         print(f"  ✅ CSV file loaded successfully")
         print(f"  • Shape: {csv_data.shape[0]:,} rows × {csv_data.shape[1]} columns")
         
@@ -237,6 +238,25 @@ def verify_datasets():
                 print(f"  {i}. {warning}")
     
     # Dataset health score
+
+def safe_int(value, default=0):
+    """Safely convert value to int"""
+    if isinstance(value, int):
+                return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return default
+
+def safe_float(value, default=0.0):
+    """Safely convert value to float"""
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return default
+    return default
     total_issues = len(errors) + len(warnings)
     if total_issues == 0:
         health_score = 100
