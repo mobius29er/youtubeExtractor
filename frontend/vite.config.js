@@ -8,8 +8,13 @@ export default defineConfig({
     host: true,
     port: 3001,
     proxy: {
+      '/api/predict': {
+        target: 'http://localhost:8002',
+        changeOrigin: true,
+        secure: false
+      },
       '/api': {
-        target: 'http://localhost:8001',
+        target: 'http://localhost:8000',
         changeOrigin: true,
         secure: false
       }

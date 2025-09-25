@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 """
 YouTube ML Dataset Analysis (No External Dependencies)
 Quick exploration of your 160-video dataset
@@ -13,49 +12,23 @@ def analyze_dataset():
     print("🎯 YOUTUBE ML DATASET EXPLORATION")
     print("=" * 50)
     
-    # Try to load CSV data, fallback to JSON if CSV fails
+    # Load CSV data
     data = []
-    csv_file = 'extracted_data/api_only_ml_SAFE.csv'
-    
-    try:
-        with open(csv_file, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            data = list(reader)
-    except Exception as e:
-        print(f"❌ CSV loading failed: {e}")
-        print("🔄 Loading from JSON instead...")
-        
-        # Load from JSON as fallback
-        with open('extracted_data/api_only_complete_data.json', 'r', encoding='utf-8') as f:
-            json_data = json.load(f)
-        
-        # Convert JSON to flat structure
-        for channel_name, channel_info in json_data.get('data', {}).items():
-            for video in channel_info.get('videos', []):
-                video_data = {
-                    'channel_name': channel_name,
-                    'video_id': video.get('video_id', ''),
-                    'title': video.get('title', ''),
-                    'view_count': video.get('view_count', 0),
-                    'like_count': video.get('like_count', 0),
-                    'comment_count': video.get('comment_count', 0),
-                    'duration': video.get('duration', ''),
-                    'channel_subscriber_count' if 'channel_subscriber_count' in data[0] else 'subscriber_count': channel_info.get('channel_data', {}).get('subscriber_count', 0),
-                    'genre': channel_info.get('genre', 'unknown')
-                }
-                data.append(video_data)
+    with open('extracted_data/api_only_ml_dataset.csv', 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        data = list(reader)
     
     print(f"📊 DATASET OVERVIEW:")
     print(f"  • Total videos: {len(data):,}")
-    print(f"  • Columns: {len(data[0]) if data else 0}")
+    print(f"  • Columns: {len(data[0])}")
     print()
     
     # Convert numeric fields
     for row in data:
-        for field in ['view_count', 'like_count', 'comment_count', 'channel_subscriber_count' if 'channel_subscriber_count' in data[0] else 'subscriber_count']:
+        for field in ['view_count', 'like_count', 'comment_count', 'duration', 'title_length', 'description_length', 'tags_count', 'channel_subscriber_count']:
             if field in row and row[field]:
                 try:
-                    row[field] = int(str(row[field]).replace(',', ''))
+                    row[field] = int(row[field])
                 except:
                     row[field] = 0
     
@@ -69,10 +42,10 @@ def analyze_dataset():
     for channel, videos in channels.items():
         channel_stats[channel] = {
             'count': len(videos),
-            'avg_views': sum(int(v['view_count']) if isinstance(v['view_count'], (str, int)) and str(v['view_count']).isdigit() else 0 for v in videos) / len(videos),
-            'total_views': sum(int(v['view_count']) if isinstance(v['view_count'], (str, int)) and str(v['view_count']).isdigit() else 0 for v in videos),
+            'avg_views': sum(v['view_count'] for v in videos) / len(videos),
+            'total_views': sum(v['view_count'] for v in videos),
             'avg_likes': sum(v['like_count'] for v in videos) / len(videos),
-            'subscribers': videos[0].get('channel_subscriber_count' if 'channel_subscriber_count' in data[0] else 'subscriber_count', 0) if videos and isinstance(videos[0], dict) else 0 if videos else 0
+            'subscribers': videos[0]['channel_subscriber_count'] if videos else 0
         }
     
     # Sort by subscriber count
@@ -94,8 +67,8 @@ def analyze_dataset():
     
     for genre, videos in genres.items():
         count = len(videos)
-        avg_views = int(sum(int(v['view_count']) if isinstance(v['view_count'], (str, int)) and str(v['view_count']).isdigit() else 0 for v in videos) / len(videos))
-        avg_duration = int(sum(int(v['duration']) if isinstance(v['duration'], str) and v['duration'].isdigit() else (v['duration'] if isinstance(v['duration'], int) else 0) for v in videos) / len(videos))
+        avg_views = int(sum(v['view_count'] for v in videos) / len(videos))
+        avg_duration = int(sum(v['duration'] for v in videos) / len(videos))
         avg_likes = int(sum(v['like_count'] for v in videos) / len(videos))
         print(f"  • {genre:<20} {count:>3} videos | {avg_views:>12,} avg views | {avg_duration:>4}s duration | {avg_likes:>8,} likes")
     print()
@@ -177,15 +150,15 @@ def analyze_dataset():
     }
     
     for row in data:
-        duration = safe_int(row['duration'])
+        duration = row['duration']
         if duration < 60:
-            duration_ranges['Short (< 60s)'].append(safe_int(row['view_count']))
+            duration_ranges['Short (< 60s)'].append(row['view_count'])
         elif duration < 300:
-            duration_ranges['Medium (1-5 min)'].append(safe_int(row['view_count']))
+            duration_ranges['Medium (1-5 min)'].append(row['view_count'])
         elif duration < 900:
-            duration_ranges['Long (5-15 min)'].append(safe_int(row['view_count']))
+            duration_ranges['Long (5-15 min)'].append(row['view_count'])
         else:
-            duration_ranges['Very Long (15+ min)'].append(safe_int(row['view_count']))
+            duration_ranges['Very Long (15+ min)'].append(row['view_count'])
     
     for duration_range, views in duration_ranges.items():
         if views:
@@ -194,25 +167,6 @@ def analyze_dataset():
     print()
     
     # ML readiness assessment
-
-def safe_int(value, default=0):
-    """Safely convert value to int"""
-    if isinstance(value, int):
-                return value
-    if isinstance(value, str) and value.isdigit():
-        return int(value)
-    return default
-
-def safe_float(value, default=0.0):
-    """Safely convert value to float"""
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return default
-    return default
     print("🤖 ML READINESS ASSESSMENT:")
     print("  ✅ Numeric features: view_count, like_count, comment_count, duration")
     print("  ✅ Categorical features: genre, performance_category, channel_name")

@@ -35,8 +35,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Data paths
-DATA_DIR = Path("extracted_data")
+# Data paths - go up one level from src to find extracted_data
+DATA_DIR = Path("..") / "extracted_data"
 JSON_FILE = DATA_DIR / "api_only_complete_data.json"
 METADATA_FILE = DATA_DIR / "metadata_only.json"
 

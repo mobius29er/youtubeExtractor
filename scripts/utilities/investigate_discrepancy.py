@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 """
 Data Discrepancy Analysis
 Compare extracted data across different files to find missing videos
@@ -21,40 +20,25 @@ def analyze_data_discrepancy():
     for i, channel in enumerate(progress['processed_channels'], 1):
         print(f"  {i:2d}. {channel}")
     
-    # Try to check CSV data - use SAFE version if available
-    csv_df = None
-    csv_files = ['extracted_data/api_only_ml_SAFE.csv', 'extracted_data/api_only_ml_dataset.csv']
+    # Check CSV data
+    csv_df = pd.read_csv('extracted_data/api_only_ml_dataset.csv')
+    csv_channels = csv_df['channel_name'].unique()
+    csv_counts = csv_df['channel_name'].value_counts()
     
-    for csv_file in csv_files:
-        try:
-            csv_df = pd.read_csv(csv_file)
-            print(f"\n📈 Successfully loaded: {csv_file}")
-            break
-        except Exception as e:
-            print(f"❌ Failed to load {csv_file}: {e}")
-            continue
-    
-    if csv_df is not None:
-        csv_channels = csv_df['channel_name'].unique()
-        csv_counts = csv_df['channel_name'].value_counts()
-        
-        print(f"   Contains: {len(csv_df)} videos from {len(csv_channels)} channels")
-        print("   CSV channels with video counts:")
-        for channel in csv_counts.index:
-            count = csv_counts[channel]
-            print(f"     {channel}: {count} videos")
-    else:
-        print("❌ Could not load any CSV file")
+    print(f"\n📈 CSV file contains: {len(csv_df)} videos from {len(csv_channels)} channels")
+    print("CSV channels with video counts:")
+    for channel in csv_counts.index:
+        count = csv_counts[channel]
+        print(f"  {channel}: {count} videos")
     
     # Check JSON data
     try:
         with open('extracted_data/api_only_complete_data.json', 'r', encoding='utf-8') as f:
             json_data = json.load(f)
         
-        json_channels = json_data.get('data', {})
-        json_total_videos = sum(len(ch.get('videos', [])) for ch in json_channels.values())
+        json_total_videos = sum(len(ch.get('videos', [])) for ch in json_data.values())
         
-        print(f"\n📋 JSON file contains: {json_total_videos} videos from {len(json_channels)} channels")
+        print(f"\n📋 JSON file contains: {json_total_videos} videos from {len(json_data)} channels")
         print("JSON channels with video counts:")
         for name, ch_data in json_data.items():
             video_count = len(ch_data.get('videos', []))

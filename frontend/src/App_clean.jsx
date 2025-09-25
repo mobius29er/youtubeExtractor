@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
 import DataVisualization from './components/DataVisualization';
+import VideoPerformancePredictor from './components/VideoPerformancePredictor';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -29,11 +30,11 @@ function App() {
       console.error('Error loading dashboard data:', error);
       // Set fallback data so the dashboard doesn't stay blank
       setExtractionData({
-        totalVideos: 773,
-        totalChannels: 20,
+        totalVideos: 941,
+        totalChannels: 25,
         totalViews: 45000000,
         extractionComplete: true,
-        healthScore: 77,
+        healthScore: 85,
         lastUpdated: new Date().toISOString(),
         dataSource: "API Error - Using Fallback",
         channels: [
@@ -74,6 +75,14 @@ function App() {
               path="/visualization" 
               element={
                 <DataVisualization 
+                  darkMode={darkMode}
+                />
+              } 
+            />
+            <Route 
+              path="/predictor" 
+              element={
+                <VideoPerformancePredictor 
                   darkMode={darkMode}
                 />
               } 

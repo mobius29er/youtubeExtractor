@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 """
 Robust YouTube ML Dataset Analysis - Text-based exploration with NaN handling
 """
@@ -13,41 +12,14 @@ warnings.filterwarnings('ignore')
 def load_and_explore():
     """Load and perform comprehensive analysis of the ML dataset."""
     
-    # Try SAFE CSV first, then original, then fallback to JSON
-    csv_paths = [
-        Path('extracted_data/api_only_ml_SAFE.csv'),
-        Path('extracted_data/api_only_ml_dataset.csv')
-    ]
+    # Load the data
+    csv_path = Path('extracted_data/api_only_ml_dataset.csv')
+    if not csv_path.exists():
+        print("❌ CSV file not found: extracted_data/api_only_ml_dataset.csv")
+        return None
     
-    df = None
-    for csv_path in csv_paths:
-        if csv_path.exists():
-            try:
-                print(f"🔍 Loading dataset from {csv_path.name}...")
-                df = pd.read_csv(csv_path)
-                break
-            except Exception as e:
-                print(f"❌ Failed to load {csv_path.name}: {e}")
-                continue
-    
-    if df is None:
-        print("🔄 Loading from JSON instead...")
-        # Load from JSON as fallback
-        import json
-        with open('extracted_data/api_only_complete_data.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        # Convert JSON to DataFrame
-        videos = []
-        for channel_name, channel_info in data.get('data', {}).items():
-            for video in channel_info.get('videos', []):
-                video_data = video.copy()
-                video_data['channel_name'] = channel_name
-                video_data['channel_subscriber_count' if 'channel_subscriber_count' in data[0] else 'subscriber_count'] = channel_info.get('channel_data', {}).get('subscriber_count', 0)
-                video_data['genre'] = channel_info.get('genre', 'unknown')
-                videos.append(video_data)
-        
-        df = pd.DataFrame(videos)
+    print("🔍 Loading dataset...")
+    df = pd.read_csv(csv_path)
     
     print(f"🎯 YOUTUBE ML DATASET EXPLORATION")
     print("=" * 50)
@@ -233,25 +205,6 @@ def load_and_explore():
     print()
     
     # Summary
-
-def safe_int(value, default=0):
-    """Safely convert value to int"""
-    if isinstance(value, int):
-                return value
-    if isinstance(value, str) and value.isdigit():
-        return int(value)
-    return default
-
-def safe_float(value, default=0.0):
-    """Safely convert value to float"""
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return default
-    return default
     print("📋 DATASET SUMMARY:")
     print(f"  • Total videos analyzed: {len(df)}")
     print(f"  • Unique channels: {df['channel_name'].nunique()}")

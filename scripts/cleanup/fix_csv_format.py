@@ -90,25 +90,6 @@ def clean_csv_data():
     except Exception as e:
         print(f"❌ Error during cleanup: {e}")
         # Restore backup if cleanup failed
-
-def safe_int(value, default=0):
-    """Safely convert value to int"""
-    if isinstance(value, int):
-                return value
-    if isinstance(value, str) and value.isdigit():
-        return int(value)
-    return default
-
-def safe_float(value, default=0.0):
-    """Safely convert value to float"""
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return default
-    return default
         if backup_file.exists():
             backup_file.rename(input_file)
             print("🔄 Restored original file")

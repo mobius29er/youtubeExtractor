@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import os
 """
 Comprehensive YouTube ML Dataset Analysis with Duration Parsing
 """
@@ -53,33 +52,9 @@ def parse_duration_string(duration_str):
 def comprehensive_analysis():
     """Run comprehensive analysis with proper duration parsing."""
     
-    # Try to load the SAFE CSV first, fall back to JSON if CSV fails
-    csv_path = Path('extracted_data/api_only_ml_SAFE.csv')
-    if not csv_path.exists():
-        csv_path = Path('extracted_data/api_only_ml_SAFE.csv') if Path('extracted_data/api_only_ml_SAFE.csv').exists() else Path('extracted_data/api_only_ml_dataset.csv')
-    
-    try:
-        df = pd.read_csv(csv_path)
-    except Exception as e:
-        print(f"❌ CSV parsing failed: {e}")
-        print("🔄 Loading from JSON instead...")
-        
-        # Load from JSON as fallback
-        import json
-        with open('extracted_data/api_only_complete_data.json', 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        
-        # Convert JSON to DataFrame
-        videos = []
-        for channel_name, channel_info in data.get('data', {}).items():
-            for video in channel_info.get('videos', []):
-                video_data = video.copy()
-                video_data['channel_name'] = channel_name
-                video_data['channel_subscriber_count' if 'channel_subscriber_count' in data[0] else 'subscriber_count'] = channel_info.get('channel_data', {}).get('subscriber_count', 0)
-                video_data['genre'] = channel_info.get('genre', 'unknown')
-                videos.append(video_data)
-        
-        df = pd.DataFrame(videos)
+    # Load data
+    csv_path = Path('extracted_data/api_only_ml_dataset.csv')
+    df = pd.read_csv(csv_path)
     
     print("🎯 COMPREHENSIVE YOUTUBE ML DATASET ANALYSIS")
     print("=" * 55)
@@ -119,17 +94,22 @@ def comprehensive_analysis():
     # Content analysis
     print("\n📝 CONTENT ANALYSIS:")
     
-    # Title length analysis (use existing column)
+    # Title length analysis
+    df['title_length'] = df['title'].str.len()
     print(f"  • Average title length: {df['title_length'].mean():.1f} characters")
     print(f"  • Title length range: {df['title_length'].min()} - {df['title_length'].max()} characters")
     
-    # Description analysis (use existing column)
-    print(f"  • Average description length: {df['description_length'].mean():.0f} characters")
-    print(f"  • Videos without descriptions: {(df['description_length'] == 0).sum()}")
+    # Description analysis
+    df['desc_length'] = df['description'].str.len()
+    desc_stats = df['desc_length'].dropna()
+    print(f"  • Average description length: {desc_stats.mean():.0f} characters")
+    print(f"  • Videos with descriptions: {len(desc_stats)}/{len(df)} ({len(desc_stats)/len(df)*100:.1f}%)")
     
-    # Tags analysis (use existing column)
-    print(f"  • Average tags per video: {df['tags_count'].mean():.1f}")
-    print(f"  • Videos without tags: {(df['tags_count'] == 0).sum()}")
+    # Tags analysis
+    df['tag_count'] = df['tags'].apply(lambda x: len(str(x).split(',')) if pd.notna(x) and x != '[]' else 0)
+    tag_stats = df[df['tag_count'] > 0]['tag_count']
+    print(f"  • Average tags per video: {tag_stats.mean():.1f}")
+    print(f"  • Videos with tags: {len(tag_stats)}/{len(df)} ({len(tag_stats)/len(df)*100:.1f}%)")
     
     # Performance correlation analysis
     print("\n📈 PERFORMANCE CORRELATIONS:")
@@ -176,25 +156,6 @@ def comprehensive_analysis():
             print(f"  • {channel[:30]:<30} {rate:>5.2f}% {bar[:10]}")
     
     # Final ML readiness summary
-
-def safe_int(value, default=0):
-    """Safely convert value to int"""
-    if isinstance(value, int):
-                return value
-    if isinstance(value, str) and value.isdigit():
-        return int(value)
-    return default
-
-def safe_float(value, default=0.0):
-    """Safely convert value to float"""
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return default
-    return default
     print(f"\n🤖 MACHINE LEARNING READINESS SUMMARY:")
     print(f"  ✅ Dataset size: {len(df)} videos across {df['channel_name'].nunique()} channels")
     print(f"  ✅ Complete records: {len(df.dropna())} ({len(df.dropna())/len(df)*100:.1f}%)")
