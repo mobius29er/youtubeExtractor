@@ -120,6 +120,7 @@ Exports:
 - caption_availability_report.json: For planning transcript scraping
 - thumbnails/: Local copies for image feature analysis
 
+
 🧠 Bonus Ideas
 Want to go further?
 
