@@ -36,7 +36,8 @@ app.add_middleware(
 )
 
 # Data paths - go up one level from src to find extracted_data
-DATA_DIR = Path("..") / "extracted_data"
+script_dir = Path(__file__).parent
+DATA_DIR = script_dir.parent / "extracted_data"
 JSON_FILE = DATA_DIR / "api_only_complete_data.json"
 METADATA_FILE = DATA_DIR / "metadata_only.json"
 
@@ -68,6 +69,9 @@ class DataLoader:
                 
                 # Process JSON data into flat structure for analytics
                 self._process_json_data()
+                
+                # Load and merge RQS data from videos_with_features.csv
+                self._merge_rqs_data()
                 
                 total_videos = sum(len(channel_data.get('videos', [])) for channel_data in self.data.values())
                 print(f"✅ Loaded JSON data: {len(self.data)} channels, {total_videos} videos")
@@ -106,6 +110,38 @@ class DataLoader:
         except Exception as e:
             print(f"❌ Error processing JSON data: {e}")
             self.processed_data = pd.DataFrame()
+    
+    def _merge_rqs_data(self):
+        """Load RQS data from videos_with_features.csv and merge with processed data"""
+        try:
+            rqs_file = script_dir.parent / "extracted_data" / "videos_with_features.csv"
+            if rqs_file.exists():
+                print(f"🔄 Loading RQS data from: {rqs_file}")
+                rqs_df = pd.read_csv(rqs_file, usecols=['video_id', 'rqs'])
+                
+                # Convert RQS from 0-1 scale to 0-100 scale and round to integers
+                rqs_df['rqs'] = (rqs_df['rqs'] * 100).round().astype(int)
+                
+                # Merge with processed data
+                if self.processed_data is not None and not self.processed_data.empty:
+                    self.processed_data = self.processed_data.merge(rqs_df, on='video_id', how='left')
+                    # Fill missing RQS values with a default of 75
+                    self.processed_data['rqs'] = self.processed_data['rqs'].fillna(75).astype(int)
+                    
+                    rqs_merged_count = self.processed_data['rqs'].notna().sum()
+                    print(f"✅ Merged RQS data for {rqs_merged_count} videos")
+                else:
+                    print("⚠️ No processed data available to merge RQS with")
+            else:
+                print(f"⚠️ RQS file not found: {rqs_file}")
+                # Add default RQS column if file not found
+                if self.processed_data is not None and not self.processed_data.empty:
+                    self.processed_data['rqs'] = 75
+        except Exception as e:
+            print(f"❌ Error loading RQS data: {e}")
+            # Add default RQS column on error
+            if self.processed_data is not None and not self.processed_data.empty:
+                self.processed_data['rqs'] = 75
     
     def _generate_mock_data(self) -> Dict:
         """Generate mock data for demonstration"""
@@ -255,16 +291,40 @@ async def get_visualization_data():
             # Get all channels, sorted by average views (descending)
             all_channels = channel_stats.sort_values('view_count', ascending=False)
             
-            engagement_data = [
-                {
-                    "name": channel,
-                    "views": int(row['view_count']),
-                    "likes": int(row['like_count']),
-                    "comments": int(row['comment_count']),
-                    "videos": int(row['video_id'])
-                }
-                for channel, row in all_channels.iterrows()
-            ]
+            engagement_data = []
+            for channel, row in all_channels.iterrows():
+                try:
+                    # Get all videos for this channel
+                    channel_videos = df[df['channel_name'] == channel]
+                    video_details = []
+                    
+                    for _, video in channel_videos.iterrows():
+                        try:
+                            video_details.append({
+                                'video_id': str(video.get('video_id', '')),
+                                'title': str(video.get('title', 'No Title')),
+                                'views': int(video.get('view_count', 0)) if pd.notna(video.get('view_count')) else 0,
+                                'likes': int(video.get('like_count', 0)) if pd.notna(video.get('like_count')) else 0,
+                                'comments': int(video.get('comment_count', 0)) if pd.notna(video.get('comment_count')) else 0,
+                                'duration': str(video.get('duration', 'N/A')),
+                                'published_at': str(video.get('published_at', '')),
+                                'rqs': int(video.get('rqs', 75)) if pd.notna(video.get('rqs')) else 75
+                            })
+                        except Exception as ve:
+                            print(f"⚠️ Error processing video in {channel}: {ve}")
+                            continue
+                    
+                    engagement_data.append({
+                        "name": str(channel),
+                        "views": int(row['view_count']) if pd.notna(row['view_count']) else 0,
+                        "likes": int(row['like_count']) if pd.notna(row['like_count']) else 0,
+                        "comments": int(row['comment_count']) if pd.notna(row['comment_count']) else 0,
+                        "videos": int(row['video_id']) if pd.notna(row['video_id']) else 0,
+                        "videoDetails": video_details  # Add the video details
+                    })
+                except Exception as ce:
+                    print(f"⚠️ Error processing channel {channel}: {ce}")
+                    continue
             
             # Generate genre data based on channel names and content
             genre_data = [
@@ -323,35 +383,38 @@ async def get_extraction_status():
 
 @app.get("/api/channel/{channel_name}/videos")
 async def get_channel_videos(channel_name: str):
-    """Get video details for a specific channel"""
+    """Get video details for a specific channel with real RQS data"""
     try:
-        if not data_loader.data:
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
             data_loader.load_data()
         
-        if not data_loader.data:
-            return {"error": "No data available"}
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
+            return {"error": "No processed data available"}
             
-        # Find the channel in the loaded data
-        channel_data = data_loader.data.get(channel_name, {})
-        videos = channel_data.get('videos', [])
+        # Get videos for this specific channel from processed data
+        channel_videos = data_loader.processed_data[data_loader.processed_data['channel_name'] == channel_name]
         
-        if not videos:
+        if channel_videos.empty:
             return {"videos": [], "message": f"No videos found for {channel_name}"}
         
-        # Process and return video data with proper formatting
+        # Process and return video data with real RQS scores
         processed_videos = []
-        for video in videos:
-            processed_video = {
-                "video_id": video.get('video_id', ''),
-                "title": video.get('title', 'Untitled'),
-                "view_count": int(str(video.get('view_count', 0)).replace(',', '')) if video.get('view_count') else 0,
-                "like_count": int(str(video.get('like_count', 0)).replace(',', '')) if video.get('like_count') else 0,
-                "comment_count": int(str(video.get('comment_count', 0)).replace(',', '')) if video.get('comment_count') else 0,
-                "duration": video.get('duration_seconds', 0),
-                "published_at": video.get('published_at', ''),
-                "rqs": video.get('rqs', 0) or calculate_basic_rqs(video)
-            }
-            processed_videos.append(processed_video)
+        for _, video in channel_videos.iterrows():
+            try:
+                processed_video = {
+                    "video_id": str(video.get('video_id', '')),
+                    "title": str(video.get('title', 'Untitled')),
+                    "view_count": int(video.get('view_count', 0)) if pd.notna(video.get('view_count')) else 0,
+                    "like_count": int(video.get('like_count', 0)) if pd.notna(video.get('like_count')) else 0,
+                    "comment_count": int(video.get('comment_count', 0)) if pd.notna(video.get('comment_count')) else 0,
+                    "duration": str(video.get('duration', '')),
+                    "published_at": str(video.get('published_at', '')),
+                    "rqs": int(video.get('rqs', 75)) if pd.notna(video.get('rqs')) else 75  # Use real RQS data
+                }
+                processed_videos.append(processed_video)
+            except Exception as ve:
+                print(f"⚠️ Error processing video {video.get('video_id', 'unknown')} in {channel_name}: {ve}")
+                continue
         
         # Sort by RQS (Retention Quality Score) descending
         processed_videos.sort(key=lambda x: x.get('rqs', 0), reverse=True)

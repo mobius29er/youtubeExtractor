@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import FilterControls from './FilterControls';
 import VideoDetailsModal from './VideoDetailsModal';
+import AllVideosModal from './AllVideosModal';
 
 // Helper function to assign genres based on channel name
 const getChannelGenre = (channelName) => {
@@ -146,6 +147,7 @@ const getChannelGenre = (channelName) => {
   };const Dashboard = ({ data, loading, darkMode }) => {
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [allVideosModalOpen, setAllVideosModalOpen] = useState(false);
   const [filteredData, setFilteredData] = useState(null);
   const [originalEnhancedData, setOriginalEnhancedData] = useState(null); // Store the original enhanced data
   const [activeFilters, setActiveFilters] = useState({
@@ -224,6 +226,23 @@ const getChannelGenre = (channelName) => {
           ...data,
           channels: enhancedChannels
         };
+
+        // Collect all videos from all channels for the AllVideosModal
+        const allVideos = [];
+        if (vizData && vizData.engagement) {
+          vizData.engagement.forEach(channelData => {
+            if (channelData.videoDetails && Array.isArray(channelData.videoDetails)) {
+              channelData.videoDetails.forEach(video => {
+                allVideos.push({
+                  ...video,
+                  channel_name: channelData.name
+                });
+              });
+            }
+          });
+        }
+        enhancedDataObj.allVideos = allVideos;
+        console.log('📹 Collected', allVideos.length, 'total videos from all channels');
 
         // Store both the original enhanced data and set it as filtered data
         setOriginalEnhancedData(enhancedDataObj);
@@ -502,8 +521,13 @@ const getChannelGenre = (channelName) => {
     );
   }
 
-  const StatCard = ({ icon: Icon, title, value, subtitle, color = "blue", trend = null }) => (
-    <div className={`${darkMode ? 'card-dark' : 'card'} group hover:scale-105 transition-transform duration-200`}>
+  const StatCard = ({ icon: Icon, title, value, subtitle, color = "blue", trend = null, onClick = null }) => (
+    <div 
+      className={`${darkMode ? 'card-dark' : 'card'} group hover:scale-105 transition-transform duration-200 ${
+        onClick ? 'cursor-pointer' : ''
+      }`}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between mb-4">
         <div className={`p-3 rounded-lg bg-${color}-100 dark:bg-${color}-900`}>
           <Icon className={`w-6 h-6 text-${color}-600 dark:text-${color}-400`} />
@@ -668,6 +692,7 @@ const getChannelGenre = (channelName) => {
           subtitle="Extracted & Verified"
           color="red"
           trend={12}
+          onClick={() => setAllVideosModalOpen(true)}
         />
         <StatCard
           icon={Users}
@@ -761,6 +786,13 @@ const getChannelGenre = (channelName) => {
         onClose={() => setModalOpen(false)}
         channel={selectedChannel?.name}
         videos={selectedChannel?.videoDetails || []}
+        darkMode={darkMode}
+      />
+
+      <AllVideosModal
+        isOpen={allVideosModalOpen}
+        onClose={() => setAllVideosModalOpen(false)}
+        allVideos={filteredData?.allVideos || []}
         darkMode={darkMode}
       />
     </div>
