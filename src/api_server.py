@@ -244,7 +244,7 @@ async def get_visualization_data():
         if data_loader.processed_data is not None and len(data_loader.processed_data) > 0:
             df = data_loader.processed_data
             
-            # Real engagement data from top channels (from JSON data)
+            # Real engagement data from all channels (from JSON data)
             channel_stats = df.groupby('channel_name').agg({
                 'view_count': 'mean',
                 'like_count': 'mean', 
@@ -252,8 +252,8 @@ async def get_visualization_data():
                 'video_id': 'count'
             }).round().astype(int)
             
-            # Get top 10 channels by average views
-            top_channels = channel_stats.nlargest(10, 'view_count')
+            # Get all channels, sorted by average views (descending)
+            all_channels = channel_stats.sort_values('view_count', ascending=False)
             
             engagement_data = [
                 {
@@ -263,7 +263,7 @@ async def get_visualization_data():
                     "comments": int(row['comment_count']),
                     "videos": int(row['video_id'])
                 }
-                for channel, row in top_channels.iterrows()
+                for channel, row in all_channels.iterrows()
             ]
             
             # Generate genre data based on channel names and content
@@ -320,6 +320,72 @@ async def get_extraction_status():
         return status_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading status data: {str(e)}")
+
+@app.get("/api/channel/{channel_name}/videos")
+async def get_channel_videos(channel_name: str):
+    """Get video details for a specific channel"""
+    try:
+        if not data_loader.data:
+            data_loader.load_data()
+        
+        if not data_loader.data:
+            return {"error": "No data available"}
+            
+        # Find the channel in the loaded data
+        channel_data = data_loader.data.get(channel_name, {})
+        videos = channel_data.get('videos', [])
+        
+        if not videos:
+            return {"videos": [], "message": f"No videos found for {channel_name}"}
+        
+        # Process and return video data with proper formatting
+        processed_videos = []
+        for video in videos:
+            processed_video = {
+                "video_id": video.get('video_id', ''),
+                "title": video.get('title', 'Untitled'),
+                "view_count": int(str(video.get('view_count', 0)).replace(',', '')) if video.get('view_count') else 0,
+                "like_count": int(str(video.get('like_count', 0)).replace(',', '')) if video.get('like_count') else 0,
+                "comment_count": int(str(video.get('comment_count', 0)).replace(',', '')) if video.get('comment_count') else 0,
+                "duration": video.get('duration_seconds', 0),
+                "published_at": video.get('published_at', ''),
+                "rqs": video.get('rqs', 0) or calculate_basic_rqs(video)
+            }
+            processed_videos.append(processed_video)
+        
+        # Sort by RQS (Retention Quality Score) descending
+        processed_videos.sort(key=lambda x: x.get('rqs', 0), reverse=True)
+        
+        return {
+            "channel": channel_name,
+            "videos": processed_videos,
+            "total": len(processed_videos)
+        }
+        
+    except Exception as e:
+        print(f"❌ Error getting videos for {channel_name}: {e}")
+        return {"error": f"Failed to get videos for {channel_name}"}
+
+def calculate_basic_rqs(video):
+    """Calculate a basic Retention Quality Score for a video"""
+    try:
+        views = int(str(video.get('view_count', 0)).replace(',', '')) if video.get('view_count') else 0
+        likes = int(str(video.get('like_count', 0)).replace(',', '')) if video.get('like_count') else 0
+        comments = int(str(video.get('comment_count', 0)).replace(',', '')) if video.get('comment_count') else 0
+        
+        if views == 0:
+            return 0
+            
+        # Basic RQS calculation based on engagement
+        like_ratio = (likes / views) * 1000  # Likes per 1000 views
+        comment_ratio = (comments / views) * 1000  # Comments per 1000 views
+        
+        # Combined score (0-100)
+        rqs = min(100, int((like_ratio * 0.7 + comment_ratio * 0.3) * 5))
+        return max(0, rqs)
+        
+    except:
+        return 0
 
 @app.post("/api/refresh")
 async def refresh_data():

@@ -15,143 +15,16 @@ import {
   ScatterChart,
   Scatter
 } from 'recharts';
-import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target } from 'lucide-react';
-import FilterControls from './FilterControls';
+import { TrendingUp, PieChart as PieIcon, BarChart3, Activity } from 'lucide-react';
 
 const DataVisualization = ({ data, loading, darkMode }) => {
   const [activeChart, setActiveChart] = useState('engagement');
   const [chartData, setChartData] = useState(null);
   const [chartLoading, setChartLoading] = useState(false);
-  const [filteredData, setFilteredData] = useState(null);
-  const [activeFilters, setActiveFilters] = useState({
-    genre: 'all',
-    tier: 'all',
-    sortBy: 'name'
-  });
-
-  // Initialize filteredData when data changes
-  useEffect(() => {
-    if (data) {
-      setFilteredData(data);
-    }
-  }, [data]);
-
-  // Handle filter changes
-  const handleFilterChange = (filters) => {
-    setActiveFilters(filters);
-    
-    if (!data) return;
-    
-    let filtered = { ...data };
-    
-    // Apply genre filter
-    if (filters.genre !== 'all') {
-      filtered.channels = data.channels.filter(channel => 
-        channel.genre?.toLowerCase() === filters.genre.toLowerCase()
-      );
-    }
-    
-    // Apply tier filter
-    if (filters.tier !== 'all') {
-      filtered.channels = filtered.channels.filter(channel => {
-        const tier = getTierForChannel(channel);
-        return tier === filters.tier;
-      });
-    }
-    
-    setFilteredData(filtered);
-    // Update chart data based on filtered data
-    processChartData(filtered);
-  };
-
-  // Helper function to determine tier for a channel
-  const getTierForChannel = (channel) => {
-    const totalViews = channel.totalViews || 0;
-    if (totalViews >= 1000000) return 'high';
-    if (totalViews >= 100000) return 'mid';
-    return 'low';
-  };
-
-  // Process chart data based on filtered data
-  const processChartData = (currentData) => {
-    if (!currentData || !currentData.channels) return;
-    
-    // Generate chart data from filtered channels
-    const processedData = {
-      genreComparison: generateGenreComparisonData(currentData.channels),
-      tierAnalysis: generateTierAnalysisData(currentData.channels),
-      performanceMetrics: generatePerformanceMetricsData(currentData.channels),
-      engagementTrends: generateEngagementTrendsData(currentData.channels)
-    };
-    
-    setChartData(processedData);
-  };
-
-  const generateGenreComparisonData = (channels) => {
-    const genreMap = {};
-    channels.forEach(channel => {
-      const genre = channel.genre || 'Unknown';
-      if (!genreMap[genre]) {
-        genreMap[genre] = {
-          genre,
-          totalViews: 0,
-          totalVideos: 0,
-          avgEngagement: 0,
-          channelCount: 0
-        };
-      }
-      genreMap[genre].totalViews += channel.totalViews || 0;
-      genreMap[genre].totalVideos += channel.videos || 0;
-      genreMap[genre].avgEngagement += channel.avgEngagement || 0;
-      genreMap[genre].channelCount += 1;
-    });
-    
-    return Object.values(genreMap).map(genre => ({
-      ...genre,
-      avgEngagement: genre.avgEngagement / genre.channelCount
-    }));
-  };
-
-  const generateTierAnalysisData = (channels) => {
-    const tierMap = { high: 0, mid: 0, low: 0 };
-    channels.forEach(channel => {
-      const tier = getTierForChannel(channel);
-      tierMap[tier]++;
-    });
-    
-    return [
-      { name: 'High Tier (1M+)', value: tierMap.high, color: '#10B981' },
-      { name: 'Mid Tier (100K-1M)', value: tierMap.mid, color: '#F59E0B' },
-      { name: 'Low Tier (<100K)', value: tierMap.low, color: '#6B7280' }
-    ];
-  };
-
-  const generatePerformanceMetricsData = (channels) => {
-    return channels.map(channel => ({
-      name: channel.name.substring(0, 15) + (channel.name.length > 15 ? '...' : ''),
-      views: channel.totalViews || 0,
-      videos: channel.videos || 0,
-      engagement: channel.avgEngagement || 0,
-      tier: getTierForChannel(channel)
-    }));
-  };
-
-  const generateEngagementTrendsData = (channels) => {
-    return channels.map((channel, index) => ({
-      index: index + 1,
-      engagement: channel.avgEngagement || 0,
-      views: (channel.totalViews || 0) / 1000000, // Convert to millions
-      name: channel.name
-    }));
-  };
 
   useEffect(() => {
     loadVisualizationData();
-    // Process initial chart data when data is available
-    if (data) {
-      processChartData(data);
-    }
-  }, [data]);
+  }, []);
 
   const loadVisualizationData = async () => {
     try {
@@ -240,9 +113,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
   const charts = [
     { id: 'engagement', label: 'Channel Engagement', icon: BarChart3 },
-    { id: 'genres', label: 'Genre Comparison', icon: PieIcon },
-    { id: 'tiers', label: 'Tier Analysis', icon: Target },
-    { id: 'performance', label: 'Performance Metrics', icon: TrendingUp },
+    { id: 'genres', label: 'Genre Distribution', icon: PieIcon },
+    { id: 'performance', label: 'Performance Trends', icon: TrendingUp },
     { id: 'correlation', label: 'Views vs Engagement', icon: Activity },
   ];
 
@@ -281,41 +153,9 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       case 'genres':
         return (
           <ResponsiveContainer {...chartProps}>
-            <BarChart data={chartData?.genreComparison || mockChartData.genres}>
-              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis 
-                dataKey="genre" 
-                stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                fontSize={12}
-                angle={-45}
-                textAnchor="end"
-                height={80}
-              />
-              <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                  borderRadius: '8px'
-                }}
-              />
-              <Bar dataKey="totalViews" fill="#3B82F6" name="Total Views" />
-              <Bar dataKey="totalVideos" fill="#10B981" name="Total Videos" />
-              <Bar dataKey="avgEngagement" fill="#F59E0B" name="Avg Engagement" />
-            </BarChart>
-          </ResponsiveContainer>
-        );
-
-      case 'tiers':
-        return (
-          <ResponsiveContainer {...chartProps}>
             <PieChart>
               <Pie
-                data={chartData?.tierAnalysis || [
-                  { name: 'High Tier (1M+)', value: 8, color: '#10B981' },
-                  { name: 'Mid Tier (100K-1M)', value: 12, color: '#F59E0B' },
-                  { name: 'Low Tier (<100K)', value: 5, color: '#6B7280' }
-                ]}
+                data={chartData?.genres || mockChartData.genres}
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -324,8 +164,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                 fill="#8884d8"
                 dataKey="value"
               >
-                {(chartData?.tierAnalysis || []).map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
+                {(chartData?.genres || mockChartData.genres).map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip />
@@ -336,15 +176,12 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       case 'performance':
         return (
           <ResponsiveContainer {...chartProps}>
-            <BarChart data={chartData?.performanceMetrics || mockChartData.performance}>
+            <LineChart data={chartData?.performance || mockChartData.performance}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
-                dataKey="name" 
+                dataKey="timeframe" 
                 stroke={darkMode ? '#9CA3AF' : '#6B7280'}
                 fontSize={12}
-                angle={-45}
-                textAnchor="end"
-                height={80}
               />
               <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} fontSize={12} />
               <Tooltip 
@@ -354,29 +191,40 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   borderRadius: '8px'
                 }}
               />
-              <Bar dataKey="views" fill="#3B82F6" name="Total Views" />
-              <Bar dataKey="videos" fill="#10B981" name="Video Count" />
-              <Bar dataKey="engagement" fill="#F59E0B" name="Engagement Rate" />
-            </BarChart>
+              <Line 
+                type="monotone" 
+                dataKey="avgViews" 
+                stroke="#3B82F6" 
+                strokeWidth={3}
+                name="Avg Views"
+              />
+              <Line 
+                type="monotone" 
+                dataKey="avgLikes" 
+                stroke="#10B981" 
+                strokeWidth={3}
+                name="Avg Likes"
+              />
+            </LineChart>
           </ResponsiveContainer>
         );
 
       case 'correlation':
         return (
           <ResponsiveContainer {...chartProps}>
-            <ScatterChart data={chartData?.engagementTrends || mockChartData.correlation}>
+            <ScatterChart data={chartData?.correlation || mockChartData.correlation}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
                 type="number"
                 dataKey="views" 
-                name="Views (M)"
+                name="Views"
                 stroke={darkMode ? '#9CA3AF' : '#6B7280'}
                 fontSize={12}
               />
               <YAxis 
                 type="number"
-                dataKey="engagement" 
-                name="Engagement Rate"
+                dataKey="likes" 
+                name="Likes"
                 stroke={darkMode ? '#9CA3AF' : '#6B7280'}
                 fontSize={12}
               />
@@ -387,11 +235,6 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
                   borderRadius: '8px'
                 }}
-                formatter={(value, name, props) => [
-                  `${value}${name === 'Views (M)' ? 'M' : '%'}`,
-                  name,
-                  props.payload.name
-                ]}
               />
               <Scatter fill="#8B5CF6" />
             </ScatterChart>
@@ -414,15 +257,6 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           Interactive charts and insights from your YouTube dataset
         </p>
       </div>
-
-      {/* Filter Controls */}
-      <FilterControls 
-        onFilterChange={handleFilterChange}
-        activeFilters={activeFilters}
-        darkMode={darkMode}
-        totalChannels={data?.totalChannels || 0}
-        filteredChannels={filteredData?.channels?.length || 0}
-      />
 
       {/* Chart Selector */}
       <ChartSelector charts={charts} />

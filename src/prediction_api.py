@@ -41,10 +41,16 @@ class YouTubePredictionSystem:
         
     def load_models(self):
         """Load all trained ML models and scalers"""
-        models_dir = Path("..") / "extracted_data" / "models"
+        # Get the directory where this script is located
+        script_dir = Path(__file__).parent
+        models_dir = script_dir.parent / "extracted_data" / "models"
         
         print("🔄 Loading ML models...")
+        print(f"📁 Script directory: {script_dir.absolute()}")
         print(f"📁 Models directory: {models_dir.absolute()}")
+        
+        if not models_dir.exists():
+            raise FileNotFoundError(f"Models directory not found: {models_dir.absolute()}")
         
         try:
             # Suppress warnings during model loading
