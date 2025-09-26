@@ -212,7 +212,6 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       })),
       genreComparison: generateGenreComparisonData(channels),
       tierAnalysis: generateTierAnalysisData(channels),
-      performanceMetrics: generatePerformanceMetricsData(channels),
       engagementTrends: generateEngagementTrendsData(channels)
     };
     
@@ -279,16 +278,6 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       { name: 'Mid Tier (1M-10M)', value: tierMap.mid, color: '#F59E0B' },
       { name: 'Low Tier (<1M)', value: tierMap.low, color: '#6B7280' }
     ].filter(tier => tier.value > 0); // Only show tiers with actual channels
-  };
-
-  const generatePerformanceMetricsData = (channels) => {
-    return channels.map(channel => ({
-      name: channel.name.substring(0, 15) + (channel.name.length > 15 ? '...' : ''),
-      views: channel.views || 0,
-      videos: channel.videos || 0,
-      engagement: Math.round(((channel.likes || 0) + (channel.comments || 0)) / (channel.views || 1) * 10000) / 100, // Engagement rate as percentage
-      tier: getTierForChannel(channel)
-    }));
   };
 
   const generateEngagementTrendsData = (channels) => {
@@ -406,11 +395,10 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       { name: 'Gaming', value: 15, videos: 60 },
       { name: 'Catholic', value: 10, videos: 40 },
     ],
-    performance: [
-      { timeframe: 'Week 1', avgViews: 1200000, avgLikes: 45000 },
-      { timeframe: 'Week 2', avgViews: 1450000, avgLikes: 52000 },
-      { timeframe: 'Week 3', avgViews: 1800000, avgLikes: 68000 },
-      { timeframe: 'Week 4', avgViews: 2200000, avgLikes: 85000 },
+    sentiment: [
+      { sentiment: 'Positive', videoCount: 150, channelCount: 12, avgViews: 2500000, totalViews: 375000000 },
+      { sentiment: 'Neutral', videoCount: 200, channelCount: 15, avgViews: 1800000, totalViews: 360000000 },
+      { sentiment: 'Negative', videoCount: 50, channelCount: 8, avgViews: 1200000, totalViews: 60000000 },
     ],
     correlation: [
       { views: 1000000, likes: 45000, comments: 5500 },
@@ -456,8 +444,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     { id: 'engagement', label: 'Channel Engagement', icon: BarChart3 },
     { id: 'genres', label: 'Genre Comparison', icon: PieIcon },
     { id: 'tiers', label: 'Tier Analysis', icon: Target },
-    { id: 'performance', label: 'Performance Metrics', icon: TrendingUp },
-    { id: 'correlation', label: 'Views vs Engagement', icon: Activity },
+    { id: 'sentiment', label: 'Sentiment Analysis', icon: Activity },
+    { id: 'correlation', label: 'Views vs Engagement', icon: TrendingUp },
   ];
 
   // Helper function to determine channel genre based on exact channel configuration
@@ -695,14 +683,45 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           isPerSubscriberData: tierViewMode === 'per_subscriber'
         })).filter(tierData => tierData.channels > 0); // Only show tiers with channels
       
-      case 'performance':
-        // Performance metrics based on filtered data
-        return filteredData.engagement.map(channel => ({
-          name: channel.name,
-          views: channel.views || 0,
-          videos: channel.videos || 40,
-          engagement: channel.views > 0 ? (((channel.likes || 0) / channel.views) * 100).toFixed(2) : 0
-        }));
+      case 'sentiment':
+        // Sentiment analysis data - categorize sentiment scores
+        const sentimentData = {
+          'Positive': { count: 0, channels: new Set(), avgViews: 0, totalViews: 0 },
+          'Neutral': { count: 0, channels: new Set(), avgViews: 0, totalViews: 0 },
+          'Negative': { count: 0, channels: new Set(), avgViews: 0, totalViews: 0 }
+        };
+        
+        filteredData.engagement.forEach(channel => {
+          // Process each channel's videos if available
+          if (channel.videoDetails && channel.videoDetails.length > 0) {
+            channel.videoDetails.forEach(video => {
+              const sentimentScore = video.sentiment_score || 0.5; // Default to neutral
+              const views = video.view_count || 0;
+              
+              let category;
+              if (sentimentScore > 0.6) category = 'Positive';
+              else if (sentimentScore < 0.4) category = 'Negative';
+              else category = 'Neutral';
+              
+              sentimentData[category].count++;
+              sentimentData[category].channels.add(channel.name);
+              sentimentData[category].totalViews += views;
+            });
+          } else {
+            // Fallback: use channel-level data with default neutral sentiment
+            sentimentData['Neutral'].count++;
+            sentimentData['Neutral'].channels.add(channel.name);
+            sentimentData['Neutral'].totalViews += (channel.views || 0);
+          }
+        });
+        
+        return Object.entries(sentimentData).map(([sentiment, data]) => ({
+          sentiment,
+          videoCount: data.count,
+          channelCount: data.channels.size,
+          avgViews: data.count > 0 ? Math.round(data.totalViews / data.count) : 0,
+          totalViews: data.totalViews
+        })).filter(item => item.videoCount > 0);
       
       case 'correlation':
         // Correlation data from filtered channels
@@ -1029,22 +1048,20 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           </ResponsiveContainer>
         );
 
-      case 'performance':
-        const performanceData = getChartData('performance') || mockChartData.performance;
+      case 'sentiment':
+        const sentimentData = getChartData('sentiment') || [];
         return (
           <ResponsiveContainer {...chartProps}>
             <BarChart 
-              data={performanceData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+              data={sentimentData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
               <XAxis 
-                dataKey="name" 
+                dataKey="sentiment" 
                 stroke={darkMode ? '#9CA3AF' : '#6B7280'}
                 fontSize={12}
-                angle={-45}
-                textAnchor="end"
-                height={80}
+                textAnchor="middle"
               />
               <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} fontSize={12} />
               <Tooltip 
@@ -1053,16 +1070,29 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
                   borderRadius: '8px'
                 }}
-                formatter={(value, name) => [
-                  name === 'views' ? `${(value / 1000000).toFixed(1)}M` : 
-                  name === 'engagement' ? `${value}%` : value,
-                  name === 'views' ? 'Total Views' : 
-                  name === 'videos' ? 'Video Count' : 'Engagement Rate'
-                ]}
+                formatter={(value, name) => {
+                  if (name === 'videoCount') return [value.toLocaleString(), 'Videos'];
+                  if (name === 'channelCount') return [value.toLocaleString(), 'Channels'];
+                  if (name === 'avgViews') return [`${(value / 1000000).toFixed(1)}M`, 'Avg Views'];
+                  if (name === 'totalViews') return [`${(value / 1000000).toFixed(1)}M`, 'Total Views'];
+                  return [value, name];
+                }}
               />
-              <Bar dataKey="views" fill="#3B82F6" name="Total Views" />
-              <Bar dataKey="videos" fill="#10B981" name="Video Count" />
-              <Bar dataKey="engagement" fill="#F59E0B" name="Engagement Rate" />
+              <Bar 
+                dataKey="videoCount" 
+                name="Video Count"
+                radius={[2, 2, 0, 0]}
+                fill="#8884d8"
+              >
+                {sentimentData.map((entry, index) => {
+                  let fillColor;
+                  if (entry.sentiment === 'Positive') fillColor = '#10B981'; // Green
+                  else if (entry.sentiment === 'Negative') fillColor = '#EF4444'; // Red
+                  else fillColor = '#FCD34D'; // Yellow for Neutral
+                  
+                  return <Cell key={`cell-${index}`} fill={fillColor} />;
+                })}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         );

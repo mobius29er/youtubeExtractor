@@ -112,36 +112,37 @@ class DataLoader:
             self.processed_data = pd.DataFrame()
     
     def _merge_rqs_data(self):
-        """Load RQS data from videos_with_features.csv and merge with processed data"""
+        """Load RQS and sentiment_score data from videos_with_features.csv and merge with processed data"""
         try:
-            rqs_file = script_dir.parent / "extracted_data" / "videos_with_features.csv"
-            if rqs_file.exists():
-                print(f"🔄 Loading RQS data from: {rqs_file}")
-                rqs_df = pd.read_csv(rqs_file, usecols=['video_id', 'rqs'])
-                
+            features_file = script_dir.parent / "extracted_data" / "videos_with_features.csv"
+            if features_file.exists():
+                print(f"🔄 Loading RQS and sentiment data from: {features_file}")
+                features_df = pd.read_csv(features_file, usecols=['video_id', 'rqs', 'sentiment_score'])
                 # Convert RQS from 0-1 scale to 0-100 scale and round to integers
-                rqs_df['rqs'] = (rqs_df['rqs'] * 100).round().astype(int)
-                
+                features_df['rqs'] = (features_df['rqs'] * 100).round().astype(int)
                 # Merge with processed data
                 if self.processed_data is not None and not self.processed_data.empty:
-                    self.processed_data = self.processed_data.merge(rqs_df, on='video_id', how='left')
+                    self.processed_data = self.processed_data.merge(features_df, on='video_id', how='left')
                     # Fill missing RQS values with a default of 75
                     self.processed_data['rqs'] = self.processed_data['rqs'].fillna(75).astype(int)
-                    
-                    rqs_merged_count = self.processed_data['rqs'].notna().sum()
-                    print(f"✅ Merged RQS data for {rqs_merged_count} videos")
+                    # Fill missing sentiment_score with 0.5 (neutral)
+                    self.processed_data['sentiment_score'] = self.processed_data['sentiment_score'].fillna(0.5)
+                    merged_count = self.processed_data['rqs'].notna().sum()
+                    print(f"✅ Merged RQS and sentiment data for {merged_count} videos")
                 else:
-                    print("⚠️ No processed data available to merge RQS with")
+                    print("⚠️ No processed data available to merge RQS/sentiment with")
             else:
-                print(f"⚠️ RQS file not found: {rqs_file}")
-                # Add default RQS column if file not found
+                print(f"⚠️ Features file not found: {features_file}")
+                # Add default columns if file not found
                 if self.processed_data is not None and not self.processed_data.empty:
                     self.processed_data['rqs'] = 75
+                    self.processed_data['sentiment_score'] = 0.5
         except Exception as e:
-            print(f"❌ Error loading RQS data: {e}")
-            # Add default RQS column on error
+            print(f"❌ Error loading RQS/sentiment data: {e}")
+            # Add default columns on error
             if self.processed_data is not None and not self.processed_data.empty:
                 self.processed_data['rqs'] = 75
+                self.processed_data['sentiment_score'] = 0.5
     
     def _generate_mock_data(self) -> Dict:
         """Generate mock data for demonstration"""
@@ -309,7 +310,8 @@ async def get_visualization_data():
                                 'comments': int(video.get('comment_count', 0)) if pd.notna(video.get('comment_count')) else 0,
                                 'duration': str(video.get('duration', 'N/A')),
                                 'published_at': str(video.get('published_at', '')),
-                                'rqs': int(video.get('rqs', 75)) if pd.notna(video.get('rqs')) else 75
+                                'rqs': int(video.get('rqs', 75)) if pd.notna(video.get('rqs')) else 75,
+                                'sentiment_score': float(video.get('sentiment_score', 0.5)) if pd.notna(video.get('sentiment_score')) else 0.5
                             })
                         except Exception as ve:
                             print(f"⚠️ Error processing video in {channel}: {ve}")
