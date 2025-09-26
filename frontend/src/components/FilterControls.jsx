@@ -27,9 +27,9 @@ const FilterControls = ({
   const genreOptions = [
     { value: 'all', label: 'All Genres' },
     { value: 'catholic', label: 'Catholic' },
-    { value: 'challenge/stunts', label: 'Challenge/Stunts' },
+    { value: 'challenge', label: 'Challenge/Stunts' },
     { value: 'education', label: 'Education' },
-    { value: 'family', label: 'Family' },
+    { value: 'kids', label: 'Kids/Family' },
     { value: 'gaming', label: 'Gaming' }
   ];
 

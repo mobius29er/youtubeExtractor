@@ -23,6 +23,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [chartData, setChartData] = useState(null);
   const [chartLoading, setChartLoading] = useState(false);
   const [filteredData, setFilteredData] = useState(null);
+  const [originalData, setOriginalData] = useState(null);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
@@ -35,56 +36,65 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   // Initialize filteredData when data changes
   useEffect(() => {
     if (data && data.engagement) {
+      setOriginalData(data);
       setFilteredData(data);
       processChartData(data);
     }
   }, [data]);
+
+  // Reprocess chart data when filteredData changes
+  useEffect(() => {
+    if (filteredData && filteredData.engagement) {
+      console.log('📊 Chart data updated for', filteredData.engagement.length, 'channels');
+      processChartData(filteredData);
+    }
+  }, [filteredData]);
 
   // Handle filter changes
   const handleFilterChange = (filters) => {
     console.log('🔍 Filter change:', filters);
     setActiveFilters(filters);
     
-    if (!data || !data.engagement) {
-      console.warn('⚠️ No data available for filtering');
+    // Use the original loaded data for filtering
+    if (!originalData || !originalData.engagement) {
+      console.warn('⚠️ No original data available for filtering');
       return;
     }
     
-    console.log('📊 Original data channels:', data.engagement.length);
-    let filteredChannels = [...data.engagement];
+    console.log('📊 Original data channels:', originalData.engagement.length);
+    let filteredChannels = [...originalData.engagement];
     
-    // Apply genre filter - check if channel data has genre information
+    // Apply genre filter using the consistent getChannelGenre function
     if (filters.genre !== 'all') {
       const beforeFilter = filteredChannels.length;
-      filteredChannels = filteredChannels.filter(channel => {
-        // Check if the channel has genre information
-        const channelGenre = channel.genre?.toLowerCase();
+      console.log(`🔍 Applying genre filter "${filters.genre}" to ${beforeFilter} channels`);
+      
+        // Map filter values to our exact genre categories
         const filterGenre = filters.genre.toLowerCase();
-        
-        // For demonstration, map some channels to genres based on their names
-        // In real implementation, this should come from the API data
-        const channelName = channel.name.toLowerCase();
-        let inferredGenre = '';
-        
-        // More comprehensive genre matching
-        if (channelName.includes('mrbeast')) {
-          inferredGenre = 'challenge/stunts';
-        } else if (channelName.includes('scishow') || channelName.includes('kurzgesagt') || channelName.includes('up and atom') || channelName.includes('ed pratt')) {
-          inferredGenre = 'education';
-        } else if (channelName.includes('cocomelon') || channelName.includes('miss honey bear') || channelName.includes('veggietales')) {
-          inferredGenre = 'kids/family';
-        } else if (channelName.includes('lizz')) {
-          inferredGenre = 'gaming';
-        } else if (channelName.includes('catholic') || channelName.includes('bishop') || channelName.includes('father') || channelName.includes('cameron')) {
-          inferredGenre = 'catholic';
+        let targetGenre = '';
+        if (filterGenre === 'education') {
+          targetGenre = 'Education';
+        } else if (filterGenre === 'gaming') {
+          targetGenre = 'Gaming';
+        } else if (filterGenre === 'entertainment') {
+          targetGenre = 'Gaming';  // Keep this for backwards compatibility with quick action buttons
+        } else if (filterGenre === 'kids') {
+          targetGenre = 'Kids/Family';
+        } else if (filterGenre === 'catholic') {
+          targetGenre = 'Catholic';
+        } else if (filterGenre === 'challenge') {
+          targetGenre = 'Challenge/Stunts';
         } else {
-          inferredGenre = 'other';
-        }
+          // For exact matches, capitalize first letter
+          targetGenre = filterGenre.charAt(0).toUpperCase() + filterGenre.slice(1);
+        }      console.log(`🎯 Looking for channels with genre "${targetGenre}"`);
+      
+      filteredChannels = filteredChannels.filter(channel => {
+        const channelGenre = getChannelGenre(channel.name);
+        const matches = channelGenre === targetGenre;
         
-        const matches = channelGenre === filterGenre || inferredGenre === filterGenre;
-        if (matches) {
-          console.log(`✅ Channel "${channel.name}" matches genre "${filterGenre}" (inferred: ${inferredGenre})`);
-        }
+        console.log(`📋 Channel "${channel.name}" -> Genre: "${channelGenre}" (${matches ? 'MATCH' : 'no match'})`);
+        
         return matches;
       });
       console.log(`🎯 Genre filter "${filters.genre}": ${beforeFilter} -> ${filteredChannels.length} channels`);
@@ -297,6 +307,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         
         // Process the data immediately when loaded
         if (vizData && vizData.engagement) {
+          setOriginalData(vizData);
           setFilteredData(vizData);
           processChartData(vizData);
         } else {
@@ -420,6 +431,106 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     { id: 'correlation', label: 'Views vs Engagement', icon: Activity },
   ];
 
+  // Helper function to determine channel genre based on exact channel configuration
+  const getChannelGenre = (channelName) => {
+    // Exact mapping based on your actual channel configuration
+    const genreMap = {
+      // Challenge/Stunts
+      'MrBeast': 'Challenge/Stunts',
+      'Zach King': 'Challenge/Stunts', 
+      'Ryan Trahan': 'Challenge/Stunts',
+      'Hangtime': 'Challenge/Stunts',
+      'Ed Pratt': 'Challenge/Stunts',
+      
+      // Catholic
+      'Ascension Presents': 'Catholic',
+      'Bishop Robert Barron': 'Catholic',
+      'The Catholic Talk Show': 'Catholic', 
+      'The Father Leo Show': 'Catholic',
+      'Cameron Riecker': 'Catholic',
+      
+      // Education/Science
+      'Kurzgesagt': 'Education',
+      'Veritasium': 'Education',
+      'SciShow': 'Education',
+      'Fun Science': 'Education',
+      'Up and Atom': 'Education',
+      
+      // Gaming
+      'PewdiePie': 'Gaming',
+      'Jacksepticeye': 'Gaming',
+      'Call Me Kevin': 'Gaming',
+      'Floydson': 'Gaming', 
+      'Lizz': 'Gaming',
+      
+      // Kids/Family
+      'Cocomelon': 'Kids/Family',
+      'Kids Roma Show': 'Kids/Family',
+      'Sheriff Labrador - Kids Cartoon': 'Kids/Family',
+      'VeggieTales Official': 'Kids/Family',
+      'Miss Honey Bear - Speech Therapist - Read Aloud': 'Kids/Family'
+    };
+    
+    const mappedGenre = genreMap[channelName] || 'Other';
+    if (mappedGenre === 'Other') {
+      console.log(`⚠️ Channel "${channelName}" not found in genre mapping - assigned to "Other"`);
+    }
+    
+    return mappedGenre;
+  };
+
+  // Process filtered data for different chart types
+  const getChartData = (type) => {
+    if (!filteredData?.engagement) return null;
+
+    switch (type) {
+      case 'engagement':
+        return filteredData.engagement;
+      
+      case 'genres':
+        // Dynamically calculate genre data from filtered channels
+        const genreStats = {};
+        filteredData.engagement.forEach(channel => {
+          const genre = getChannelGenre(channel.name);
+          if (!genreStats[genre]) {
+            genreStats[genre] = { totalViews: 0, totalVideos: 0, totalLikes: 0, channels: 0 };
+          }
+          genreStats[genre].totalViews += channel.views || 0;
+          genreStats[genre].totalVideos += channel.videos || 0;
+          genreStats[genre].totalLikes += channel.likes || 0;
+          genreStats[genre].channels += 1;
+        });
+        
+        return Object.entries(genreStats).map(([genre, stats]) => ({
+          genre,
+          totalViews: stats.totalViews,
+          totalVideos: stats.totalVideos,
+          avgEngagement: stats.totalViews > 0 ? ((stats.totalLikes / stats.totalViews) * 100).toFixed(2) : 0,
+          channels: stats.channels
+        }));
+      
+      case 'performance':
+        // Performance metrics based on filtered data
+        return filteredData.engagement.map(channel => ({
+          name: channel.name,
+          views: channel.views || 0,
+          videos: channel.videos || 40,
+          engagement: channel.views > 0 ? (((channel.likes || 0) / channel.views) * 100).toFixed(2) : 0
+        }));
+      
+      case 'correlation':
+        // Correlation data from filtered channels
+        return filteredData.engagement.map(channel => ({
+          views: (channel.views || 0) / 1000000, // Convert to millions
+          engagement: channel.views > 0 ? (((channel.likes || 0) + (channel.comments || 0)) / channel.views) * 100 : 0,
+          name: channel.name
+        }));
+      
+      default:
+        return null;
+    }
+  };
+
   const renderChart = () => {
     const chartProps = {
       width: '100%',
@@ -428,7 +539,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
     switch (activeChart) {
       case 'engagement':
-        const engagementData = chartData?.engagement || mockChartData.engagement;
+        const engagementData = getChartData('engagement') || mockChartData.engagement;
         return (
           <ResponsiveContainer {...chartProps}>
             <BarChart 
@@ -451,10 +562,48 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
                   borderRadius: '8px'
                 }}
-                formatter={(value, name) => [
-                  name === 'views' ? `${(value / 1000000).toFixed(1)}M` : value.toLocaleString(),
-                  name === 'views' ? 'Views' : name === 'likes' ? 'Likes' : 'Comments'
-                ]}
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload;
+                    const isKidsChannel = ['Cocomelon', 'Kids Roma Show', 'VeggieTales Official', 'Sheriff Labrador - Kids Cartoon', 'Miss Honey Bear - Speech Therapist - Read Aloud'].includes(label);
+                    
+                    return (
+                      <div className={`p-3 rounded-lg shadow-lg ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
+                        <p className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{label}</p>
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                            <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                              Views: {(data.views / 1000000).toFixed(1)}M
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-green-500 rounded"></div>
+                            <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                              Likes: {data.likes.toLocaleString()}
+                            </span>
+                          </div>
+                          {data.comments > 0 ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                              <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                Comments: {data.comments.toLocaleString()}
+                              </span>
+                            </div>
+                          ) : isKidsChannel ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-gray-400 rounded"></div>
+                              <span className={`text-xs italic ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                Comments disabled (Kids content)
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
               />
               <Bar dataKey="views" fill="#3B82F6" name="Views" />
               <Bar dataKey="likes" fill="#10B981" name="Likes" />
@@ -464,7 +613,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         );
 
       case 'genres':
-        const genreData = chartData?.genreComparison || mockChartData.genres;
+        const genreData = getChartData('genres') || mockChartData.genres;
         return (
           <ResponsiveContainer {...chartProps}>
             <BarChart 
@@ -528,7 +677,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         );
 
       case 'performance':
-        const performanceData = chartData?.performanceMetrics || mockChartData.performance;
+        const performanceData = getChartData('performance') || mockChartData.performance;
         return (
           <ResponsiveContainer {...chartProps}>
             <BarChart 
@@ -566,7 +715,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         );
 
       case 'correlation':
-        const correlationData = chartData?.engagementTrends || mockChartData.correlation;
+        const correlationData = getChartData('correlation') || mockChartData.correlation;
         return (
           <ResponsiveContainer {...chartProps}>
             <ScatterChart 
@@ -657,15 +806,13 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       )}
 
       {/* Filter Controls */}
-      <FilterControls 
+      <FilterControls
         onFilterChange={handleFilterChange}
         activeFilters={activeFilters}
         darkMode={darkMode}
-        totalChannels={data?.engagement?.length || 0}
+        totalChannels={originalData?.engagement?.length || 0}
         filteredChannels={filteredData?.engagement?.length || 0}
-      />
-
-      {/* Quick Actions */}
+      />      {/* Quick Actions */}
       <div className="flex items-center justify-center flex-wrap gap-2 mb-6">
         <button
           onClick={() => handleFilterChange({
@@ -720,6 +867,30 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           🔥 Top Performers
         </button>
         <button
+          onClick={() => handleFilterChange({...activeFilters, genre: 'catholic', sortBy: 'views'})}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeFilters.genre === 'catholic'
+              ? 'bg-indigo-600 text-white'
+              : darkMode 
+                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' 
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+          }`}
+        >
+          ✝️ Catholic Content
+        </button>
+        <button
+          onClick={() => handleFilterChange({...activeFilters, genre: 'challenge', sortBy: 'views'})}
+          className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            activeFilters.genre === 'challenge'
+              ? 'bg-orange-600 text-white'
+              : darkMode 
+                ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' 
+                : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+          }`}
+        >
+          🎯 Challenge/Stunts
+        </button>
+        <button
           onClick={() => handleFilterChange({...activeFilters, genre: 'kids', sortBy: 'views'})}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             activeFilters.genre === 'kids'
@@ -767,7 +938,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
             Filtered Results
           </h4>
           <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Showing {filteredData?.engagement?.length || 0} of {data?.engagement?.length || 0} channels based on your filter selection
+            Showing {filteredData?.engagement?.length || 0} of {originalData?.engagement?.length || 0} channels based on your filter selection
           </p>
         </div>
 
