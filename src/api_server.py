@@ -112,12 +112,17 @@ class DataLoader:
             self.processed_data = pd.DataFrame()
     
     def _merge_rqs_data(self):
-        """Load RQS and sentiment_score data from videos_with_features.csv and merge with processed data"""
+        """Load RQS, sentiment_score, and color data from videos_with_features.csv and merge with processed data"""
         try:
             features_file = script_dir.parent / "extracted_data" / "videos_with_features.csv"
             if features_file.exists():
-                print(f"🔄 Loading RQS and sentiment data from: {features_file}")
-                features_df = pd.read_csv(features_file, usecols=['video_id', 'rqs', 'sentiment_score'])
+                print(f"🔄 Loading RQS, sentiment, and color data from: {features_file}")
+                # Load additional columns including color data
+                features_df = pd.read_csv(features_file, usecols=[
+                    'video_id', 'rqs', 'sentiment_score', 
+                    'color_palette', 'dominant_colors', 'average_rgb',
+                    'face_area_percentage'
+                ])
                 # Convert RQS from 0-1 scale to 0-100 scale and round to integers
                 features_df['rqs'] = (features_df['rqs'] * 100).round().astype(int)
                 # Merge with processed data
@@ -127,22 +132,37 @@ class DataLoader:
                     self.processed_data['rqs'] = self.processed_data['rqs'].fillna(75).astype(int)
                     # Fill missing sentiment_score with 0.5 (neutral)
                     self.processed_data['sentiment_score'] = self.processed_data['sentiment_score'].fillna(0.5)
+                    # Fill missing color data with empty arrays
+                    self.processed_data['color_palette'] = self.processed_data['color_palette'].fillna('[]')
+                    self.processed_data['dominant_colors'] = self.processed_data['dominant_colors'].fillna('[]')
+                    self.processed_data['average_rgb'] = self.processed_data['average_rgb'].fillna('[128, 128, 128]')
+                    self.processed_data['face_area_percentage'] = self.processed_data['face_area_percentage'].fillna(0.0)
                     merged_count = self.processed_data['rqs'].notna().sum()
-                    print(f"✅ Merged RQS and sentiment data for {merged_count} videos")
+                    color_count = self.processed_data['color_palette'].notna().sum()
+                    print(f"✅ Merged RQS/sentiment data for {merged_count} videos")
+                    print(f"✅ Merged color data for {color_count} videos")
                 else:
-                    print("⚠️ No processed data available to merge RQS/sentiment with")
+                    print("⚠️ No processed data available to merge RQS/sentiment/color with")
             else:
                 print(f"⚠️ Features file not found: {features_file}")
                 # Add default columns if file not found
                 if self.processed_data is not None and not self.processed_data.empty:
                     self.processed_data['rqs'] = 75
                     self.processed_data['sentiment_score'] = 0.5
+                    self.processed_data['color_palette'] = '[]'
+                    self.processed_data['dominant_colors'] = '[]'
+                    self.processed_data['average_rgb'] = '[128, 128, 128]'
+                    self.processed_data['face_area_percentage'] = 0.0
         except Exception as e:
-            print(f"❌ Error loading RQS/sentiment data: {e}")
+            print(f"❌ Error loading RQS/sentiment/color data: {e}")
             # Add default columns on error
             if self.processed_data is not None and not self.processed_data.empty:
                 self.processed_data['rqs'] = 75
                 self.processed_data['sentiment_score'] = 0.5
+                self.processed_data['color_palette'] = '[]'
+                self.processed_data['dominant_colors'] = '[]'
+                self.processed_data['average_rgb'] = '[128, 128, 128]'
+                self.processed_data['face_area_percentage'] = 0.0
     
     def _generate_mock_data(self) -> Dict:
         """Generate mock data for demonstration"""
@@ -311,7 +331,11 @@ async def get_visualization_data():
                                 'duration': str(video.get('duration', 'N/A')),
                                 'published_at': str(video.get('published_at', '')),
                                 'rqs': int(video.get('rqs', 75)) if pd.notna(video.get('rqs')) else 75,
-                                'sentiment_score': float(video.get('sentiment_score', 0.5)) if pd.notna(video.get('sentiment_score')) else 0.5
+                                'sentiment_score': float(video.get('sentiment_score', 0.5)) if pd.notna(video.get('sentiment_score')) else 0.5,
+                                'face_area_percentage': float(video.get('face_area_percentage', 0.0)) if pd.notna(video.get('face_area_percentage')) else 0.0,
+                                'dominant_colors': str(video.get('dominant_colors', '[]')),
+                                'color_palette': str(video.get('color_palette', '[]')),
+                                'average_rgb': str(video.get('average_rgb', '[128, 128, 128]'))
                             })
                         except Exception as ve:
                             print(f"⚠️ Error processing video in {channel}: {ve}")

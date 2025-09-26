@@ -510,6 +510,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     { id: 'tiers', label: 'Tier Analysis', icon: Target },
     { id: 'sentiment', label: 'Sentiment Analysis', icon: Activity },
     { id: 'correlation', label: 'Correlation Analysis', icon: TrendingUp },
+    { id: 'thumbnails', label: 'Thumbnail Analysis', icon: Filter },
   ];
 
   // Helper function to determine channel genre based on exact channel configuration
@@ -1425,7 +1426,429 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           </div>
         );
 
-      default:
+      case 'thumbnails':
+        // Debug the data structure
+        console.log('=== THUMBNAIL DEBUG ===');
+        console.log('filteredData:', filteredData);
+        console.log('filteredData.engagement:', filteredData?.engagement);
+        if (filteredData?.engagement?.[0]) {
+          console.log('First channel:', filteredData.engagement[0]);
+          console.log('First channel videoDetails:', filteredData.engagement[0].videoDetails);
+          if (filteredData.engagement[0].videoDetails?.[0]) {
+            console.log('First video:', filteredData.engagement[0].videoDetails[0]);
+            console.log('Color palette:', filteredData.engagement[0].videoDetails[0].color_palette);
+          }
+        }
+        
+        // Sample some actual color palette data for debugging
+        let sampleColorData = [];
+        if (filteredData?.engagement) {
+          for (let i = 0; i < Math.min(5, filteredData.engagement.length); i++) {
+            const channel = filteredData.engagement[i];
+            if (channel.videoDetails?.[0]) {
+              sampleColorData.push({
+                channel: channel.name,
+                videoTitle: channel.videoDetails[0].title,
+                colorPalette: channel.videoDetails[0].color_palette,
+                faceArea: channel.videoDetails[0].face_area_percentage
+              });
+            }
+          }
+        }
+        
+        // Process thumbnail color palette data from real CSV data (Individual Videos)
+        let individualVideos = [];
+        let debugInfo = {
+          totalChannels: 0,
+          totalVideos: 0,
+          videosWithColors: 0,
+          parseErrors: 0,
+          sampleData: []
+        };
+        
+        if (filteredData?.engagement) {
+          debugInfo.totalChannels = filteredData.engagement.length;
+          
+          filteredData.engagement.forEach(channel => {
+            if (channel.videoDetails && Array.isArray(channel.videoDetails)) {
+              channel.videoDetails.forEach((video, index) => {
+                debugInfo.totalVideos++;
+                
+                // Collect sample data for debugging
+                if (debugInfo.sampleData.length < 10) {
+                  debugInfo.sampleData.push({
+                    channel: channel.name,
+                    title: video.title?.substring(0, 30),
+                    colorPalette: video.color_palette,
+                    dominantColors: video.dominant_colors,
+                    averageRgb: video.average_rgb,
+                    rqs: video.rqs,
+                    views: video.views
+                  });
+                }
+                
+                // Parse color data - prioritize color_palette, then dominant_colors
+                let colorData = null;
+                let colorSource = '';
+                
+                try {
+                  // First try color_palette (this has 5 colors and should be prioritized)
+                  const colorPaletteStr = video.color_palette;
+                  if (colorPaletteStr && colorPaletteStr !== '[]' && colorPaletteStr !== '' && colorPaletteStr !== 'null') {
+                    const colorPalette = JSON.parse(colorPaletteStr);
+                    if (Array.isArray(colorPalette) && colorPalette.length > 0) {
+                      // Convert RGB arrays to hex
+                      colorData = colorPalette.slice(0, 5).map(color => {
+                        if (Array.isArray(color) && color.length >= 3) {
+                          const [r, g, b] = color.map(c => Math.round(Math.max(0, Math.min(255, c))));
+                          return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                        }
+                        return color;
+                      });
+                      colorSource = 'color_palette';
+                    }
+                  }
+                  
+                  // Only if color_palette failed, try dominant_colors
+                  if (!colorData || colorData.length === 0) {
+                    const dominantColorsStr = video.dominant_colors;
+                    if (dominantColorsStr && dominantColorsStr !== '[]' && dominantColorsStr !== '' && dominantColorsStr !== 'null') {
+                      const dominantColors = JSON.parse(dominantColorsStr);
+                      if (Array.isArray(dominantColors) && dominantColors.length > 0) {
+                        // Convert RGB arrays to hex - use actual number of colors available
+                        colorData = dominantColors.slice(0, 5).map(color => {
+                          if (Array.isArray(color) && color.length >= 3) {
+                            const [r, g, b] = color.map(c => Math.round(Math.max(0, Math.min(255, c))));
+                            return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+                          }
+                          return color;
+                        });
+                        
+                        colorSource = 'dominant_colors';
+                      }
+                    }
+                  }
+                  
+                  // If we found color data, add this individual video
+                  if (colorData && colorData.length > 0) {
+                    debugInfo.videosWithColors++;
+                    
+                    const views = parseInt(video.views) || 0;
+                    const rqs = parseFloat(video.rqs) || 0;
+                    
+                    // Enhanced debugging for color processing
+                    if (debugInfo.videosWithColors <= 5) {
+                      console.log(`🎨 Color Debug - Video ${debugInfo.videosWithColors}:`, {
+                        title: video.title?.substring(0, 40),
+                        colorSource: colorSource,
+                        colorCount: colorData.length,
+                        finalColors: colorData,
+                        rawColorPalette: video.color_palette?.substring(0, 100) + '...',
+                        rawDominantColors: video.dominant_colors?.substring(0, 100) + '...'
+                      });
+                    }
+                    
+                    individualVideos.push({
+                      colors: colorData, // Use actual number of colors (1-5)
+                      videoId: video.video_id,
+                      title: video.title || 'Untitled Video',
+                      channelName: channel.name,
+                      views: views,
+                      rqs: rqs,
+                      source: colorSource,
+                      colorCount: colorData.length // Track actual number of colors
+                    });
+                  }
+                  
+                } catch (e) {
+                  debugInfo.parseErrors++;
+                  console.warn('Error parsing color data for video:', video.video_id, e);
+                }
+              });
+            }
+          });
+          
+          // Sort individual videos by RQS (performance score)
+          individualVideos.sort((a, b) => b.rqs - a.rqs);
+          // Take top performing videos (limit to prevent UI slowdown)
+          individualVideos = individualVideos.slice(0, 1000);
+        }
+        
+        // Enhanced debugging
+        console.log('=== THUMBNAIL ANALYSIS DEBUG (INDIVIDUAL VIDEOS) ===');
+        console.log('Debug info:', debugInfo);
+        console.log('Individual videos found:', individualVideos.length);
+        console.log('Sample raw data:', debugInfo.sampleData);
+        if (individualVideos.length > 0) {
+          console.log('Sample processed videos:', individualVideos.slice(0, 3));
+        }
+
+        return (
+          <div 
+            className={`chart-section w-full overflow-y-auto overflow-x-hidden ${
+              darkMode ? 'bg-gray-900' : 'bg-gray-50'
+            }`}
+            style={{ height: '500px', maxHeight: '500px' }}
+          >
+            <div className="w-full space-y-6 p-6 pb-96">
+              <div className={`sticky top-0 py-4 z-10 ${
+                darkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
+              } border-b`}>
+                <h3 className={`text-2xl font-bold mb-2 ${
+                  darkMode ? 'text-white' : 'text-gray-900'
+                }`}>
+                  🎨 Thumbnail Analysis
+                </h3>
+                <p className={`text-sm ${
+                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Analyzing color palettes and performance metrics from YouTube thumbnails
+                </p>
+              </div>
+              
+              {/* Main Content Container */}
+              <div className={`w-full rounded-xl shadow-xl mb-96 border ${
+                darkMode 
+                  ? 'bg-gray-800 border-gray-700 shadow-gray-900/50' 
+                  : 'bg-white border-gray-200 shadow-gray-300/50'
+              }`}>
+                <div className="p-8">
+                  <div className="mb-8">
+                    <h4 className={`text-xl font-semibold mb-3 ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Individual Video Color Palettes & Performance
+                    </h4>
+                    <p className={`text-sm leading-relaxed ${
+                      darkMode ? 'text-gray-300' : 'text-gray-600'
+                    }`}>
+                      Each row shows a unique video with its extracted thumbnail color palette (1-5 actual colors), 
+                      ranked by RQS performance score. Shows the real color data without artificial padding.
+                    </p>
+                  </div>
+                  
+                  {individualVideos.length > 0 ? (
+                    <div className="w-full pb-48">
+                      <div className={`rounded-lg overflow-hidden border ${
+                        darkMode ? 'border-gray-600' : 'border-gray-200'
+                      }`}>
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className={`${
+                              darkMode ? 'bg-gray-700/80' : 'bg-gray-100/80'
+                            } backdrop-blur-sm`}>
+                              <th className={`text-left px-8 py-5 text-sm font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              } border-b-2 ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                              }`}>
+                                Rank
+                              </th>
+                              <th className={`text-left px-8 py-5 text-sm font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              } border-b-2 ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                              }`}>
+                                Video Title
+                              </th>
+                              <th className={`text-left px-8 py-5 text-sm font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              } border-b-2 ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                              }`}>
+                                Color Palette (1-5 colors)
+                              </th>
+                              <th className={`text-left px-8 py-5 text-sm font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              } border-b-2 ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                              }`}>
+                                Views
+                              </th>
+                              <th className={`text-left px-8 py-5 text-sm font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              } border-b-2 ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                              }`}>
+                                RQS Score
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {individualVideos.map((video, index) => (
+                              <tr key={`${video.videoId}-${index}`} className={`transition-all duration-200 border-b ${
+                                darkMode 
+                                  ? 'hover:bg-gray-700/50 border-gray-700/50' 
+                                  : 'hover:bg-blue-50/50 border-gray-200/50'
+                              }`}>
+                                <td className="px-8 py-10">
+                                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl font-bold text-lg ${
+                                    index < 3 
+                                      ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white shadow-lg'
+                                      : darkMode
+                                        ? 'bg-gray-600 text-gray-200'
+                                        : 'bg-gray-200 text-gray-700'
+                                  }`}>
+                                    #{index + 1}
+                                  </div>
+                                </td>
+                                <td className="px-8 py-10 max-w-xs">
+                                  <div className="space-y-2">
+                                    <h5 className={`font-semibold text-sm leading-tight line-clamp-2 ${
+                                      darkMode ? 'text-white' : 'text-gray-900'
+                                    }`}>
+                                      {video.title}
+                                    </h5>
+                                    <div className={`flex items-center text-xs ${
+                                      darkMode ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>
+                                      <span className="mr-2">📺</span>
+                                      {video.channelName}
+                                      {video.source && (
+                                        <span className={`ml-2 px-2 py-1 text-xs rounded ${
+                                          video.source === 'dominant_colors' ? 'bg-green-100 text-green-800' :
+                                          video.source === 'average_rgb' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-purple-100 text-purple-800'
+                                        }`}>
+                                          {video.source === 'dominant_colors' ? 'DOM' :
+                                           video.source === 'average_rgb' ? 'AVG' : 'PAL'}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-8 py-10">
+                                  <div className="flex items-center space-x-4">
+                                    {video.colors.map((color, colorIndex) => (
+                                      <div key={colorIndex} className="group flex flex-col items-center space-y-3">
+                                        <div
+                                          className={`w-20 h-20 rounded-xl shadow-lg border-3 transition-all duration-300 cursor-pointer group-hover:scale-110 group-hover:shadow-xl ${
+                                            darkMode ? 'border-gray-600' : 'border-gray-300'
+                                          }`}
+                                          style={{ backgroundColor: color }}
+                                          title={`Color ${colorIndex + 1}: ${color}`}
+                                        />
+                                        <span className={`text-xs font-mono px-3 py-1 rounded-full transition-colors ${
+                                          darkMode 
+                                            ? 'bg-gray-700 text-gray-300 group-hover:bg-gray-600' 
+                                            : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+                                        }`}>
+                                          {color}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </td>
+                                <td className="px-8 py-10">
+                                  <div className="flex flex-col space-y-1">
+                                    <span className={`text-xl font-bold ${
+                                      darkMode ? 'text-white' : 'text-gray-900'
+                                    }`}>
+                                      {video.views >= 1000000 
+                                        ? `${(video.views / 1000000).toFixed(1)}M`
+                                        : video.views >= 1000
+                                          ? `${(video.views / 1000).toFixed(1)}K`
+                                          : video.views.toLocaleString()}
+                                    </span>
+                                    <span className={`text-xs ${
+                                      darkMode ? 'text-gray-400' : 'text-gray-500'
+                                    }`}>
+                                      views
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-8 py-10">
+                                  <div className="flex items-center space-x-4">
+                                    <div className="flex flex-col space-y-2">
+                                      <div className={`flex-1 rounded-full h-4 shadow-inner ${
+                                        darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                                      }`}>
+                                        <div
+                                          className={`h-4 rounded-full shadow-sm transition-all duration-700 relative overflow-hidden ${
+                                            video.rqs >= 80 
+                                              ? 'bg-gradient-to-r from-green-400 to-green-600' 
+                                              : video.rqs >= 60
+                                                ? 'bg-gradient-to-r from-yellow-400 to-yellow-600'
+                                                : video.rqs >= 40
+                                                  ? 'bg-gradient-to-r from-orange-400 to-orange-600'
+                                                  : 'bg-gradient-to-r from-red-400 to-red-600'
+                                          }`}
+                                          style={{
+                                            width: `${Math.min(100, video.rqs)}%`
+                                          }}
+                                        >
+                                          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-between items-center">
+                                        <span className={`text-lg font-bold ${
+                                          darkMode ? 'text-white' : 'text-gray-900'
+                                        }`}>
+                                          {video.rqs.toFixed(1)}
+                                        </span>
+                                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                          video.rqs >= 80
+                                            ? 'bg-green-100 text-green-800'
+                                            : video.rqs >= 60
+                                              ? 'bg-yellow-100 text-yellow-800'
+                                              : video.rqs >= 40
+                                                ? 'bg-orange-100 text-orange-800'
+                                                : 'bg-red-100 text-red-800'
+                                        }`}>
+                                          {video.rqs >= 80 ? 'Excellent' : 
+                                           video.rqs >= 60 ? 'Good' : 
+                                           video.rqs >= 40 ? 'Fair' : 'Poor'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className={`text-center py-20 rounded-lg ${
+                      darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                    }`}>
+                      <div className="text-8xl mb-6">🎨</div>
+                      <h5 className={`text-xl font-semibold mb-3 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        No color palette data available
+                      </h5>
+                      <div className={`text-sm space-y-2 ${
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        <p>Debug Information:</p>
+                        <p>• Total videos processed: {debugInfo.totalVideos}</p>
+                        <p>• Individual videos found: {individualVideos.length}</p>
+                        <p>• Parse errors: {debugInfo.parseErrors}</p>
+                        <p className="mt-4 font-medium">
+                          {debugInfo.totalVideos > 0 
+                            ? debugInfo.videosWithColors === 0 
+                              ? "All color_palette fields appear to be empty []" 
+                              : "Color palettes found but filtered out"
+                            : "No video data loaded"}
+                        </p>
+                        <details className="mt-4">
+                          <summary className="cursor-pointer font-medium">Sample Raw Data</summary>
+                          <pre className={`mt-2 p-3 rounded text-xs overflow-x-auto ${
+                            darkMode ? 'bg-gray-800' : 'bg-gray-100'
+                          }`}>
+                            {JSON.stringify(debugInfo.sampleData.slice(0, 3), null, 2)}
+                          </pre>
+                        </details>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );      default:
         return null;
     }
   };
