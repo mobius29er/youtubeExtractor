@@ -29,6 +29,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [engagementMetricFilter, setEngagementMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
   const [genreViewMode, setGenreViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
   const [genreMetricFilter, setGenreMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
+  const [tierViewMode, setTierViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
+  const [tierMetricFilter, setTierMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -186,10 +188,12 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
   // Helper function to determine tier for a channel
   const getTierForChannel = (channel) => {
-    const totalViews = channel.views || 0;
-    if (totalViews >= 10000000) return 'high'; // 10M+ views
-    if (totalViews >= 1000000) return 'mid';   // 1M-10M views
-    return 'low';                              // <1M views
+    const subscribers = channel.subscribers || 0;
+    if (subscribers >= 50_000_000) return 'mega';    // 50M+ subscribers
+    if (subscribers >= 10_000_000) return 'large';   // 10M-50M subscribers  
+    if (subscribers >= 1_000_000) return 'mid';      // 1M-10M subscribers
+    if (subscribers >= 100_000) return 'small';      // 100K-1M subscribers
+    return 'new';                                     // <100K subscribers
   };
 
   // Process chart data based on filtered data
@@ -313,6 +317,13 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       processChartData(filteredData);
     }
   }, [genreViewMode, genreMetricFilter, activeChart, filteredData]);
+
+  // Process chart data when tier toggles change
+  useEffect(() => {
+    if (filteredData && activeChart === 'tiers') {
+      processChartData(filteredData);
+    }
+  }, [tierViewMode, tierMetricFilter, activeChart, filteredData]);
 
   const loadVisualizationData = async () => {
     try {
@@ -589,6 +600,101 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           isPerSubscriberData: genreViewMode === 'per_subscriber'
         }));
       
+      case 'tiers':
+        // Dynamically calculate tier data from filtered channels with raw/per-subscriber support
+        const tierStats = {
+          'Mega (50M+)': { 
+            totalViews: 0, 
+            totalVideos: 0, 
+            totalLikes: 0, 
+            totalComments: 0,
+            totalRqs: 0,
+            channels: 0,
+            totalSubscribers: 0
+          },
+          'Large (10M-50M)': { 
+            totalViews: 0, 
+            totalVideos: 0, 
+            totalLikes: 0, 
+            totalComments: 0,
+            totalRqs: 0,
+            channels: 0,
+            totalSubscribers: 0
+          },
+          'Mid (1M-10M)': { 
+            totalViews: 0, 
+            totalVideos: 0, 
+            totalLikes: 0, 
+            totalComments: 0,
+            totalRqs: 0,
+            channels: 0,
+            totalSubscribers: 0
+          },
+          'Small (100K-1M)': { 
+            totalViews: 0, 
+            totalVideos: 0, 
+            totalLikes: 0, 
+            totalComments: 0,
+            totalRqs: 0,
+            channels: 0,
+            totalSubscribers: 0
+          },
+          'New (<100K)': { 
+            totalViews: 0, 
+            totalVideos: 0, 
+            totalLikes: 0, 
+            totalComments: 0,
+            totalRqs: 0,
+            channels: 0,
+            totalSubscribers: 0
+          }
+        };
+        
+        filteredData.engagement.forEach(channel => {
+          const subscribers = channel.subscribers || 1;
+          const tier = getTierForChannel(channel);
+          const genre = getChannelGenre(channel.name);
+          const isKidsFamily = genre === 'Kids/Family';
+          
+          let tierName;
+          if (tier === 'mega') tierName = 'Mega (50M+)';
+          else if (tier === 'large') tierName = 'Large (10M-50M)';
+          else if (tier === 'mid') tierName = 'Mid (1M-10M)';
+          else if (tier === 'small') tierName = 'Small (100K-1M)';
+          else tierName = 'New (<100K)';
+          
+          // Calculate values based on view mode
+          if (tierViewMode === 'raw') {
+            tierStats[tierName].totalViews += channel.views || 0;
+            tierStats[tierName].totalLikes += channel.likes || 0;
+            tierStats[tierName].totalComments += isKidsFamily ? 0 : (channel.comments || 0);
+          } else {
+            // Per-subscriber values
+            tierStats[tierName].totalViews += (channel.views || 0) / subscribers;
+            tierStats[tierName].totalLikes += (channel.likes || 0) / subscribers;
+            tierStats[tierName].totalComments += isKidsFamily ? 0 : (channel.comments || 0) / subscribers;
+          }
+          
+          tierStats[tierName].totalVideos += channel.videos || 0;
+          tierStats[tierName].totalSubscribers += subscribers;
+          tierStats[tierName].totalRqs += channel.videoDetails && channel.videoDetails.length > 0 
+            ? channel.videoDetails.reduce((sum, video) => sum + (video.rqs || 75), 0) / channel.videoDetails.length
+            : 75;
+          tierStats[tierName].channels += 1;
+        });
+        
+        return Object.entries(tierStats).map(([tier, stats]) => ({
+          tier,
+          totalViews: Number(stats.totalViews) || 0,
+          totalVideos: Number(stats.totalVideos) || 0,
+          totalLikes: Number(stats.totalLikes) || 0,
+          totalComments: Number(stats.totalComments) || 0,
+          avgRqs: Number(stats.totalRqs / Math.max(stats.channels, 1)) || 75,
+          avgEngagement: stats.totalViews > 0 ? Number(((stats.totalLikes / stats.totalViews) * 100).toFixed(2)) : 0,
+          channels: Number(stats.channels) || 0,
+          isPerSubscriberData: tierViewMode === 'per_subscriber'
+        })).filter(tierData => tierData.channels > 0); // Only show tiers with channels
+      
       case 'performance':
         // Performance metrics based on filtered data
         return filteredData.engagement.map(channel => ({
@@ -836,30 +942,90 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         );
 
       case 'tiers':
-        const tierData = chartData?.tierAnalysis || [
-          { name: 'High Tier (10M+)', value: 8, color: '#10B981' },
-          { name: 'Mid Tier (1M-10M)', value: 12, color: '#F59E0B' },
-          { name: 'Low Tier (<1M)', value: 5, color: '#6B7280' }
-        ];
+        const tierData = getChartData('tiers') || [];
         return (
           <ResponsiveContainer {...chartProps}>
-            <PieChart margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
-              <Pie
-                data={tierData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={120}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {tierData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value, name) => [`${value} channels`, name]} />
-            </PieChart>
+            <BarChart 
+              data={tierData}
+              margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
+              <XAxis 
+                dataKey="tier" 
+                stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                fontSize={12}
+                angle={-45}
+                textAnchor="end"
+                height={80}
+              />
+              <YAxis 
+                stroke={darkMode ? '#9CA3AF' : '#6B7280'} 
+                fontSize={12}
+                tickFormatter={(value) => {
+                  if (tierMetricFilter === 'rqs') {
+                    return value.toFixed(0);
+                  } else if (tierViewMode === 'per_subscriber') {
+                    return value >= 1 ? value.toFixed(1) : value.toFixed(3);
+                  } else {
+                    if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                    return value.toString();
+                  }
+                }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
+                  border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
+                  borderRadius: '8px'
+                }}
+                formatter={(value, name, props) => {
+                  // Get the data safely from the tooltip props
+                  const data = props?.payload || {};
+                  const isPerSub = data.isPerSubscriberData;
+                  
+                  // Format display based on metric and view mode
+                  if (name === 'totalViews') {
+                    if (isPerSub) {
+                      return [`${Number(value).toFixed(3)} views/sub`, 'Views Per Subscriber'];
+                    } else {
+                      return [`${(value / 1000000).toFixed(1)}M views`, 'Total Views'];
+                    }
+                  } else if (name === 'totalLikes') {
+                    if (isPerSub) {
+                      return [`${Number(value).toFixed(4)} likes/sub`, 'Likes Per Subscriber'];
+                    } else {
+                      return [`${(value / 1000000).toFixed(1)}M likes`, 'Total Likes'];
+                    }
+                  } else if (name === 'totalComments') {
+                    if (isPerSub) {
+                      return [`${Number(value).toFixed(4)} comments/sub`, 'Comments Per Subscriber'];
+                    } else {
+                      return [`${(value / 1000000).toFixed(1)}M comments`, 'Total Comments'];
+                    }
+                  } else if (name === 'avgRqs') {
+                    return [`${Number(value).toFixed(1)}`, 'Average RQS'];
+                  } else if (name === 'totalVideos') {
+                    return [`${value} videos`, 'Total Videos'];
+                  }
+                  
+                  return [value, name];
+                }}
+              />
+              {/* Conditional Bar rendering based on metric filter */}
+              {(tierMetricFilter === 'all' || tierMetricFilter === 'views') && (
+                <Bar dataKey="totalViews" fill="#3B82F6" name="totalViews" />
+              )}
+              {(tierMetricFilter === 'all' || tierMetricFilter === 'likes') && (
+                <Bar dataKey="totalLikes" fill="#10B981" name="totalLikes" />
+              )}
+              {(tierMetricFilter === 'all' || tierMetricFilter === 'comments') && (
+                <Bar dataKey="totalComments" fill="#F59E0B" name="totalComments" />
+              )}
+              {(tierMetricFilter === 'all' || tierMetricFilter === 'rqs') && (
+                <Bar dataKey="avgRqs" fill="#8B5CF6" name="avgRqs" />
+              )}
+            </BarChart>
           </ResponsiveContainer>
         );
 
@@ -1284,6 +1450,107 @@ const DataVisualization = ({ data, loading, darkMode }) => {
               onClick={() => setGenreMetricFilter('rqs')}
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 genreMetricFilter === 'rqs'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              ⭐ RQS
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Tier Toggle Controls */}
+      {activeChart === 'tiers' && (
+        <div className="flex flex-col items-center gap-4 mb-4">
+          {/* Raw vs Per Subscriber Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setTierViewMode('raw')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                tierViewMode === 'raw'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📊 Raw Values
+            </button>
+            <button
+              onClick={() => setTierViewMode('per_subscriber')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                tierViewMode === 'per_subscriber'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📈 Per Subscriber
+            </button>
+          </div>
+
+          {/* Metrics Filter Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setTierMetricFilter('all')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                tierMetricFilter === 'all'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              🔍 All
+            </button>
+            <button
+              onClick={() => setTierMetricFilter('views')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                tierMetricFilter === 'views'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👁️ Views
+            </button>
+            <button
+              onClick={() => setTierMetricFilter('likes')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                tierMetricFilter === 'likes'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👍 Likes
+            </button>
+            <button
+              onClick={() => setTierMetricFilter('comments')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                tierMetricFilter === 'comments'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              💬 Comments
+            </button>
+            <button
+              onClick={() => setTierMetricFilter('rqs')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                tierMetricFilter === 'rqs'
                   ? 'bg-green-600 text-white shadow-sm'
                   : darkMode
                     ? 'text-gray-300 hover:text-white hover:bg-gray-700'
