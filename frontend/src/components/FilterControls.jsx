@@ -35,9 +35,9 @@ const FilterControls = ({
 
   const tierOptions = [
     { value: 'all', label: 'All Tiers' },
-    { value: 'high', label: 'High Tier (1M+ views)' },
-    { value: 'mid', label: 'Mid Tier (100K-1M views)' },
-    { value: 'low', label: 'Low Tier (<100K views)' }
+    { value: 'high', label: 'High Tier (10M+ views)' },
+    { value: 'mid', label: 'Mid Tier (1M-10M views)' },
+    { value: 'low', label: 'Low Tier (<1M views)' }
   ];
 
   const globalTierOptions = [
