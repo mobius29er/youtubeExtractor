@@ -33,6 +33,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [tierMetricFilter, setTierMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
   const [correlationViewMode, setCorrelationViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
   const [correlationColorMode, setCorrelationColorMode] = useState('genre'); // 'genre' or 'tier'
+  const [correlationDataMode, setCorrelationDataMode] = useState('channel'); // 'channel' or 'video'
+  const [correlationYAxis, setCorrelationYAxis] = useState('engagement'); // 'engagement', 'rqs', 'like_ratio', 'comment_ratio', 'subscribers'
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -316,6 +318,66 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     }
   }, [tierViewMode, tierMetricFilter, activeChart, filteredData]);
 
+  // Process chart data when correlation toggles change
+  useEffect(() => {
+    if (filteredData && activeChart === 'correlation') {
+      processChartData(filteredData);
+    }
+  }, [correlationViewMode, correlationColorMode, correlationDataMode, correlationYAxis, activeChart, filteredData]);
+
+  // Helper function to get Y-axis label based on selected metric
+  const getYAxisLabel = () => {
+    switch (correlationYAxis) {
+      case 'engagement':
+        return 'Engagement Rate (%)';
+      case 'rqs':
+        return 'RQS Score';
+      case 'like_ratio':
+        return 'Like Ratio (%)';
+      case 'comment_ratio':
+        return 'Comment Ratio (%)';
+      case 'subscribers':
+        return 'Subscribers (Millions)';
+      default:
+        return 'Engagement Rate (%)';
+    }
+  };
+
+  // Helper function to get Y-axis data key name
+  const getYAxisDataKey = () => {
+    return 'engagement'; // We use 'engagement' as the data key for all Y-axis metrics
+  };
+
+  // Helper function to format Y-axis value in tooltip
+  const formatYAxisValue = (value) => {
+    switch (correlationYAxis) {
+      case 'engagement':
+        return `${value?.toFixed(2)}%`;
+      case 'rqs':
+        return `${value?.toFixed(1)}`;
+      case 'like_ratio':
+        return `${value?.toFixed(3)}%`;
+      case 'comment_ratio':
+        return `${value?.toFixed(3)}%`;
+      case 'subscribers':
+        return `${value?.toFixed(1)}M`;
+      default:
+        return `${value?.toFixed(2)}%`;
+    }
+  };
+
+  // Helper function to get dynamic chart title
+  const getChartTitle = () => {
+    if (activeChart === 'correlation') {
+      const xAxisLabel = correlationViewMode === 'per_subscriber' ? 'Views/Sub' : 'Views';
+      const yAxisLabel = getYAxisLabel().replace(' (%)', '').replace(' (Millions)', '');
+      const dataType = correlationDataMode === 'video' ? 'Video' : 'Channel';
+      return `${dataType} ${xAxisLabel} vs ${yAxisLabel}`;
+    }
+    // Return the default label for other charts
+    return charts.find(c => c.id === activeChart)?.label;
+  };
+
   const loadVisualizationData = async () => {
     try {
       setChartLoading(true);
@@ -447,7 +509,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     { id: 'genres', label: 'Genre Comparison', icon: PieIcon },
     { id: 'tiers', label: 'Tier Analysis', icon: Target },
     { id: 'sentiment', label: 'Sentiment Analysis', icon: Activity },
-    { id: 'correlation', label: 'Views vs Engagement', icon: TrendingUp },
+    { id: 'correlation', label: 'Correlation Analysis', icon: TrendingUp },
   ];
 
   // Helper function to determine channel genre based on exact channel configuration
@@ -750,29 +812,109 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       
       case 'correlation':
         // Correlation data from filtered channels with view mode support
-        return filteredData.engagement.map(channel => {
-          const subscribers = channel.subscribers || 1; // Avoid division by zero
-          const genre = getChannelGenre(channel.name);
-          const tier = getTierForChannel(channel);
-          
-          // Calculate views (raw or per subscriber)
-          const views = correlationViewMode === 'per_subscriber' 
-            ? (channel.views || 0) / subscribers 
-            : (channel.views || 0) / 1000000; // Convert to millions for raw
-          
-          // Calculate engagement rate (always as percentage, don't divide by subscribers)
-          const engagement = channel.views > 0 ? (((channel.likes || 0) + (channel.comments || 0)) / channel.views) * 100 : 0;
-          
-          return {
-            views,
-            engagement,
-            name: channel.name,
-            subscribers,
-            genre,
-            tier,
-            isPerSubscriberData: correlationViewMode === 'per_subscriber'
-          };
-        });
+        if (correlationDataMode === 'video') {
+          // Video-level data
+          const videoData = [];
+          filteredData.engagement.forEach(channel => {
+            const subscribers = channel.subscribers || 1;
+            const channelGenre = getChannelGenre(channel.name);
+            const channelTier = getTierForChannel(channel);
+            
+            // Process each video in the channel
+            if (channel.videoDetails && Array.isArray(channel.videoDetails)) {
+              channel.videoDetails.forEach(video => {
+                // Calculate views (raw or per subscriber)
+                const views = correlationViewMode === 'per_subscriber' 
+                  ? (video.views || 0) / subscribers 
+                  : (video.views || 0) / 1000000; // Convert to millions for raw
+                
+                // Calculate Y-axis metric based on selected option
+                let yValue;
+                switch (correlationYAxis) {
+                  case 'engagement':
+                    yValue = video.views > 0 ? (((video.likes || 0) + (video.comments || 0)) / video.views) * 100 : 0;
+                    break;
+                  case 'rqs':
+                    yValue = video.rqs || 75;
+                    break;
+                  case 'like_ratio':
+                    yValue = video.views > 0 ? ((video.likes || 0) / video.views) * 100 : 0;
+                    break;
+                  case 'comment_ratio':
+                    yValue = video.views > 0 ? ((video.comments || 0) / video.views) * 100 : 0;
+                    break;
+                  case 'subscribers':
+                    yValue = subscribers / 1000000; // Convert to millions
+                    break;
+                  default:
+                    yValue = video.views > 0 ? (((video.likes || 0) + (video.comments || 0)) / video.views) * 100 : 0;
+                }
+                
+                videoData.push({
+                  views,
+                  engagement: yValue,
+                  name: video.title || 'Untitled Video',
+                  channelName: channel.name,
+                  subscribers,
+                  genre: channelGenre,
+                  tier: channelTier,
+                  isPerSubscriberData: correlationViewMode === 'per_subscriber'
+                });
+              });
+            }
+          });
+          return videoData;
+        } else {
+          // Channel-level data (existing logic with new Y-axis options)
+          return filteredData.engagement.map(channel => {
+            const subscribers = channel.subscribers || 1; // Avoid division by zero
+            const genre = getChannelGenre(channel.name);
+            const tier = getTierForChannel(channel);
+            
+            // Calculate views (raw or per subscriber)
+            const views = correlationViewMode === 'per_subscriber' 
+              ? (channel.views || 0) / subscribers 
+              : (channel.views || 0) / 1000000; // Convert to millions for raw
+            
+            // Calculate Y-axis metric based on selected option
+            let yValue;
+            switch (correlationYAxis) {
+              case 'engagement':
+                yValue = channel.views > 0 ? (((channel.likes || 0) + (channel.comments || 0)) / channel.views) * 100 : 0;
+                break;
+              case 'rqs':
+                // Calculate average RQS from video details
+                if (channel.videoDetails && Array.isArray(channel.videoDetails)) {
+                  const totalRqs = channel.videoDetails.reduce((sum, video) => sum + (video.rqs || 75), 0);
+                  yValue = channel.videoDetails.length > 0 ? totalRqs / channel.videoDetails.length : 75;
+                } else {
+                  yValue = 75; // Default RQS
+                }
+                break;
+              case 'like_ratio':
+                yValue = channel.views > 0 ? ((channel.likes || 0) / channel.views) * 100 : 0;
+                break;
+              case 'comment_ratio':
+                yValue = channel.views > 0 ? ((channel.comments || 0) / channel.views) * 100 : 0;
+                break;
+              case 'subscribers':
+                yValue = subscribers / 1000000; // Convert to millions
+                break;
+              default:
+                yValue = channel.views > 0 ? (((channel.likes || 0) + (channel.comments || 0)) / channel.views) * 100 : 0;
+            }
+            
+            return {
+              views,
+              engagement: yValue,
+              name: channel.name,
+              subscribers,
+              genre,
+              tier,
+              isPerSubscriberData: correlationViewMode === 'per_subscriber'
+            };
+          });
+        }
       
       default:
         return null;
@@ -1169,12 +1311,12 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   <YAxis 
                     type="number"
                     dataKey="engagement" 
-                    name="Engagement Rate (%)"
+                    name={getYAxisLabel()}
                     stroke={darkMode ? '#D1D5DB' : '#4B5563'}
                     fontSize={12}
                     tick={{ fill: darkMode ? '#D1D5DB' : '#4B5563' }}
                     label={{ 
-                      value: 'Engagement Rate (%)', 
+                      value: getYAxisLabel(), 
                       angle: -90, 
                       position: 'insideLeft',
                       style: { textAnchor: 'middle', fill: darkMode ? '#D1D5DB' : '#4B5563', fontSize: '12px' }
@@ -1199,8 +1341,11 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                         return (
                           <div className={`p-3 rounded-lg shadow-lg ${darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'}`}>
                             <p className="font-semibold mb-1">{data.name}</p>
+                            {correlationDataMode === 'video' && data.channelName && (
+                              <p className="text-xs text-gray-500 mb-1">Channel: {data.channelName}</p>
+                            )}
                             <p className="text-sm">{`${viewLabel}: ${viewValue}`}</p>
-                            <p className="text-sm">{`Engagement: ${data.engagement?.toFixed(2)}%`}</p>
+                            <p className="text-sm">{`${getYAxisLabel().replace(' (%)', '').replace(' (Millions)', '')}: ${formatYAxisValue(data.engagement)}`}</p>
                             <p className="text-xs mt-1 opacity-75">
                               {correlationColorMode === 'genre' ? `Genre: ${data.genre}` : `Tier: ${data.tier}`}
                             </p>
@@ -1780,7 +1925,37 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
       {/* Correlation Toggle Controls */}
       {activeChart === 'correlation' && (
-        <div className="flex flex-col items-center gap-4 mb-4">
+        <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
+          {/* Channel vs Video Data Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setCorrelationDataMode('channel')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationDataMode === 'channel'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📺 Channel Data
+            </button>
+            <button
+              onClick={() => setCorrelationDataMode('video')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationDataMode === 'video'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              🎬 Individual Videos
+            </button>
+          </div>
+
           {/* Raw vs Per Subscriber Toggle */}
           <div className={`inline-flex rounded-lg p-1 ${
             darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
@@ -1840,6 +2015,72 @@ const DataVisualization = ({ data, loading, darkMode }) => {
               🏆 Color by Tier
             </button>
           </div>
+
+          {/* Y-axis Metric Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setCorrelationYAxis('engagement')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationYAxis === 'engagement'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              💬 Engagement
+            </button>
+            <button
+              onClick={() => setCorrelationYAxis('rqs')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationYAxis === 'rqs'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              ⭐ RQS
+            </button>
+            <button
+              onClick={() => setCorrelationYAxis('like_ratio')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationYAxis === 'like_ratio'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👍 Likes
+            </button>
+            <button
+              onClick={() => setCorrelationYAxis('comment_ratio')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationYAxis === 'comment_ratio'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              💬 Comments
+            </button>
+            <button
+              onClick={() => setCorrelationYAxis('subscribers')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationYAxis === 'subscribers'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👥 Subscribers
+            </button>
+          </div>
         </div>
       )}
 
@@ -1847,7 +2088,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       <div className={`${darkMode ? 'card-dark' : 'card'} h-[600px] relative overflow-hidden`}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">
-            {charts.find(c => c.id === activeChart)?.label}
+            {getChartTitle()}
           </h3>
           <div className={`px-3 py-1 rounded-full text-xs font-medium ${
             darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
