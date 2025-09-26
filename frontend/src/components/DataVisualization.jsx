@@ -31,6 +31,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [genreMetricFilter, setGenreMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
   const [tierViewMode, setTierViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
   const [tierMetricFilter, setTierMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
+  const [correlationViewMode, setCorrelationViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
+  const [correlationColorMode, setCorrelationColorMode] = useState('genre'); // 'genre' or 'tier'
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -496,6 +498,29 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     return mappedGenre;
   };
 
+  // Color mapping functions for scatter plot
+  const getGenreColor = (genre) => {
+    const genreColors = {
+      'Challenge/Stunts': '#10B981', // Green
+      'Education': '#3B82F6',        // Blue  
+      'Kids/Family': '#F59E0B',      // Yellow
+      'Gaming': '#EF4444',           // Red
+      'Catholic': '#8B5CF6',         // Purple
+    };
+    return genreColors[genre] || '#6B7280'; // Gray fallback
+  };
+
+  const getTierColor = (tier) => {
+    const tierColors = {
+      'mega': '#DC2626',      // Red - Mega (50M+)
+      'large': '#EA580C',     // Orange - Large (10M-50M)
+      'mid': '#F59E0B',       // Yellow - Mid (1M-10M)
+      'small': '#10B981',     // Green - Small (100K-1M)
+      'new': '#3B82F6'        // Blue - New (<100K)
+    };
+    return tierColors[tier] || '#6B7280'; // Gray fallback
+  };
+
   // Process filtered data for different chart types
   const getChartData = (type) => {
     if (!filteredData?.engagement) return null;
@@ -724,12 +749,30 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         })).filter(item => item.videoCount > 0);
       
       case 'correlation':
-        // Correlation data from filtered channels
-        return filteredData.engagement.map(channel => ({
-          views: (channel.views || 0) / 1000000, // Convert to millions
-          engagement: channel.views > 0 ? (((channel.likes || 0) + (channel.comments || 0)) / channel.views) * 100 : 0,
-          name: channel.name
-        }));
+        // Correlation data from filtered channels with view mode support
+        return filteredData.engagement.map(channel => {
+          const subscribers = channel.subscribers || 1; // Avoid division by zero
+          const genre = getChannelGenre(channel.name);
+          const tier = getTierForChannel(channel);
+          
+          // Calculate views (raw or per subscriber)
+          const views = correlationViewMode === 'per_subscriber' 
+            ? (channel.views || 0) / subscribers 
+            : (channel.views || 0) / 1000000; // Convert to millions for raw
+          
+          // Calculate engagement rate (always as percentage, don't divide by subscribers)
+          const engagement = channel.views > 0 ? (((channel.likes || 0) + (channel.comments || 0)) / channel.views) * 100 : 0;
+          
+          return {
+            views,
+            engagement,
+            name: channel.name,
+            subscribers,
+            genre,
+            tier,
+            isPerSubscriberData: correlationViewMode === 'per_subscriber'
+          };
+        });
       
       default:
         return null;
@@ -1100,47 +1143,189 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       case 'correlation':
         const correlationData = getChartData('correlation') || mockChartData.correlation;
         return (
-          <ResponsiveContainer {...chartProps}>
-            <ScatterChart 
-              data={correlationData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis 
-                type="number"
-                dataKey="views" 
-                name="Views (M)"
-                stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                fontSize={12}
-              />
-              <YAxis 
-                type="number"
-                dataKey="engagement" 
-                name="Engagement Rate (%)"
-                stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                fontSize={12}
-              />
-              <Tooltip 
-                cursor={{ strokeDasharray: '3 3' }}
-                contentStyle={{ 
-                  backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                  borderRadius: '8px'
-                }}
-                formatter={(value, name, props) => [
-                  `${value}${name === 'Views (M)' ? 'M' : '%'}`,
-                  name,
-                  props.payload.name
-                ]}
-              />
-              <Scatter fill="#8B5CF6" />
-            </ScatterChart>
-          </ResponsiveContainer>
+          <div className="flex gap-4 h-full">
+            {/* Chart Container */}
+            <div className="flex-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart 
+                  data={correlationData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
+                  <XAxis 
+                    type="number"
+                    dataKey="views" 
+                    name={correlationViewMode === 'per_subscriber' ? 'Views per Subscriber' : 'Views (M)'}
+                    stroke={darkMode ? '#D1D5DB' : '#4B5563'}
+                    fontSize={12}
+                    tick={{ fill: darkMode ? '#D1D5DB' : '#4B5563' }}
+                    label={{ 
+                      value: correlationViewMode === 'per_subscriber' ? 'Views per Subscriber' : 'Views (Millions)', 
+                      position: 'insideBottom', 
+                      offset: -10,
+                      style: { textAnchor: 'middle', fill: darkMode ? '#D1D5DB' : '#4B5563', fontSize: '12px' }
+                    }}
+                  />
+                  <YAxis 
+                    type="number"
+                    dataKey="engagement" 
+                    name="Engagement Rate (%)"
+                    stroke={darkMode ? '#D1D5DB' : '#4B5563'}
+                    fontSize={12}
+                    tick={{ fill: darkMode ? '#D1D5DB' : '#4B5563' }}
+                    label={{ 
+                      value: 'Engagement Rate (%)', 
+                      angle: -90, 
+                      position: 'insideLeft',
+                      style: { textAnchor: 'middle', fill: darkMode ? '#D1D5DB' : '#4B5563', fontSize: '12px' }
+                    }}
+                  />
+                  <Tooltip 
+                    cursor={{ strokeDasharray: '3 3' }}
+                    contentStyle={{ 
+                      backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
+                      border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
+                      borderRadius: '8px',
+                      color: darkMode ? '#F3F4F6' : '#1F2937'
+                    }}
+                    content={({ active, payload, label }) => {
+                      if (active && payload && payload.length > 0) {
+                        const data = payload[0].payload;
+                        const viewLabel = data.isPerSubscriberData ? 'Views/Sub' : 'Views';
+                        const viewValue = data.isPerSubscriberData 
+                          ? `${data.views?.toFixed(3)}` 
+                          : `${data.views?.toFixed(1)}M`;
+                        
+                        return (
+                          <div className={`p-3 rounded-lg shadow-lg ${darkMode ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900'}`}>
+                            <p className="font-semibold mb-1">{data.name}</p>
+                            <p className="text-sm">{`${viewLabel}: ${viewValue}`}</p>
+                            <p className="text-sm">{`Engagement: ${data.engagement?.toFixed(2)}%`}</p>
+                            <p className="text-xs mt-1 opacity-75">
+                              {correlationColorMode === 'genre' ? `Genre: ${data.genre}` : `Tier: ${data.tier}`}
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Scatter fill="#8B5CF6" stroke="#7C3AED" strokeWidth={1}>
+                    {correlationData.map((entry, index) => {
+                      const color = correlationColorMode === 'genre' 
+                        ? getGenreColor(entry.genre) 
+                        : getTierColor(entry.tier);
+                      return <Cell key={`cell-${index}`} fill={color} />;
+                    })}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Legend */}
+            <div className={`w-48 p-4 ${darkMode ? 'bg-gray-800 text-gray-200' : 'bg-gray-50 text-gray-800'} rounded-lg`}>
+              <h3 className="font-semibold text-sm mb-3">
+                {correlationColorMode === 'genre' ? '🎨 Genres' : '🏆 Tiers'}
+              </h3>
+              <div className="space-y-2">
+                {correlationColorMode === 'genre' ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10B981' }}></div>
+                      <span className="text-xs">Challenge/Stunts</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
+                      <span className="text-xs">Education</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EAB308' }}></div>
+                      <span className="text-xs">Kids/Family</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EF4444' }}></div>
+                      <span className="text-xs">Gaming</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#8B5CF6' }}></div>
+                      <span className="text-xs">Catholic</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EF4444' }}></div>
+                      <span className="text-xs">Mega (50M+)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#F97316' }}></div>
+                      <span className="text-xs">Large (10M-50M)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EAB308' }}></div>
+                      <span className="text-xs">Mid (1M-10M)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#22C55E' }}></div>
+                      <span className="text-xs">Small (100K-1M)</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }}></div>
+                      <span className="text-xs">New (&lt;100K)</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         );
 
       default:
         return null;
     }
+  };
+
+  // Legend component for scatter plot
+  const renderLegend = () => {
+    if (activeChart !== 'correlation') return null;
+
+    const legendItems = correlationColorMode === 'genre' 
+      ? [
+          { key: 'Challenge/Stunts', color: getGenreColor('challenge'), label: '🎯 Challenge/Stunts' },
+          { key: 'Education', color: getGenreColor('education'), label: '🎓 Education' },
+          { key: 'Kids/Family', color: getGenreColor('kids'), label: '👶 Kids/Family' },
+          { key: 'Gaming', color: getGenreColor('gaming'), label: '🎮 Gaming' },
+          { key: 'Catholic', color: getGenreColor('catholic'), label: '✝️ Catholic' },
+          { key: 'Music', color: getGenreColor('music'), label: '🎵 Music' }
+        ]
+      : [
+          { key: 'mega', color: getTierColor('mega'), label: '🔴 Mega (50M+)' },
+          { key: 'large', color: getTierColor('large'), label: '🟠 Large (10M-50M)' },
+          { key: 'mid', color: getTierColor('mid'), label: '🟡 Mid (1M-10M)' },
+          { key: 'small', color: getTierColor('small'), label: '🟢 Small (100K-1M)' },
+          { key: 'new', color: getTierColor('new'), label: '🔵 New (<100K)' }
+        ];
+
+    return (
+      <div className={`mt-4 p-4 rounded-lg ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'} border`}>
+        <h4 className={`text-sm font-medium mb-3 ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+          {correlationColorMode === 'genre' ? 'Genre Colors' : 'Tier Colors'}
+        </h4>
+        <div className="flex flex-wrap gap-4">
+          {legendItems.map(item => (
+            <div key={item.key} className="flex items-center gap-2">
+              <div 
+                className="w-4 h-4 rounded-full border border-opacity-30 border-gray-400"
+                style={{ backgroundColor: item.color }}
+              ></div>
+              <span className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -1593,6 +1778,71 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         </div>
       )}
 
+      {/* Correlation Toggle Controls */}
+      {activeChart === 'correlation' && (
+        <div className="flex flex-col items-center gap-4 mb-4">
+          {/* Raw vs Per Subscriber Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setCorrelationViewMode('raw')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationViewMode === 'raw'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📊 Raw Values
+            </button>
+            <button
+              onClick={() => setCorrelationViewMode('per_subscriber')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationViewMode === 'per_subscriber'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📈 Per Subscriber
+            </button>
+          </div>
+
+          {/* Color Mode Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setCorrelationColorMode('genre')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationColorMode === 'genre'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              🎨 Color by Genre
+            </button>
+            <button
+              onClick={() => setCorrelationColorMode('tier')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                correlationColorMode === 'tier'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              🏆 Color by Tier
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Chart */}
       <div className={`${darkMode ? 'card-dark' : 'card'} h-[600px] relative overflow-hidden`}>
         <div className="flex items-center justify-between mb-4">
@@ -1611,7 +1861,10 @@ const DataVisualization = ({ data, loading, darkMode }) => {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
           ) : (
-            renderChart()
+            <>
+              {renderChart()}
+              {renderLegend()}
+            </>
           )}
         </div>
       </div>
