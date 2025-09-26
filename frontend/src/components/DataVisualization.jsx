@@ -27,6 +27,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [engagementViewMode, setEngagementViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
   const [engagementMetricFilter, setEngagementMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
+  const [genreViewMode, setGenreViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
+  const [genreMetricFilter, setGenreMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -305,6 +307,13 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     }
   }, [engagementViewMode, engagementMetricFilter, activeChart, filteredData]);
 
+  // Process chart data when genre toggles change
+  useEffect(() => {
+    if (filteredData && activeChart === 'genres') {
+      processChartData(filteredData);
+    }
+  }, [genreViewMode, genreMetricFilter, activeChart, filteredData]);
+
   const loadVisualizationData = async () => {
     try {
       setChartLoading(true);
@@ -529,25 +538,55 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         return processedData;
       
       case 'genres':
-        // Dynamically calculate genre data from filtered channels
+        // Dynamically calculate genre data from filtered channels with raw/per-subscriber support
         const genreStats = {};
         filteredData.engagement.forEach(channel => {
           const genre = getChannelGenre(channel.name);
+          const subscribers = channel.subscribers || 1; // Avoid division by zero
+          const isKidsFamily = genre === 'Kids/Family';
+          
           if (!genreStats[genre]) {
-            genreStats[genre] = { totalViews: 0, totalVideos: 0, totalLikes: 0, channels: 0 };
+            genreStats[genre] = { 
+              totalViews: 0, 
+              totalVideos: 0, 
+              totalLikes: 0, 
+              totalComments: 0,
+              totalRqs: 0,
+              channels: 0,
+              totalSubscribers: 0
+            };
           }
-          genreStats[genre].totalViews += channel.views || 0;
+          
+          // Calculate values based on view mode
+          if (genreViewMode === 'raw') {
+            genreStats[genre].totalViews += channel.views || 0;
+            genreStats[genre].totalLikes += channel.likes || 0;
+            genreStats[genre].totalComments += isKidsFamily ? 0 : (channel.comments || 0);
+          } else {
+            // Per-subscriber values
+            genreStats[genre].totalViews += (channel.views || 0) / subscribers;
+            genreStats[genre].totalLikes += (channel.likes || 0) / subscribers;
+            genreStats[genre].totalComments += isKidsFamily ? 0 : (channel.comments || 0) / subscribers;
+          }
+          
           genreStats[genre].totalVideos += channel.videos || 0;
-          genreStats[genre].totalLikes += channel.likes || 0;
+          genreStats[genre].totalSubscribers += subscribers;
+          genreStats[genre].totalRqs += channel.videoDetails && channel.videoDetails.length > 0 
+            ? channel.videoDetails.reduce((sum, video) => sum + (video.rqs || 75), 0) / channel.videoDetails.length
+            : 75;
           genreStats[genre].channels += 1;
         });
         
         return Object.entries(genreStats).map(([genre, stats]) => ({
           genre,
-          totalViews: stats.totalViews,
-          totalVideos: stats.totalVideos,
-          avgEngagement: stats.totalViews > 0 ? ((stats.totalLikes / stats.totalViews) * 100).toFixed(2) : 0,
-          channels: stats.channels
+          totalViews: Number(stats.totalViews) || 0,
+          totalVideos: Number(stats.totalVideos) || 0,
+          totalLikes: Number(stats.totalLikes) || 0,
+          totalComments: Number(stats.totalComments) || 0,
+          avgRqs: Number(stats.totalRqs / Math.max(stats.channels, 1)) || 75,
+          avgEngagement: stats.totalViews > 0 ? Number(((stats.totalLikes / stats.totalViews) * 100).toFixed(2)) : 0,
+          channels: Number(stats.channels) || 0,
+          isPerSubscriberData: genreViewMode === 'per_subscriber'
         }));
       
       case 'performance':
@@ -725,21 +764,73 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                 textAnchor="end"
                 height={80}
               />
-              <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} fontSize={12} />
+              <YAxis 
+                stroke={darkMode ? '#9CA3AF' : '#6B7280'} 
+                fontSize={12}
+                tickFormatter={(value) => {
+                  if (genreMetricFilter === 'rqs') {
+                    return value.toFixed(0);
+                  } else if (genreViewMode === 'per_subscriber') {
+                    return value >= 1 ? value.toFixed(1) : value.toFixed(3);
+                  } else {
+                    if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                    return value.toString();
+                  }
+                }}
+              />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
                   border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
                   borderRadius: '8px'
                 }}
-                formatter={(value, name) => [
-                  name === 'totalViews' ? `${(value / 1000000).toFixed(1)}M` : value,
-                  name === 'totalViews' ? 'Total Views' : name === 'totalVideos' ? 'Total Videos' : 'Avg Engagement %'
-                ]}
+                formatter={(value, name, props) => {
+                  // Get the data safely from the tooltip props
+                  const data = props?.payload || {};
+                  const isPerSub = data.isPerSubscriberData;
+                  
+                  // Format display based on metric and view mode
+                  if (name === 'totalViews') {
+                    if (isPerSub) {
+                      return [`${Number(value).toFixed(3)} views/sub`, 'Views Per Subscriber'];
+                    } else {
+                      return [`${(value / 1000000).toFixed(1)}M views`, 'Total Views'];
+                    }
+                  } else if (name === 'totalLikes') {
+                    if (isPerSub) {
+                      return [`${Number(value).toFixed(4)} likes/sub`, 'Likes Per Subscriber'];
+                    } else {
+                      return [`${(value / 1000000).toFixed(1)}M likes`, 'Total Likes'];
+                    }
+                  } else if (name === 'totalComments') {
+                    if (isPerSub) {
+                      return [`${Number(value).toFixed(4)} comments/sub`, 'Comments Per Subscriber'];
+                    } else {
+                      return [`${(value / 1000000).toFixed(1)}M comments`, 'Total Comments'];
+                    }
+                  } else if (name === 'avgRqs') {
+                    return [`${Number(value).toFixed(1)}`, 'Average RQS'];
+                  } else if (name === 'totalVideos') {
+                    return [`${value} videos`, 'Total Videos'];
+                  }
+                  
+                  return [value, name];
+                }}
               />
-              <Bar dataKey="totalViews" fill="#3B82F6" name="Total Views" />
-              <Bar dataKey="totalVideos" fill="#10B981" name="Total Videos" />
-              <Bar dataKey="avgEngagement" fill="#F59E0B" name="Avg Engagement" />
+              {/* Conditional Bar rendering based on metric filter */}
+              {(genreMetricFilter === 'all' || genreMetricFilter === 'views') && (
+                <Bar dataKey="totalViews" fill="#3B82F6" name="totalViews" />
+              )}
+              {(genreMetricFilter === 'all' || genreMetricFilter === 'likes') && (
+                <Bar dataKey="totalLikes" fill="#10B981" name="totalLikes" />
+              )}
+              {(genreMetricFilter === 'all' || genreMetricFilter === 'comments') && (
+                <Bar dataKey="totalComments" fill="#F59E0B" name="totalComments" />
+              )}
+              {(genreMetricFilter === 'all' || genreMetricFilter === 'rqs') && (
+                <Bar dataKey="avgRqs" fill="#8B5CF6" name="avgRqs" />
+              )}
             </BarChart>
           </ResponsiveContainer>
         );
@@ -1092,6 +1183,107 @@ const DataVisualization = ({ data, loading, darkMode }) => {
               onClick={() => setEngagementMetricFilter('rqs')}
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 engagementMetricFilter === 'rqs'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              ⭐ RQS
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Genre Toggle Controls */}
+      {activeChart === 'genres' && (
+        <div className="flex flex-col items-center gap-4 mb-4">
+          {/* Raw vs Per Subscriber Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setGenreViewMode('raw')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                genreViewMode === 'raw'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📊 Raw Values
+            </button>
+            <button
+              onClick={() => setGenreViewMode('per_subscriber')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                genreViewMode === 'per_subscriber'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📈 Per Subscriber
+            </button>
+          </div>
+
+          {/* Metrics Filter Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setGenreMetricFilter('all')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                genreMetricFilter === 'all'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              🔍 All
+            </button>
+            <button
+              onClick={() => setGenreMetricFilter('views')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                genreMetricFilter === 'views'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👁️ Views
+            </button>
+            <button
+              onClick={() => setGenreMetricFilter('likes')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                genreMetricFilter === 'likes'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👍 Likes
+            </button>
+            <button
+              onClick={() => setGenreMetricFilter('comments')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                genreMetricFilter === 'comments'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              💬 Comments
+            </button>
+            <button
+              onClick={() => setGenreMetricFilter('rqs')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                genreMetricFilter === 'rqs'
                   ? 'bg-green-600 text-white shadow-sm'
                   : darkMode
                     ? 'text-gray-300 hover:text-white hover:bg-gray-700'
