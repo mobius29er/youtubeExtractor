@@ -25,6 +25,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [filteredData, setFilteredData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [engagementViewMode, setEngagementViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
+  const [engagementMetricFilter, setEngagementMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -296,6 +298,13 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     loadVisualizationData();
   }, []); // Run once on mount
 
+  // Update chart data when engagement view mode changes
+  useEffect(() => {
+    if (filteredData && activeChart === 'engagement') {
+      processChartData(filteredData);
+    }
+  }, [engagementViewMode, engagementMetricFilter, activeChart, filteredData]);
+
   const loadVisualizationData = async () => {
     try {
       setChartLoading(true);
@@ -485,7 +494,39 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
     switch (type) {
       case 'engagement':
-        return filteredData.engagement;
+        let processedData;
+        if (engagementViewMode === 'raw') {
+          processedData = filteredData.engagement.map(channel => ({
+            ...channel,
+            // Calculate average RQS from video details if available
+            rqs: channel.videoDetails && channel.videoDetails.length > 0 
+              ? channel.videoDetails.reduce((sum, video) => sum + (video.rqs || 75), 0) / channel.videoDetails.length
+              : 75
+          }));
+        } else {
+          // Per-subscriber percentage view
+          processedData = filteredData.engagement.map(channel => {
+            const subscribers = channel.subscribers || 1; // Avoid division by zero
+            const genre = getChannelGenre(channel.name);
+            const isKidsFamily = genre === 'Kids/Family';
+            
+            return {
+              ...channel,
+              // Convert to per-subscriber ratios (views per subscriber, likes per subscriber, etc.)
+              views: (channel.views || 0) / subscribers,
+              likes: (channel.likes || 0) / subscribers,
+              // Set comments to 0 for Kids/Family channels or calculate per subscriber
+              comments: isKidsFamily ? 0 : (channel.comments || 0) / subscribers,
+              // RQS doesn't need per-subscriber conversion since it's already a quality score
+              rqs: channel.videoDetails && channel.videoDetails.length > 0 
+                ? channel.videoDetails.reduce((sum, video) => sum + (video.rqs || 75), 0) / channel.videoDetails.length
+                : 75,
+              // Add a flag to identify this as per-subscriber data
+              isPerSubscriberData: true
+            };
+          });
+        }
+        return processedData;
       
       case 'genres':
         // Dynamically calculate genre data from filtered channels
@@ -555,7 +596,29 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                 textAnchor="end"
                 height={80}
               />
-              <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} fontSize={12} />
+              <YAxis 
+                stroke={darkMode ? '#9CA3AF' : '#6B7280'} 
+                fontSize={12}
+                tickFormatter={(value) => {
+                  const isPerSubscriberData = engagementData && engagementData[0]?.isPerSubscriberData;
+                  
+                  // Special handling for RQS metric
+                  if (engagementMetricFilter === 'rqs') {
+                    return value.toFixed(0);
+                  }
+                  
+                  if (isPerSubscriberData) {
+                    // For per-subscriber data, show decimal values
+                    if (value >= 1) return value.toFixed(1);
+                    if (value >= 0.1) return value.toFixed(2);
+                    return value.toFixed(3);
+                  }
+                  // For raw values, format large numbers
+                  if (value >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+                  if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+                  return value.toString();
+                }}
+              />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
@@ -566,38 +629,62 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     const isKidsChannel = ['Cocomelon', 'Kids Roma Show', 'VeggieTales Official', 'Sheriff Labrador - Kids Cartoon', 'Miss Honey Bear - Speech Therapist - Read Aloud'].includes(label);
+                    const isPerSubscriberData = data.isPerSubscriberData;
                     
                     return (
                       <div className={`p-3 rounded-lg shadow-lg ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'}`}>
                         <p className={`font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{label}</p>
                         <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                            <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                              Views: {(data.views / 1000000).toFixed(1)}M
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-green-500 rounded"></div>
-                            <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                              Likes: {data.likes.toLocaleString()}
-                            </span>
-                          </div>
-                          {data.comments > 0 ? (
+                          {(engagementMetricFilter === 'all' || engagementMetricFilter === 'views') && (
                             <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                              <div className="w-3 h-3 bg-blue-500 rounded"></div>
                               <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                                Comments: {data.comments.toLocaleString()}
+                                Views: {isPerSubscriberData 
+                                  ? `${data.views.toFixed(2)} per subscriber`
+                                  : `${(data.views / 1000000).toFixed(1)}M`
+                                }
                               </span>
                             </div>
-                          ) : isKidsChannel ? (
+                          )}
+                          {(engagementMetricFilter === 'all' || engagementMetricFilter === 'likes') && (
                             <div className="flex items-center space-x-2">
-                              <div className="w-3 h-3 bg-gray-400 rounded"></div>
-                              <span className={`text-xs italic ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                Comments disabled (Kids content)
+                              <div className="w-3 h-3 bg-green-500 rounded"></div>
+                              <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                Likes: {isPerSubscriberData 
+                                  ? `${data.likes.toFixed(3)} per subscriber`
+                                  : data.likes.toLocaleString()
+                                }
                               </span>
                             </div>
-                          ) : null}
+                          )}
+                          {(engagementMetricFilter === 'all' || engagementMetricFilter === 'comments') && (
+                            (data.comments > 0 ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                                <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                  Comments: {isPerSubscriberData 
+                                    ? `${data.comments.toFixed(4)} per subscriber`
+                                    : data.comments.toLocaleString()
+                                  }
+                                </span>
+                              </div>
+                            ) : isKidsChannel ? (
+                              <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-gray-400 rounded"></div>
+                                <span className={`text-xs italic ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  Comments disabled (Kids content)
+                                </span>
+                              </div>
+                            ) : null)
+                          )}
+                          {(engagementMetricFilter === 'all' || engagementMetricFilter === 'rqs') && (
+                            <div className="flex items-center space-x-2">
+                              <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                              <span className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-700'}`}>
+                                RQS: {data.rqs ? data.rqs.toFixed(1) : '75.0'}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -605,9 +692,18 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   return null;
                 }}
               />
-              <Bar dataKey="views" fill="#3B82F6" name="Views" />
-              <Bar dataKey="likes" fill="#10B981" name="Likes" />
-              <Bar dataKey="comments" fill="#F59E0B" name="Comments" />
+              {(engagementMetricFilter === 'all' || engagementMetricFilter === 'views') && (
+                <Bar dataKey="views" fill="#3B82F6" name="Views" />
+              )}
+              {(engagementMetricFilter === 'all' || engagementMetricFilter === 'likes') && (
+                <Bar dataKey="likes" fill="#10B981" name="Likes" />
+              )}
+              {(engagementMetricFilter === 'all' || engagementMetricFilter === 'comments') && (
+                <Bar dataKey="comments" fill="#F59E0B" name="Comments" />
+              )}
+              {(engagementMetricFilter === 'all' || engagementMetricFilter === 'rqs') && (
+                <Bar dataKey="rqs" fill="#8B5CF6" name="RQS" />
+              )}
             </BarChart>
           </ResponsiveContainer>
         );
@@ -906,6 +1002,107 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
       {/* Chart Selector */}
       <ChartSelector charts={charts} />
+
+      {/* Engagement View Toggle - Only show when engagement chart is active */}
+      {activeChart === 'engagement' && (
+        <div className="flex flex-col items-center gap-4 mb-4">
+          {/* Raw vs Per Subscriber Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setEngagementViewMode('raw')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                engagementViewMode === 'raw'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📊 Raw Values
+            </button>
+            <button
+              onClick={() => setEngagementViewMode('per_subscriber')}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                engagementViewMode === 'per_subscriber'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              📈 Per Subscriber
+            </button>
+          </div>
+
+          {/* Metrics Filter Toggle */}
+          <div className={`inline-flex rounded-lg p-1 ${
+            darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+          }`}>
+            <button
+              onClick={() => setEngagementMetricFilter('all')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                engagementMetricFilter === 'all'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              🔍 All
+            </button>
+            <button
+              onClick={() => setEngagementMetricFilter('views')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                engagementMetricFilter === 'views'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👁️ Views
+            </button>
+            <button
+              onClick={() => setEngagementMetricFilter('likes')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                engagementMetricFilter === 'likes'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              👍 Likes
+            </button>
+            <button
+              onClick={() => setEngagementMetricFilter('comments')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                engagementMetricFilter === 'comments'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              💬 Comments
+            </button>
+            <button
+              onClick={() => setEngagementMetricFilter('rqs')}
+              className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                engagementMetricFilter === 'rqs'
+                  ? 'bg-green-600 text-white shadow-sm'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+              }`}
+            >
+              ⭐ RQS
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Chart */}
       <div className={`${darkMode ? 'card-dark' : 'card'} h-[600px] relative overflow-hidden`}>

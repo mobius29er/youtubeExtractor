@@ -285,7 +285,8 @@ async def get_visualization_data():
                 'view_count': 'mean',
                 'like_count': 'mean', 
                 'comment_count': 'mean',
-                'video_id': 'count'
+                'video_id': 'count',
+                'channel_subs': 'first'  # Get subscriber count (should be same for all videos in channel)
             }).round().astype(int)
             
             # Get all channels, sorted by average views (descending)
@@ -320,6 +321,7 @@ async def get_visualization_data():
                         "likes": int(row['like_count']) if pd.notna(row['like_count']) else 0,
                         "comments": int(row['comment_count']) if pd.notna(row['comment_count']) else 0,
                         "videos": int(row['video_id']) if pd.notna(row['video_id']) else 0,
+                        "subscribers": int(row['channel_subs']) if pd.notna(row['channel_subs']) else 1000000,  # Add subscriber data with fallback
                         "videoDetails": video_details  # Add the video details
                     })
                 except Exception as ce:
