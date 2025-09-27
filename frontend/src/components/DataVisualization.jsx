@@ -18,6 +18,15 @@ import {
 import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target, Flame, BarChart2, Trophy } from 'lucide-react';
 import FilterControls from './FilterControls';
 
+// YouTube thumbnail utility
+const getYouTubeThumbnail = (videoId, quality = 'mqdefault') => {
+  if (!videoId) return null;
+  // Handle different video ID formats that might be in the data
+  const cleanVideoId = videoId.toString().trim();
+  // YouTube thumbnail qualities: default (120x90), mqdefault (320x180), hqdefault (480x360), sddefault (640x480), maxresdefault (1280x720)
+  return `https://img.youtube.com/vi/${cleanVideoId}/${quality}.jpg`;
+};
+
 // Color analysis utilities for heatmap
 const hexToHsl = (hex) => {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
@@ -2731,6 +2740,13 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                               } border-b-2 ${
                                 darkMode ? 'border-gray-600' : 'border-gray-300'
                               }`}>
+                                Thumbnail
+                              </th>
+                              <th className={`text-left px-8 py-5 text-sm font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              } border-b-2 ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                              }`}>
                                 Video Title
                               </th>
                               <th className={`text-left px-8 py-5 text-sm font-semibold ${
@@ -2779,6 +2795,43 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                   }`}>
                                     RQS Rank
                                   </div>
+                                </td>
+                                <td className="px-8 py-10">
+                                  {/* YouTube thumbnail */}
+                                  {(() => {
+                                    const thumbnailUrl = getYouTubeThumbnail(video.videoId, 'mqdefault');
+                                    return thumbnailUrl ? (
+                                      <img
+                                        src={thumbnailUrl}
+                                        alt={video.title}
+                                        className={`w-24 h-16 rounded-lg border-2 object-cover shadow-md hover:shadow-lg transition-all cursor-pointer ${
+                                          darkMode ? 'border-gray-600' : 'border-gray-300'
+                                        }`}
+                                        onError={(e) => {
+                                          // Fallback to placeholder if thumbnail fails to load
+                                          e.target.style.display = 'none';
+                                          e.target.nextSibling.style.display = 'flex';
+                                        }}
+                                      />
+                                    ) : null;
+                                  })()}
+                                  
+                                  {/* Fallback placeholder */}
+                                  {(() => {
+                                    const thumbnailUrl = getYouTubeThumbnail(video.videoId, 'mqdefault');
+                                    return (
+                                      <div 
+                                        className={`w-24 h-16 rounded-lg border-2 flex items-center justify-center ${
+                                          darkMode ? 'bg-gray-700 border-gray-600 text-gray-400' : 'bg-gray-200 border-gray-300 text-gray-600'
+                                        } ${thumbnailUrl ? 'hidden' : 'flex'}`}
+                                        style={{
+                                          background: thumbnailUrl ? undefined : `linear-gradient(45deg, ${video.colors[0] || '#gray'}, ${video.colors[1] || video.colors[0] || '#gray'})`
+                                        }}
+                                      >
+                                        🖼️
+                                      </div>
+                                    );
+                                  })()}
                                 </td>
                                 <td className="px-8 py-10 max-w-xs">
                                   <div className="space-y-2">
@@ -3344,31 +3397,64 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                           Example Thumbnails:
                                         </h7>
                                         <div className="mt-2 space-y-2">
-                                          {selectedHeatmapCell.examples.map((example, idx) => (
-                                            <div key={idx} className={`p-2 rounded text-xs ${
-                                              darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
-                                            }`}>
-                                              <div className="flex items-center gap-2 mb-1">
-                                                <div className="flex gap-1">
-                                                  {example.palette?.map((color, colorIdx) => (
-                                                    <div
-                                                      key={colorIdx}
-                                                      className="w-3 h-3 rounded border border-gray-400"
-                                                      style={{ backgroundColor: color }}
-                                                      title={color}
-                                                    />
-                                                  ))}
+                                          {selectedHeatmapCell.examples.map((example, idx) => {
+                                            const thumbnailUrl = getYouTubeThumbnail(example.videoId, 'mqdefault');
+                                            return (
+                                              <div key={idx} className={`p-3 rounded flex items-center gap-3 ${
+                                                darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
+                                              }`}>
+                                                {/* Thumbnail */}
+                                                {thumbnailUrl ? (
+                                                  <img
+                                                    src={thumbnailUrl}
+                                                    alt={example.title}
+                                                    className={`w-16 h-10 rounded border object-cover flex-shrink-0 ${
+                                                      darkMode ? 'border-gray-600' : 'border-gray-300'
+                                                    }`}
+                                                    onError={(e) => {
+                                                      e.target.style.display = 'none';
+                                                      e.target.nextSibling.style.display = 'flex';
+                                                    }}
+                                                  />
+                                                ) : null}
+                                                
+                                                {/* Fallback placeholder */}
+                                                <div 
+                                                  className={`w-16 h-10 rounded border flex items-center justify-center text-xs flex-shrink-0 ${
+                                                    darkMode ? 'bg-gray-700 border-gray-600 text-gray-400' : 'bg-gray-200 border-gray-300 text-gray-600'
+                                                  } ${thumbnailUrl ? 'hidden' : 'flex'}`}
+                                                  style={{
+                                                    background: thumbnailUrl ? undefined : `linear-gradient(45deg, ${example.palette?.[0] || '#gray'}, ${example.palette?.[1] || example.palette?.[0] || '#gray'})`
+                                                  }}
+                                                >
+                                                  🖼️
                                                 </div>
-                                                <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                                                  {heatmapMetric === 'rqs' ? example.metric.toFixed(1) : example.metric.toLocaleString()} 
-                                                  {heatmapMetric === 'rqs' ? ' RQS' : ' views'}
-                                                </span>
+                                                
+                                                {/* Content */}
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center gap-2 mb-1">
+                                                    <div className="flex gap-1">
+                                                      {example.palette?.map((color, colorIdx) => (
+                                                        <div
+                                                          key={colorIdx}
+                                                          className="w-3 h-3 rounded border border-gray-400"
+                                                          style={{ backgroundColor: color }}
+                                                          title={color}
+                                                        />
+                                                      ))}
+                                                    </div>
+                                                    <span className={`font-medium text-xs ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                                      {heatmapMetric === 'rqs' ? example.metric.toFixed(1) : example.metric.toLocaleString()} 
+                                                      {heatmapMetric === 'rqs' ? ' RQS' : ' views'}
+                                                    </span>
+                                                  </div>
+                                                  <div className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                    {example.title}
+                                                  </div>
+                                                </div>
                                               </div>
-                                              <div className={`truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                                {example.title}
-                                              </div>
-                                            </div>
-                                          ))}
+                                            );
+                                          })}
                                         </div>
                                       </div>
                                     )}
@@ -4247,32 +4333,65 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                 Example Thumbnails Using {selectedFrequencyColor.color}:
                               </h7>
                               <div className="space-y-2">
-                                {selectedFrequencyColor.examples.map((example, idx) => (
-                                  <div key={idx} className={`p-3 rounded text-sm ${
-                                    darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
-                                  }`}>
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <div className="flex gap-1">
-                                        {example.palette?.map((color, colorIdx) => (
-                                          <div
-                                            key={colorIdx}
-                                            className="w-4 h-4 rounded border border-gray-400"
-                                            style={{ backgroundColor: color }}
-                                          />
-                                        ))}
+                                {selectedFrequencyColor.examples.map((example, idx) => {
+                                  const thumbnailUrl = getYouTubeThumbnail(example.videoId, 'mqdefault');
+                                  return (
+                                    <div key={idx} className={`p-3 rounded flex items-center gap-3 ${
+                                      darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
+                                    }`}>
+                                      {/* Thumbnail */}
+                                      {thumbnailUrl ? (
+                                        <img
+                                          src={thumbnailUrl}
+                                          alt={example.title}
+                                          className={`w-16 h-10 rounded border object-cover flex-shrink-0 ${
+                                            darkMode ? 'border-gray-600' : 'border-gray-300'
+                                          }`}
+                                          onError={(e) => {
+                                            e.target.style.display = 'none';
+                                            e.target.nextSibling.style.display = 'flex';
+                                          }}
+                                        />
+                                      ) : null}
+                                      
+                                      {/* Fallback placeholder */}
+                                      <div 
+                                        className={`w-16 h-10 rounded border flex items-center justify-center text-xs flex-shrink-0 ${
+                                          darkMode ? 'bg-gray-700 border-gray-600 text-gray-400' : 'bg-gray-200 border-gray-300 text-gray-600'
+                                        } ${thumbnailUrl ? 'hidden' : 'flex'}`}
+                                        style={{
+                                          background: thumbnailUrl ? undefined : `linear-gradient(45deg, ${example.palette?.[0] || selectedFrequencyColor.color}, ${example.palette?.[1] || selectedFrequencyColor.color})`
+                                        }}
+                                      >
+                                        🖼️
                                       </div>
-                                      <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-                                        {frequencyMetric === 'rqs' 
-                                          ? example.metric.toFixed(1) + ' RQS' 
-                                          : example.metric.toLocaleString() + ' views'
-                                        }
-                                      </span>
+                                      
+                                      {/* Content */}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <div className="flex gap-1">
+                                            {example.palette?.map((color, colorIdx) => (
+                                              <div
+                                                key={colorIdx}
+                                                className="w-4 h-4 rounded border border-gray-400"
+                                                style={{ backgroundColor: color }}
+                                              />
+                                            ))}
+                                          </div>
+                                          <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                            {frequencyMetric === 'rqs' 
+                                              ? example.metric.toFixed(1) + ' RQS' 
+                                              : example.metric.toLocaleString() + ' views'
+                                            }
+                                          </span>
+                                        </div>
+                                        <div className={`text-sm truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                          {example.title}
+                                        </div>
+                                      </div>
                                     </div>
-                                    <div className={`truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                      {example.title}
-                                    </div>
-                                  </div>
-                                ))}
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
@@ -4690,20 +4809,56 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                       {/* Example thumbnails */}
                                       {leaderboardExamples && item.examples.length > 0 && (
                                         <div className="mt-3 pt-3 border-t border-gray-600">
-                                          <div className="flex gap-2 text-xs">
-                                            <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                          <div className="space-y-2">
+                                            <span className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                               Examples:
                                             </span>
-                                            {item.examples.slice(0, 3).map((example, i) => (
-                                              <span key={i} className={`px-2 py-1 rounded ${
-                                                darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
-                                              }`}>
-                                                {example.title.length > 30 
-                                                  ? example.title.substring(0, 30) + '...'
-                                                  : example.title
-                                                }
-                                              </span>
-                                            ))}
+                                            <div className="flex gap-2 flex-wrap">
+                                              {item.examples.slice(0, 3).map((example, i) => {
+                                                const thumbnailUrl = getYouTubeThumbnail(example.videoId, 'mqdefault');
+                                                return (
+                                                  <div key={i} className="flex items-center gap-2">
+                                                    {/* Thumbnail */}
+                                                    {thumbnailUrl ? (
+                                                      <img
+                                                        src={thumbnailUrl}
+                                                        alt={example.title}
+                                                        className={`w-16 h-10 rounded border object-cover ${
+                                                          darkMode ? 'border-gray-600' : 'border-gray-300'
+                                                        }`}
+                                                        onError={(e) => {
+                                                          // Fallback to placeholder if thumbnail fails to load
+                                                          e.target.style.display = 'none';
+                                                          e.target.nextSibling.style.display = 'flex';
+                                                        }}
+                                                      />
+                                                    ) : null}
+                                                    
+                                                    {/* Fallback placeholder */}
+                                                    <div 
+                                                      className={`w-16 h-10 rounded border flex items-center justify-center text-xs ${
+                                                        darkMode ? 'bg-gray-700 border-gray-600 text-gray-400' : 'bg-gray-200 border-gray-300 text-gray-600'
+                                                      } ${thumbnailUrl ? 'hidden' : 'flex'}`}
+                                                      style={{
+                                                        background: thumbnailUrl ? undefined : `linear-gradient(45deg, ${item.palette[0] || '#gray'}, ${item.palette[1] || item.palette[0] || '#gray'})`
+                                                      }}
+                                                    >
+                                                      🖼️
+                                                    </div>
+                                                    
+                                                    {/* Title */}
+                                                    <span className={`text-xs px-2 py-1 rounded flex-1 ${
+                                                      darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                                                    }`}>
+                                                      {example.title.length > 25 
+                                                        ? example.title.substring(0, 25) + '...'
+                                                        : example.title
+                                                      }
+                                                    </span>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
                                           </div>
                                         </div>
                                       )}
@@ -5033,21 +5188,305 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                 </div>
                               )}
 
+                              {/* Grid View - Instagram/Dribbble Style */}
                               {leaderboardView === 'grid' && (
-                                <div className={`text-center py-20 rounded-lg ${
-                                  darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
-                                }`}>
-                                  <div className="text-6xl mb-4">🗂️</div>
-                                  <h5 className={`text-lg font-semibold mb-2 ${
-                                    darkMode ? 'text-gray-300' : 'text-gray-700'
-                                  }`}>
-                                    Grid View Coming Soon
-                                  </h5>
-                                  <p className={`text-sm ${
-                                    darkMode ? 'text-gray-400' : 'text-gray-500'
-                                  }`}>
-                                    Card-based grid layout will be available here
-                                  </p>
+                                <div className="space-y-6">
+                                  {/* Grid Container - Responsive 2x5 → 2x5 → 1x10 */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                                    {leaderboardData.top10.map((item, index) => (
+                                      <div
+                                        key={item.signature}
+                                        className={`group relative overflow-hidden rounded-xl border transition-all duration-300 cursor-pointer hover:shadow-xl hover:-translate-y-1 ${
+                                          darkMode 
+                                            ? 'bg-gray-800 border-gray-600 hover:border-gray-500 hover:bg-gray-750' 
+                                            : 'bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                        onClick={() => setSelectedLeaderboardItem(item)}
+                                      >
+                                        {/* Rank Badge - Top Left */}
+                                        <div className={`absolute top-3 left-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                          index === 0 ? 'bg-yellow-500 text-yellow-900 shadow-lg' :
+                                          index === 1 ? 'bg-gray-400 text-gray-900 shadow-lg' :
+                                          index === 2 ? 'bg-orange-600 text-orange-100 shadow-lg' :
+                                          darkMode ? 'bg-gray-700 text-gray-200 shadow-lg' : 'bg-gray-300 text-gray-700 shadow-lg'
+                                        }`}>
+                                          #{item.rank}
+                                        </div>
+
+                                        {/* Metric Badge - Top Right */}
+                                        <div className={`absolute top-3 right-3 z-10 px-2 py-1 rounded-full text-xs font-semibold ${
+                                          // Color-code based on relative performance
+                                          item.metricValue / leaderboardData.top10[0].metricValue > 0.8
+                                            ? 'bg-green-500 text-white' // Strong
+                                            : item.metricValue / leaderboardData.top10[0].metricValue > 0.6
+                                              ? 'bg-yellow-500 text-yellow-900' // Baseline
+                                              : 'bg-red-500 text-white' // Weak
+                                        }`}>
+                                          {leaderboardMetric === 'rqs' 
+                                            ? item.metricValue.toFixed(1)
+                                            : (item.metricValue / 1000000).toFixed(1) + 'M'
+                                          }
+                                        </div>
+
+                                        {/* Card Content */}
+                                        <div className="p-4 pt-12">
+                                          {/* Swatch Strip */}
+                                          <div className="mb-4">
+                                            <div className="flex justify-center mb-2">
+                                              <div className="flex rounded-lg overflow-hidden border-2 border-gray-200 shadow-sm">
+                                                {item.type === 'single_color' ? (
+                                                  <div
+                                                    className="w-12 h-8 flex-shrink-0 transition-all group-hover:w-16 group-hover:h-10"
+                                                    style={{ backgroundColor: item.palette[0] }}
+                                                    title={`${item.signature}: ${item.palette[0]}`}
+                                                  />
+                                                ) : (
+                                                  item.palette.slice(0, 5).map((color, i) => (
+                                                    <div
+                                                      key={i}
+                                                      className="w-8 h-8 flex-shrink-0 border-r border-gray-300 last:border-r-0 transition-all group-hover:w-10 group-hover:h-10 relative"
+                                                      style={{ backgroundColor: color }}
+                                                      title={`Color ${i + 1}: ${color}`}
+                                                    >
+                                                      {/* Hex code on hover */}
+                                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-75 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                                                        <span className="text-white text-xs font-mono">
+                                                          {color.length > 7 ? color.substring(0, 7) : color}
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                  ))
+                                                )}
+                                              </div>
+                                            </div>
+
+                                            {/* Signature Label */}
+                                            <h6 className={`text-center font-semibold text-sm mb-1 ${
+                                              darkMode ? 'text-gray-200' : 'text-gray-800'
+                                            }`}>
+                                              {item.signature}
+                                            </h6>
+
+                                            {/* Family Badge */}
+                                            <div className="flex justify-center">
+                                              <div className="flex gap-1 flex-wrap justify-center">
+                                                {item.families.slice(0, 2).map(family => (
+                                                  <span key={family} className={`text-xs px-2 py-1 rounded-full ${
+                                                    ['Black', 'White', 'Gray'].includes(family)
+                                                      ? darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700'
+                                                      : getCoarseGrouping(family) === 'Warm'
+                                                        ? darkMode ? 'bg-red-900 text-red-300' : 'bg-red-200 text-red-800'
+                                                        : darkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-200 text-blue-800'
+                                                  }`}>
+                                                    {leaderboardGrouping === 'coarse' ? getCoarseGrouping(family) : family}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* Metric Value + Context */}
+                                          <div className="text-center mb-4">
+                                            <div className={`text-lg font-bold ${
+                                              darkMode ? 'text-gray-200' : 'text-gray-800'
+                                            }`}>
+                                              {leaderboardMetric === 'rqs' ? (
+                                                <>Avg RQS {item.metricValue.toFixed(1)}</>
+                                              ) : (
+                                                <>{leaderboardViewsMode === 'median' ? 'Median' : 'Average'} Views {(item.metricValue / 1000000).toFixed(1)}M</>
+                                              )}
+                                            </div>
+                                            <div className={`text-xs ${
+                                              darkMode ? 'text-gray-400' : 'text-gray-600'
+                                            }`}>
+                                              n={item.n} • {item.usageRate.toFixed(1)}% usage
+                                            </div>
+                                          </div>
+
+                                          {/* Example Thumbnails */}
+                                          <div className="space-y-2">
+                                            <div className={`text-xs font-medium text-center ${
+                                              darkMode ? 'text-gray-400' : 'text-gray-600'
+                                            }`}>
+                                              Example Thumbnails
+                                            </div>
+                                            
+                                            {item.examples.length > 0 ? (
+                                              <div className="flex justify-center gap-1">
+                                                {item.examples.slice(0, 3).map((example, i) => {
+                                                  const thumbnailUrl = getYouTubeThumbnail(example.videoId, 'mqdefault');
+                                                  return (
+                                                    <div
+                                                      key={i}
+                                                      className="relative group/thumb cursor-pointer"
+                                                      title={`${example.title} - ${example.channel}`}
+                                                    >
+                                                      {/* Actual YouTube thumbnail */}
+                                                      {thumbnailUrl ? (
+                                                        <img
+                                                          src={thumbnailUrl}
+                                                          alt={example.title}
+                                                          className={`w-12 h-8 rounded border-2 border-opacity-20 object-cover transition-all group-hover/thumb:w-16 group-hover/thumb:h-10 group-hover/thumb:shadow-lg ${
+                                                            darkMode ? 'border-gray-500' : 'border-gray-400'
+                                                          }`}
+                                                          onError={(e) => {
+                                                            // Fallback to placeholder if thumbnail fails to load
+                                                            e.target.style.display = 'none';
+                                                            e.target.nextSibling.style.display = 'flex';
+                                                          }}
+                                                        />
+                                                      ) : null}
+                                                      
+                                                      {/* Fallback placeholder */}
+                                                      <div 
+                                                        className={`w-12 h-8 rounded border-2 border-opacity-20 flex items-center justify-center text-xs transition-all group-hover/thumb:w-16 group-hover/thumb:h-10 ${
+                                                          darkMode ? 'bg-gray-700 border-gray-500 text-gray-400' : 'bg-gray-200 border-gray-400 text-gray-600'
+                                                        } ${thumbnailUrl ? 'hidden' : 'flex'}`}
+                                                        style={{
+                                                          background: thumbnailUrl ? undefined : `linear-gradient(45deg, ${item.palette[0] || '#gray'}, ${item.palette[1] || item.palette[0] || '#gray'})`
+                                                        }}
+                                                      >
+                                                        🖼️
+                                                      </div>
+                                                      
+                                                      {/* Hover overlay with title */}
+                                                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-1 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover/thumb:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
+                                                        {example.title.length > 20 
+                                                          ? example.title.substring(0, 20) + '...'
+                                                          : example.title
+                                                        }
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })}
+                                              </div>
+                                            ) : (
+                                              <div className={`text-center text-xs italic ${
+                                                darkMode ? 'text-gray-500' : 'text-gray-400'
+                                              }`}>
+                                                No examples available
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Top Genres (if space) */}
+                                          {item.topGenres.length > 0 && (
+                                            <div className="mt-3 text-center">
+                                              <div className={`text-xs ${
+                                                darkMode ? 'text-gray-400' : 'text-gray-600'
+                                              }`}>
+                                                Top: {item.topGenres.slice(0, 2).join(', ')}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Hover Effect Overlay */}
+                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none ${
+                                          darkMode ? 'bg-blue-500' : 'bg-blue-400'
+                                        } bg-opacity-5`} />
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Grid Actions */}
+                                  <div className="flex justify-center gap-4 pt-4">
+                                    <button
+                                      onClick={() => {
+                                        // Export grid as PNG (placeholder)
+                                        console.log('Export grid as PNG functionality would go here');
+                                      }}
+                                      className={`px-4 py-2 text-sm rounded-lg border transition-colors flex items-center gap-2 ${
+                                        darkMode 
+                                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      📸 Export Grid
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        // Export as CSV (placeholder)
+                                        console.log('Export CSV functionality would go here');
+                                      }}
+                                      className={`px-4 py-2 text-sm rounded-lg border transition-colors flex items-center gap-2 ${
+                                        darkMode 
+                                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      📊 Export CSV
+                                    </button>
+                                    <button
+                                      onClick={() => setLeaderboardView('bars')}
+                                      className={`px-4 py-2 text-sm rounded-lg border transition-colors flex items-center gap-2 ${
+                                        darkMode 
+                                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      📊 Switch to Bars
+                                    </button>
+                                  </div>
+
+                                  {/* Grid Legend */}
+                                  <div className={`p-4 rounded-lg ${
+                                    darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                                  } border`}>
+                                    <h6 className={`font-semibold mb-3 ${
+                                      darkMode ? 'text-gray-200' : 'text-gray-800'
+                                    }`}>
+                                      🗂️ How to Read the Grid
+                                    </h6>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center text-xs font-bold">#1</div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Rank Badge:</strong> Gold (#1), Silver (#2), Bronze (#3)
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-6 h-4 bg-green-500 rounded"></div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Metric Badge:</strong> Green = strong, Yellow = good, Red = weak
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex">
+                                            <div className="w-3 h-3 bg-red-400"></div>
+                                            <div className="w-3 h-3 bg-blue-400"></div>
+                                            <div className="w-3 h-3 bg-green-400"></div>
+                                          </div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Swatch Strip:</strong> Hover to see hex codes
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-4 h-3 bg-gray-400 rounded border text-xs flex items-center justify-center">🖼️</div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Thumbnails:</strong> Hover to see video titles
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="text-lg">📊</div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Usage:</strong> Percentage of videos using this palette
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="text-lg">👆</div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Click Card:</strong> View detailed breakdown
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </div>
