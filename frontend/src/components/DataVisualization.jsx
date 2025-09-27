@@ -180,7 +180,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [correlationDataMode, setCorrelationDataMode] = useState('channel'); // 'channel' or 'video'
   const [correlationYAxis, setCorrelationYAxis] = useState('engagement'); // 'engagement', 'rqs', 'like_ratio', 'comment_ratio', 'subscribers'
   const [thumbnailView, setThumbnailView] = useState('table'); // 'table' or 'matrix'
-  const [thumbnailAnalysisView, setThumbnailAnalysisView] = useState('palette'); // 'palette', 'heatmap', 'frequency', 'leaderboard'
+  const [thumbnailAnalysisView, setThumbnailAnalysisView] = useState('palette'); // 'palette', 'heatmap', 'frequency', 'face_analysis', 'leaderboard'
   const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Heatmap specific states
@@ -213,6 +213,14 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [leaderboardNormalize, setLeaderboardNormalize] = useState(false);
   const [selectedLeaderboardItem, setSelectedLeaderboardItem] = useState(null);
   const [leaderboardExamples, setLeaderboardExamples] = useState(true);
+  
+  // Face analysis state
+  const [faceMetric, setFaceMetric] = useState('rqs'); // 'rqs' or 'views'
+  const [faceViewsMode, setFaceViewsMode] = useState('avg'); // 'avg' or 'median'
+  const [faceBinScheme, setFaceBinScheme] = useState('standard'); // 'standard' or 'fine'
+  const [faceMinN, setFaceMinN] = useState(5); // minimum n for valid bins
+  const [faceAnalysisView, setFaceAnalysisView] = useState('leaderboard'); // 'leaderboard', 'curve', 'distribution'
+  const [selectedFaceBin, setSelectedFaceBin] = useState(null); // for drill-down
   
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
@@ -821,7 +829,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
             title: row.title,
             palette: row.palette,
             metric,
-            videoId: row.videoId
+            videoId: row.videoId,
+            facePercentage: row.facePercentage || 0
           });
         }
         
@@ -1055,7 +1064,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
             title: row.title,
             palette: row.palette,
             metric: metricValues(row),
-            videoId: row.videoId
+            videoId: row.videoId,
+            facePercentage: row.facePercentage || 0
           }))
         };
       });
@@ -1064,6 +1074,168 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       
     } catch (error) {
       console.error('Error generating color frequency data:', error);
+      return null;
+    }
+  };
+
+  // Face Analysis Data Processing
+  const generateFaceAnalysisData = (videos) => {
+    if (!videos || videos.length === 0) return null;
+
+    try {
+      console.log('👤 Face Analysis:', {
+        totalVideos: videos.length,
+        sampleWithFace: videos.filter(v => v.facePercentage > 0).length,
+        faceRange: {
+          min: Math.min(...videos.map(v => v.facePercentage || 0)),
+          max: Math.max(...videos.map(v => v.facePercentage || 0))
+        }
+      });
+
+      // Define face percentage bins
+      const getBinFromFacePercentage = (facePercentage) => {
+        if (faceBinScheme === 'standard') {
+          if (facePercentage === 0) return { key: 'B0', label: '0% (no face)', range: [0, 0] };
+          if (facePercentage <= 5) return { key: 'B1', label: '0-5%', range: [0.1, 5] };
+          if (facePercentage <= 10) return { key: 'B2', label: '5-10%', range: [5, 10] };
+          if (facePercentage <= 20) return { key: 'B3', label: '10-20%', range: [10, 20] };
+          if (facePercentage <= 35) return { key: 'B4', label: '20-35%', range: [20, 35] };
+          if (facePercentage <= 50) return { key: 'B5', label: '35-50%', range: [35, 50] };
+          if (facePercentage <= 75) return { key: 'B6', label: '50-75%', range: [50, 75] };
+          return { key: 'B7', label: '>75%', range: [75, 100] };
+        } else if (faceBinScheme === 'fine') {
+          // 12-bin scheme for finer granularity
+          const binSize = 100 / 12;
+          const binIndex = Math.min(11, Math.floor(facePercentage / binSize));
+          const start = binIndex * binSize;
+          const end = (binIndex + 1) * binSize;
+          return {
+            key: `F${binIndex}`,
+            label: `${start.toFixed(0)}-${end.toFixed(0)}%`,
+            range: [start, end]
+          };
+        }
+      };
+
+      // Group videos by face percentage bins
+      const faceBins = {};
+      const metricValues = faceMetric === 'rqs' ? 
+        (video) => video.rqs : 
+        (video) => video.views;
+
+      videos.forEach(video => {
+        const facePercentage = video.facePercentage || 0;
+        const bin = getBinFromFacePercentage(facePercentage);
+        const metric = metricValues(video);
+
+        if (!faceBins[bin.key]) {
+          faceBins[bin.key] = {
+            ...bin,
+            videos: [],
+            metrics: []
+          };
+        }
+
+        faceBins[bin.key].videos.push(video);
+        faceBins[bin.key].metrics.push(metric);
+      });
+
+      // Calculate statistics for each bin
+      const binStats = Object.values(faceBins).map(bin => {
+        const n = bin.videos.length;
+        if (n < faceMinN) {
+          return {
+            ...bin,
+            n,
+            mean: null,
+            median: null,
+            ci: null,
+            insufficient: true,
+            usageRate: (n / videos.length) * 100,
+            examples: []
+          };
+        }
+
+        const sortedMetrics = [...bin.metrics].sort((a, b) => a - b);
+        const mean = bin.metrics.reduce((sum, val) => sum + val, 0) / n;
+        const median = sortedMetrics[Math.floor(n / 2)];
+        
+        // Bootstrap 95% CI
+        const bootstrapMeans = [];
+        for (let i = 0; i < 100; i++) {
+          const sample = Array.from({length: n}, () => 
+            bin.metrics[Math.floor(Math.random() * n)]
+          );
+          bootstrapMeans.push(sample.reduce((sum, val) => sum + val, 0) / n);
+        }
+        bootstrapMeans.sort((a, b) => a - b);
+        const ci = [
+          bootstrapMeans[Math.floor(0.025 * bootstrapMeans.length)],
+          bootstrapMeans[Math.floor(0.975 * bootstrapMeans.length)]
+        ];
+
+        // Get top examples
+        const sortedVideos = [...bin.videos].sort((a, b) => 
+          faceMetric === 'rqs' ? b.rqs - a.rqs : b.views - a.views
+        );
+        const examples = sortedVideos.slice(0, 3).map(video => ({
+          videoId: video.videoId,
+          title: video.title,
+          channelName: video.channelName,
+          metric: metricValues(video),
+          facePercentage: video.facePercentage,
+          palette: video.colors
+        }));
+
+        return {
+          ...bin,
+          n,
+          mean,
+          median,
+          ci,
+          insufficient: false,
+          usageRate: (n / videos.length) * 100,
+          examples
+        };
+      }).filter(bin => bin.n > 0); // Remove empty bins
+
+      // Sort by metric performance
+      const validBins = binStats.filter(bin => !bin.insufficient);
+      const metricKey = faceMetric === 'rqs' ? 'mean' : 
+                       (faceViewsMode === 'median' ? 'median' : 'mean');
+      
+      validBins.sort((a, b) => b[metricKey] - a[metricKey]);
+
+      // Calculate baseline (overall mean/median)
+      const allMetrics = videos.map(metricValues);
+      const baseline = faceMetric === 'rqs' ? 
+        allMetrics.reduce((sum, val) => sum + val, 0) / allMetrics.length :
+        (faceViewsMode === 'median' ? 
+          [...allMetrics].sort((a, b) => a - b)[Math.floor(allMetrics.length / 2)] :
+          allMetrics.reduce((sum, val) => sum + val, 0) / allMetrics.length
+        );
+
+      // Add lift calculation
+      binStats.forEach(bin => {
+        if (!bin.insufficient) {
+          const binValue = bin[metricKey];
+          bin.lift = binValue - baseline;
+          bin.liftPercent = ((binValue - baseline) / baseline) * 100;
+        }
+      });
+
+      return {
+        bins: binStats,
+        validBins: validBins.slice(0, 10), // Top 10 for leaderboard
+        baseline,
+        totalVideos: videos.length,
+        binScheme: faceBinScheme,
+        metric: faceMetric,
+        viewsMode: faceViewsMode
+      };
+
+    } catch (error) {
+      console.error('Error generating face analysis data:', error);
       return null;
     }
   };
@@ -1232,7 +1404,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
               title: video.title,
               channelName: video.channelName,
               metric: leaderboardMetric === 'rqs' ? video.rqs : video.views,
-              palette: video.palette
+              palette: video.palette,
+              facePercentage: video.facePercentage || 0 // Include face percentage
             }));
           
           return {
@@ -2448,6 +2621,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                       channelName: channel.name,
                       views: views,
                       rqs: rqs,
+                      facePercentage: video.face_area_percentage || 0, // Add face percentage
                       source: colorSource,
                       colorCount: colorData.length, // Track actual number of colors
                       // Add channel metadata for filtering (calculate tiers dynamically)
@@ -2678,6 +2852,21 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   </button>
                   
                   <button
+                    onClick={() => setThumbnailAnalysisView('face_analysis')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      thumbnailAnalysisView === 'face_analysis'
+                        ? darkMode
+                          ? 'bg-blue-600 text-white border border-blue-500'
+                          : 'bg-blue-600 text-white border border-blue-500'
+                        : darkMode
+                          ? 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    👤 Face Analysis
+                  </button>
+                  
+                  <button
                     onClick={() => setThumbnailAnalysisView('leaderboard')}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                       thumbnailAnalysisView === 'leaderboard'
@@ -2762,6 +2951,13 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                 darkMode ? 'border-gray-600' : 'border-gray-300'
                               }`}>
                                 Views
+                              </th>
+                              <th className={`text-left px-8 py-5 text-sm font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              } border-b-2 ${
+                                darkMode ? 'border-gray-600' : 'border-gray-300'
+                              }`}>
+                                Face %
                               </th>
                               <th className={`text-left px-8 py-5 text-sm font-semibold ${
                                 darkMode ? 'text-gray-200' : 'text-gray-800'
@@ -2896,6 +3092,35 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                     }`}>
                                       views
                                     </span>
+                                  </div>
+                                </td>
+                                <td className="px-8 py-10">
+                                  <div className="flex flex-col items-center space-y-2">
+                                    {/* Face percentage visualization */}
+                                    <div className="relative w-16 h-16">
+                                      <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl ${
+                                        darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                                      }`}>
+                                        😊
+                                      </div>
+                                      {/* Face percentage overlay */}
+                                      <div className="absolute inset-0 flex items-center justify-center">
+                                        <div className={`text-xs font-bold px-1 py-0.5 rounded ${
+                                          video.facePercentage >= 20 
+                                            ? 'bg-green-500 text-white' 
+                                            : video.facePercentage >= 10
+                                              ? 'bg-yellow-500 text-yellow-900'
+                                              : 'bg-red-500 text-white'
+                                        }`}>
+                                          {video.facePercentage ? `${video.facePercentage.toFixed(0)}%` : '0%'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className={`text-xs text-center ${
+                                      darkMode ? 'text-gray-400' : 'text-gray-600'
+                                    }`}>
+                                      Face Area
+                                    </div>
                                   </div>
                                 </td>
                                 <td className="px-8 py-10">
@@ -3447,6 +3672,15 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                                       {heatmapMetric === 'rqs' ? example.metric.toFixed(1) : example.metric.toLocaleString()} 
                                                       {heatmapMetric === 'rqs' ? ' RQS' : ' views'}
                                                     </span>
+                                                    {example.facePercentage !== undefined && (
+                                                      <span className={`text-xs px-1 py-0.5 rounded ${
+                                                        example.facePercentage >= 20 ? 'bg-green-500 text-white' :
+                                                        example.facePercentage >= 10 ? 'bg-yellow-500 text-yellow-900' :
+                                                        'bg-red-500 text-white'
+                                                      }`}>
+                                                        👤{example.facePercentage.toFixed(0)}%
+                                                      </span>
+                                                    )}
                                                   </div>
                                                   <div className={`text-xs truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                                     {example.title}
@@ -4384,6 +4618,15 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                               : example.metric.toLocaleString() + ' views'
                                             }
                                           </span>
+                                          {example.facePercentage !== undefined && (
+                                            <span className={`text-xs px-1 py-0.5 rounded ${
+                                              example.facePercentage >= 20 ? 'bg-green-500 text-white' :
+                                              example.facePercentage >= 10 ? 'bg-yellow-500 text-yellow-900' :
+                                              'bg-red-500 text-white'
+                                            }`}>
+                                              👤{example.facePercentage.toFixed(0)}%
+                                            </span>
+                                          )}
                                         </div>
                                         <div className={`text-sm truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                                           {example.title}
@@ -4398,6 +4641,553 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                         </div>
                       )}
                     </>
+                  )}
+
+                  {/* Face Analysis View */}
+                  {thumbnailAnalysisView === 'face_analysis' && (
+                    <div className="space-y-6">
+                      {/* Face Analysis Header */}
+                      <div className="text-center space-y-4">
+                        <h4 className={`text-2xl font-bold ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          👤 How Much Face Should Fill Your Thumbnails?
+                        </h4>
+                        <p className={`text-sm max-w-3xl mx-auto leading-relaxed ${
+                          darkMode ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                          Analysis shows face coverage directly impacts performance. Find your sweet spot - the face percentage ranges where your audience engages most.
+                        </p>
+                      </div>
+
+                      {/* Face Analysis Controls */}
+                      <div className="space-y-4">
+                        {/* Primary Controls Row */}
+                        <div className="flex flex-wrap gap-4 items-center justify-center">
+                          {/* Metric Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Metric:
+                            </label>
+                            <div className={`inline-flex rounded-lg p-1 ${
+                              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                            }`}>
+                              <button
+                                onClick={() => setFaceMetric('rqs')}
+                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                  faceMetric === 'rqs'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : darkMode
+                                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                                }`}
+                              >
+                                RQS
+                              </button>
+                              <button
+                                onClick={() => setFaceMetric('views')}
+                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                  faceMetric === 'views'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : darkMode
+                                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                                }`}
+                              >
+                                Views
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Views Mode (when Views is selected) */}
+                          {faceMetric === 'views' && (
+                            <div className="flex items-center gap-2">
+                              <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Mode:
+                              </label>
+                              <select
+                                value={faceViewsMode}
+                                onChange={(e) => setFaceViewsMode(e.target.value)}
+                                className={`px-3 py-2 text-sm rounded-md border ${
+                                  darkMode 
+                                    ? 'bg-gray-800 border-gray-600 text-gray-200' 
+                                    : 'bg-white border-gray-300 text-gray-900'
+                                }`}
+                              >
+                                <option value="avg">Average</option>
+                                <option value="median">Median</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {/* Bin Scheme */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Bins:
+                            </label>
+                            <select
+                              value={faceBinScheme}
+                              onChange={(e) => setFaceBinScheme(e.target.value)}
+                              className={`px-3 py-2 text-sm rounded-md border ${
+                                darkMode 
+                                  ? 'bg-gray-800 border-gray-600 text-gray-200' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                              <option value="standard">Quick View (8 ranges)</option>
+                              <option value="fine">Detailed View (12 ranges)</option>
+                            </select>
+                          </div>
+
+                          {/* Min-n Slider */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Min n:
+                            </label>
+                            <input
+                              type="range"
+                              min="1"
+                              max="100"
+                              value={faceMinN}
+                              onChange={(e) => setFaceMinN(parseInt(e.target.value))}
+                              className="w-20"
+                            />
+                            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {faceMinN}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* View Toggle */}
+                      <div className="flex gap-2 justify-center flex-wrap">
+                        <button
+                          onClick={() => setFaceAnalysisView('leaderboard')}
+                          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                            faceAnalysisView === 'leaderboard'
+                              ? 'bg-blue-600 text-white'
+                              : darkMode
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          🏆 Best Face Ranges
+                        </button>
+                        <button
+                          onClick={() => setFaceAnalysisView('curve')}
+                          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                            faceAnalysisView === 'curve'
+                              ? 'bg-blue-600 text-white'
+                              : darkMode
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          📈 Face % vs Performance
+                        </button>
+                        <button
+                          onClick={() => setFaceAnalysisView('distribution')}
+                          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                            faceAnalysisView === 'distribution'
+                              ? 'bg-blue-600 text-white'
+                              : darkMode
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          📊 Usage vs Effectiveness
+                        </button>
+                      </div>
+
+                      {/* Face Analysis Content */}
+                      <div>
+                        {(() => {
+                          // Process data for face analysis
+                          const processedHeatmapData = processHeatmapData(individualVideos);
+                          const faceAnalysisData = generateFaceAnalysisData(processedHeatmapData);
+
+                          if (!faceAnalysisData || faceAnalysisData.bins.length === 0) {
+                            return (
+                              <div className={`text-center py-20 rounded-lg ${
+                                darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                              }`}>
+                                <div className="text-4xl mb-4">👤</div>
+                                <h5 className={`text-lg font-semibold mb-2 ${
+                                  darkMode ? 'text-gray-300' : 'text-gray-700'
+                                }`}>
+                                  No Face Data Available
+                                </h5>
+                                <p className={`text-sm ${
+                                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}>
+                                  Not enough face percentage data. Try lowering Min n or check data availability.
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="space-y-6">
+                              {/* Sweet-Spot Gauge Cards */}
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* Best RQS Bin */}
+                                {(() => {
+                                  const rqsBins = faceAnalysisData.bins.filter(b => !b.insufficient && b.mean);
+                                  const bestRQS = rqsBins.sort((a, b) => b.mean - a.mean)[0];
+                                  return bestRQS ? (
+                                    <div className={`p-4 rounded-lg border ${
+                                      darkMode ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'
+                                    }`}>
+                                      <h6 className={`font-semibold mb-2 ${
+                                        darkMode ? 'text-green-200' : 'text-green-800'
+                                      }`}>
+                                        🏆 Sweet Spot for Engagement
+                                      </h6>
+                                      <div className={`text-lg font-bold ${
+                                        darkMode ? 'text-green-100' : 'text-green-900'
+                                      }`}>
+                                        {bestRQS.label} face
+                                      </div>
+                                      <div className={`text-sm ${
+                                        darkMode ? 'text-green-300' : 'text-green-700'
+                                      }`}>
+                                        Avg RQS: {bestRQS.mean.toFixed(1)} (n={bestRQS.n})
+                                      </div>
+                                    </div>
+                                  ) : null;
+                                })()}
+
+                                {/* Best Views Bin */}
+                                {(() => {
+                                  const viewsBins = faceAnalysisData.bins.filter(b => !b.insufficient);
+                                  const bestViews = viewsBins.sort((a, b) => 
+                                    (faceViewsMode === 'median' ? b.median : b.mean) - (faceViewsMode === 'median' ? a.median : a.mean)
+                                  )[0];
+                                  return bestViews ? (
+                                    <div className={`p-4 rounded-lg border ${
+                                      darkMode ? 'bg-blue-900/20 border-blue-700' : 'bg-blue-50 border-blue-200'
+                                    }`}>
+                                      <h6 className={`font-semibold mb-2 ${
+                                        darkMode ? 'text-blue-200' : 'text-blue-800'
+                                      }`}>
+                                        📈 Sweet Spot for Views
+                                      </h6>
+                                      <div className={`text-lg font-bold ${
+                                        darkMode ? 'text-blue-100' : 'text-blue-900'
+                                      }`}>
+                                        {bestViews.label} face
+                                      </div>
+                                      <div className={`text-sm ${
+                                        darkMode ? 'text-blue-300' : 'text-blue-700'
+                                      }`}>
+                                        {faceViewsMode === 'median' ? 'Median' : 'Avg'} Views: {
+                                          ((faceViewsMode === 'median' ? bestViews.median : bestViews.mean) / 1000000).toFixed(1)
+                                        }M (n={bestViews.n})
+                                      </div>
+                                    </div>
+                                  ) : null;
+                                })()}
+
+                                {/* Avoid Bin */}
+                                {(() => {
+                                  const validBins = faceAnalysisData.bins.filter(b => !b.insufficient && b.lift !== undefined);
+                                  const worstBin = validBins.sort((a, b) => a.lift - b.lift)[0];
+                                  return worstBin && worstBin.lift < 0 ? (
+                                    <div className={`p-4 rounded-lg border ${
+                                      darkMode ? 'bg-red-900/20 border-red-700' : 'bg-red-50 border-red-200'
+                                    }`}>
+                                      <h6 className={`font-semibold mb-2 ${
+                                        darkMode ? 'text-red-200' : 'text-red-800'
+                                      }`}>
+                                        ⚠️ Range to Avoid
+                                      </h6>
+                                      <div className={`text-lg font-bold ${
+                                        darkMode ? 'text-red-100' : 'text-red-900'
+                                      }`}>
+                                        {worstBin.label} face
+                                      </div>
+                                      <div className={`text-sm ${
+                                        darkMode ? 'text-red-300' : 'text-red-700'
+                                      }`}>
+                                        Lift: {worstBin.lift.toFixed(1)} ({worstBin.liftPercent.toFixed(1)}%)
+                                      </div>
+                                    </div>
+                                  ) : null;
+                                })()}
+                              </div>
+
+                              {/* Render based on selected view */}
+                              {faceAnalysisView === 'leaderboard' && (
+                                <div className="space-y-4">
+                                  <h5 className={`text-lg font-semibold ${
+                                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                                  }`}>
+                                    🏆 Best Performing Face Coverage Ranges ({faceMetric === 'rqs' ? 'Engagement' : 'Views'})
+                                  </h5>
+                                  
+                                  {faceAnalysisData.validBins.map((bin, index) => (
+                                    <div key={bin.key} className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-lg ${
+                                      darkMode ? 'bg-gray-800 border-gray-600 hover:border-gray-500' : 'bg-white border-gray-200 hover:border-gray-300'
+                                    }`} onClick={() => setSelectedFaceBin(bin)}>
+                                      <div className="flex items-center gap-4">
+                                        {/* Rank Badge */}
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                          index === 0 ? 'bg-yellow-500 text-yellow-900' :
+                                          index === 1 ? 'bg-gray-400 text-gray-900' :
+                                          index === 2 ? 'bg-orange-600 text-orange-100' :
+                                          darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                                        }`}>
+                                          #{index + 1}
+                                        </div>
+
+                                        {/* Face Range */}
+                                        <div className="flex items-center gap-2">
+                                          <div className="text-2xl">👤</div>
+                                          <div>
+                                            <div className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                              {bin.label}
+                                            </div>
+                                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                              Face Coverage
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Metric Value */}
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-4">
+                                            <div>
+                                              <div className={`text-lg font-bold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                                {faceMetric === 'rqs' 
+                                                  ? bin.mean.toFixed(1)
+                                                  : ((faceViewsMode === 'median' ? bin.median : bin.mean) / 1000000).toFixed(1) + 'M'
+                                                }
+                                              </div>
+                                              <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                {faceMetric === 'rqs' ? 'Avg RQS' : `${faceViewsMode === 'median' ? 'Median' : 'Avg'} Views`}
+                                              </div>
+                                            </div>
+
+                                            {/* Performance Bar */}
+                                            <div className="flex-1 max-w-xs">
+                                              <div className={`w-full h-2 rounded-full overflow-hidden ${
+                                                darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                                              }`}>
+                                                <div
+                                                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
+                                                  style={{
+                                                    width: `${Math.min(100, (
+                                                      (faceMetric === 'rqs' ? bin.mean : (faceViewsMode === 'median' ? bin.median : bin.mean)) / 
+                                                      (faceMetric === 'rqs' ? faceAnalysisData.validBins[0].mean : (faceViewsMode === 'median' ? faceAnalysisData.validBins[0].median : faceAnalysisData.validBins[0].mean))
+                                                    ) * 100)}%`
+                                                  }}
+                                                />
+                                              </div>
+                                            </div>
+
+                                            {/* Metadata */}
+                                            <div className={`text-right text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                              <div>n={bin.n}</div>
+                                              <div>{bin.usageRate.toFixed(1)}% usage</div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Example Thumbnails */}
+                                      {bin.examples.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t border-gray-600">
+                                          <div className="flex gap-2 items-center">
+                                            <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                              Examples:
+                                            </span>
+                                            {bin.examples.map((example, i) => {
+                                              const thumbnailUrl = getYouTubeThumbnail(example.videoId, 'mqdefault');
+                                              return (
+                                                <div key={i} className="flex items-center gap-2">
+                                                  {thumbnailUrl ? (
+                                                    <img
+                                                      src={thumbnailUrl}
+                                                      alt={example.title}
+                                                      className={`w-12 h-8 rounded border object-cover ${
+                                                        darkMode ? 'border-gray-600' : 'border-gray-300'
+                                                      }`}
+                                                      onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.nextSibling.style.display = 'flex';
+                                                      }}
+                                                    />
+                                                  ) : null}
+                                                  
+                                                  <div 
+                                                    className={`w-12 h-8 rounded border flex items-center justify-center text-xs ${
+                                                      darkMode ? 'bg-gray-700 border-gray-600 text-gray-400' : 'bg-gray-200 border-gray-300 text-gray-600'
+                                                    } ${thumbnailUrl ? 'hidden' : 'flex'}`}
+                                                  >
+                                                    👤
+                                                  </div>
+                                                  
+                                                  <span className={`text-xs px-1 py-0.5 rounded ${
+                                                    darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                                                  }`}>
+                                                    {example.title.length > 20 
+                                                      ? example.title.substring(0, 20) + '...'
+                                                      : example.title
+                                                    }
+                                                  </span>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {faceAnalysisView === 'curve' && (
+                                <div className="space-y-4">
+                                  <h5 className={`text-lg font-semibold ${
+                                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                                  }`}>
+                                    📈 How Face Coverage Affects Performance
+                                  </h5>
+                                  
+                                  {/* Simple curve visualization */}
+                                  <div className={`p-8 rounded-lg ${
+                                    darkMode ? 'bg-gray-800' : 'bg-gray-50'
+                                  }`}>
+                                    <div className="space-y-4">
+                                      {faceAnalysisData.bins.filter(b => !b.insufficient).map((bin, index) => (
+                                        <div key={bin.key} className="flex items-center gap-4">
+                                          <div className={`w-20 text-sm font-mono ${
+                                            darkMode ? 'text-gray-400' : 'text-gray-600'
+                                          }`}>
+                                            {bin.label}
+                                          </div>
+                                          <div className="flex-1 flex items-center gap-2">
+                                            <div className={`h-4 rounded-full ${
+                                              darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                                            } flex-1 relative overflow-hidden`}>
+                                              <div
+                                                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+                                                style={{
+                                                  width: `${Math.min(100, (
+                                                    (faceMetric === 'rqs' ? bin.mean : (faceViewsMode === 'median' ? bin.median : bin.mean)) / 
+                                                    Math.max(...faceAnalysisData.bins.filter(b => !b.insufficient).map(b => 
+                                                      faceMetric === 'rqs' ? b.mean : (faceViewsMode === 'median' ? b.median : b.mean)
+                                                    ))
+                                                  ) * 100)}%`
+                                                }}
+                                              />
+                                            </div>
+                                            <div className={`text-sm font-bold min-w-16 text-right ${
+                                              darkMode ? 'text-gray-200' : 'text-gray-800'
+                                            }`}>
+                                              {faceMetric === 'rqs' 
+                                                ? bin.mean.toFixed(1)
+                                                : ((faceViewsMode === 'median' ? bin.median : bin.mean) / 1000000).toFixed(1) + 'M'
+                                              }
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {faceAnalysisView === 'distribution' && (
+                                <div className="space-y-4">
+                                  <h5 className={`text-lg font-semibold ${
+                                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                                  }`}>
+                                    📊 What You Use vs What Works Best
+                                  </h5>
+                                  
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    {/* Distribution */}
+                                    <div className={`p-4 rounded-lg ${
+                                      darkMode ? 'bg-gray-800' : 'bg-gray-50'
+                                    }`}>
+                                      <h6 className={`font-medium mb-4 ${
+                                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                                      }`}>
+                                        How Often You Use Each Face %
+                                      </h6>
+                                      <div className="space-y-2">
+                                        {faceAnalysisData.bins.map(bin => (
+                                          <div key={bin.key} className="flex items-center gap-2">
+                                            <div className={`w-16 text-xs ${
+                                              darkMode ? 'text-gray-400' : 'text-gray-600'
+                                            }`}>
+                                              {bin.label}
+                                            </div>
+                                            <div className={`h-6 rounded ${
+                                              darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                                            } flex-1 relative overflow-hidden`}>
+                                              <div
+                                                className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
+                                                style={{
+                                                  width: `${(bin.n / faceAnalysisData.totalVideos) * 100}%`
+                                                }}
+                                              />
+                                            </div>
+                                            <div className={`w-12 text-xs text-right ${
+                                              darkMode ? 'text-gray-400' : 'text-gray-600'
+                                            }`}>
+                                              {bin.n}
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+
+                                    {/* Lift Analysis */}
+                                    <div className={`p-4 rounded-lg ${
+                                      darkMode ? 'bg-gray-800' : 'bg-gray-50'
+                                    }`}>
+                                      <h6 className={`font-medium mb-4 ${
+                                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                                      }`}>
+                                        Which Ranges Over/Under Perform
+                                      </h6>
+                                      <div className="space-y-2">
+                                        {faceAnalysisData.bins.filter(b => !b.insufficient && b.lift !== undefined).map(bin => (
+                                          <div key={bin.key} className="flex items-center gap-2">
+                                            <div className={`w-16 text-xs ${
+                                              darkMode ? 'text-gray-400' : 'text-gray-600'
+                                            }`}>
+                                              {bin.label}
+                                            </div>
+                                            <div className="flex-1 flex justify-center">
+                                              <div className={`h-6 rounded ${
+                                                bin.lift > 0 ? 'bg-green-500' : bin.lift < 0 ? 'bg-red-500' : 'bg-gray-500'
+                                              } transition-all duration-500`}
+                                              style={{
+                                                width: `${Math.min(50, Math.abs(bin.liftPercent))}%`,
+                                                marginLeft: bin.lift < 0 ? `${50 - Math.min(50, Math.abs(bin.liftPercent))}%` : '50%'
+                                              }}
+                                              />
+                                            </div>
+                                            <div className={`w-16 text-xs text-right font-bold ${
+                                              bin.lift > 0 ? 'text-green-500' : bin.lift < 0 ? 'text-red-500' : 'text-gray-500'
+                                            }`}>
+                                              {bin.liftPercent > 0 ? '+' : ''}{bin.liftPercent.toFixed(1)}%
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
                   )}
 
                   {/* Leaderboard View */}
@@ -4790,6 +5580,9 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                         }`}>
                                           <span>📊 {item.n} videos</span>
                                           <span>📈 {item.usageRate.toFixed(1)}% usage</span>
+                                          {item.examples.length > 0 && item.examples[0].facePercentage !== undefined && (
+                                            <span>👤 Avg Face: {(item.examples.reduce((sum, ex) => sum + (ex.facePercentage || 0), 0) / item.examples.length).toFixed(0)}%</span>
+                                          )}
                                           {item.topGenres.length > 0 && (
                                             <span>🎯 Top genres: {item.topGenres.join(', ')}</span>
                                           )}
@@ -4854,6 +5647,15 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                                         ? example.title.substring(0, 25) + '...'
                                                         : example.title
                                                       }
+                                                      {example.facePercentage !== undefined && (
+                                                        <span className={`ml-2 px-1 py-0.5 rounded text-xs ${
+                                                          example.facePercentage >= 20 ? 'bg-green-500 text-white' :
+                                                          example.facePercentage >= 10 ? 'bg-yellow-500 text-yellow-900' :
+                                                          'bg-red-500 text-white'
+                                                        }`}>
+                                                          👤{example.facePercentage.toFixed(0)}%
+                                                        </span>
+                                                      )}
                                                     </span>
                                                   </div>
                                                 );
@@ -5069,6 +5871,9 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                                     : (item.metricValue / 1000000).toFixed(1) + 'M Views'
                                                   }
                                                   {'\n'}{item.n} videos • {item.usageRate.toFixed(1)}% usage
+                                                  {item.examples.length > 0 && item.examples[0].facePercentage !== undefined && 
+                                                    '\nAvg Face: ' + (item.examples.reduce((sum, ex) => sum + (ex.facePercentage || 0), 0) / item.examples.length).toFixed(0) + '%'
+                                                  }
                                                   {item.topGenres.length > 0 && '\nTop genres: ' + item.topGenres.join(', ')}
                                                 </title>
                                               </circle>
@@ -5300,6 +6105,9 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                               darkMode ? 'text-gray-400' : 'text-gray-600'
                                             }`}>
                                               n={item.n} • {item.usageRate.toFixed(1)}% usage
+                                              {item.examples.length > 0 && item.examples[0].facePercentage !== undefined && (
+                                                <> • Avg Face: {(item.examples.reduce((sum, ex) => sum + (ex.facePercentage || 0), 0) / item.examples.length).toFixed(0)}%</>
+                                              )}
                                             </div>
                                           </div>
 
@@ -5355,6 +6163,9 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                                           ? example.title.substring(0, 20) + '...'
                                                           : example.title
                                                         }
+                                                        {example.facePercentage !== undefined && (
+                                                          <span className="ml-2">👤{example.facePercentage.toFixed(0)}%</span>
+                                                        )}
                                                       </div>
                                                     </div>
                                                   );
