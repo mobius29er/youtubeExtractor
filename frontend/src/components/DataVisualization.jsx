@@ -18,6 +18,84 @@ import {
 import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target, Flame, BarChart2, Trophy } from 'lucide-react';
 import FilterControls from './FilterControls';
 
+// Color analysis utilities for heatmap
+const hexToHsl = (hex) => {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0; // achromatic
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+      default: h = 0;
+    }
+    h /= 6;
+  }
+
+  return [h * 360, s, l];
+};
+
+const getHueFamily = (h, s, l) => {
+  // Handle neutrals first
+  if (l <= 0.10) return 'Black';
+  if (l >= 0.90) return 'White';
+  if (s <= 0.10) return 'Gray';
+
+  // 12-color wheel families
+  const families = [
+    'Red', 'Red-Orange', 'Orange', 'Yellow', 'Yellow-Green', 'Green',
+    'Green-Cyan', 'Cyan', 'Blue', 'Blue-Violet', 'Violet', 'Magenta'
+  ];
+  
+  const hueIndex = Math.floor((h + 15) / 30) % 12;
+  return families[hueIndex];
+};
+
+const getContrastClass = (contrast) => {
+  if (contrast < 0.25) return 'Low';
+  if (contrast < 0.5) return 'Mid';
+  return 'High';
+};
+
+const calculatePaletteContrast = (hslColors) => {
+  if (hslColors.length === 0) return 0;
+  const lightnesses = hslColors.map(([h, s, l]) => l);
+  return Math.max(...lightnesses) - Math.min(...lightnesses);
+};
+
+const createPaletteCombo = (families) => {
+  const neutrals = families.filter(f => ['Black', 'White', 'Gray'].includes(f));
+  const hues = families.filter(f => !['Black', 'White', 'Gray'].includes(f));
+  
+  // Sort neutrals by preference and hues by color wheel order
+  const sortedNeutrals = neutrals.sort((a, b) => {
+    const order = ['Black', 'White', 'Gray'];
+    return order.indexOf(a) - order.indexOf(b);
+  });
+  
+  const hueOrder = [
+    'Red', 'Red-Orange', 'Orange', 'Yellow', 'Yellow-Green', 'Green',
+    'Green-Cyan', 'Cyan', 'Blue', 'Blue-Violet', 'Violet', 'Magenta'
+  ];
+  
+  const sortedHues = hues.sort((a, b) => {
+    return hueOrder.indexOf(a) - hueOrder.indexOf(b);
+  }).slice(0, 3); // Cap at 3 hues
+  
+  const combo = [...sortedNeutrals, ...sortedHues].join(' + ');
+  return combo || 'Mixed';
+};
+
 const DataVisualization = ({ data, loading, darkMode }) => {
   const [activeChart, setActiveChart] = useState('engagement');
   const [chartData, setChartData] = useState(null);
@@ -38,6 +116,15 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [thumbnailView, setThumbnailView] = useState('table'); // 'table' or 'matrix'
   const [thumbnailAnalysisView, setThumbnailAnalysisView] = useState('palette'); // 'palette', 'heatmap', 'frequency', 'leaderboard'
   const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Heatmap specific states
+  const [heatmapMetric, setHeatmapMetric] = useState('rqs'); // 'rqs' or 'views'
+  const [heatmapViewsMode, setHeatmapViewsMode] = useState('avg'); // 'avg' or 'median'
+  const [heatmapColumns, setHeatmapColumns] = useState('n_colors'); // 'n_colors' or 'contrast'
+  const [heatmapType, setHeatmapType] = useState('combinations'); // 'combinations' or 'single_colors'
+  const [heatmapMinN, setHeatmapMinN] = useState(20);
+  const [selectedHeatmapCell, setSelectedHeatmapCell] = useState(null);
+  
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -518,6 +605,236 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       setChartData(mockChartData);
     } finally {
       setChartLoading(false);
+    }
+  };
+
+  // Process heatmap data from thumbnail videos
+  const processHeatmapData = (videos) => {
+    if (!videos || videos.length === 0) return null;
+    
+    try {
+      const processedRows = [];
+      
+      videos.forEach(video => {
+        if (!video.colors || !Array.isArray(video.colors) || video.colors.length === 0) return;
+        
+        // Convert palette to HSL and analyze
+        const hslColors = video.colors.map(hex => {
+          try {
+            return hexToHsl(hex);
+          } catch {
+            return null;
+          }
+        }).filter(Boolean);
+        
+        if (hslColors.length === 0) return;
+        
+        const families = hslColors.map(([h, s, l]) => getHueFamily(h, s, l));
+        const uniqueFamilies = [...new Set(families)];
+        const nColors = hslColors.length;
+        const contrast = calculatePaletteContrast(hslColors);
+        const contrastClass = getContrastClass(contrast);
+        const combo = createPaletteCombo(uniqueFamilies);
+        
+        processedRows.push({
+          videoId: video.videoId,
+          title: video.title,
+          channelName: video.channelName,
+          combo,
+          nColors,
+          contrast,
+          contrastClass,
+          families: uniqueFamilies,
+          rqs: video.rqs,
+          views: video.views,
+          palette: video.colors,
+          genre: video.genre,
+          tier: video.tier
+        });
+      });
+      
+      return processedRows;
+    } catch (error) {
+      console.error('Error processing heatmap data:', error);
+      return [];
+    }
+  };
+
+  // Generate heatmap tables
+  const generateHeatmapTables = (heatmapData) => {
+    if (!heatmapData || heatmapData.length === 0) return null;
+    
+    try {
+      const filteredData = heatmapData.filter(row => {
+        // Apply current filters
+        if (activeFilters.genre !== 'all') {
+          const filterGenre = activeFilters.genre.toLowerCase();
+          let targetGenre = '';
+          
+          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
+          else if (filterGenre === 'education') targetGenre = 'Education';
+          else if (filterGenre === 'gaming') targetGenre = 'Gaming';
+          else if (filterGenre === 'music') targetGenre = 'Music';
+          else if (filterGenre === 'news') targetGenre = 'News & Politics';
+          else if (filterGenre === 'sports') targetGenre = 'Sports';
+          else if (filterGenre === 'tech') targetGenre = 'Science & Technology';
+          else if (filterGenre === 'catholic') targetGenre = 'Catholic';
+          else if (filterGenre === 'challenge') targetGenre = 'Challenge/Stunts';
+          else if (filterGenre === 'kids') targetGenre = 'Kids/Family';
+          else targetGenre = activeFilters.genre;
+          
+          if (row.genre !== targetGenre) return false;
+        }
+        if (activeFilters.tier !== 'all' && row.tier !== activeFilters.tier) return false;
+        return true;
+      });
+      
+      if (filteredData.length === 0) return null;
+      
+      // Create combination heatmap
+      const combinationData = {};
+      const singleColorData = {};
+      
+      // Initialize all possible combinations to ensure we don't miss any
+      const allCombos = [...new Set(filteredData.map(row => row.combo))];
+      const allColumns = [...new Set(filteredData.map(row => 
+        heatmapColumns === 'n_colors' ? row.nColors : row.contrastClass
+      ))];
+      
+      console.log('🎨 Heatmap Generation Debug:', {
+        filteredDataLength: filteredData.length,
+        allCombos: allCombos.slice(0, 10),
+        allColumns,
+        heatmapColumns,
+        heatmapMetric
+      });
+      
+      filteredData.forEach(row => {
+        const metric = heatmapMetric === 'views' ? row.views : row.rqs;
+        const columnKey = heatmapColumns === 'n_colors' ? row.nColors : row.contrastClass;
+        
+        // Skip invalid metrics
+        if (isNaN(metric) || metric === null || metric === undefined) return;
+        
+        // Combination heatmap
+        const comboKey = `${row.combo}_${columnKey}`;
+        if (!combinationData[comboKey]) {
+          combinationData[comboKey] = {
+            combo: row.combo,
+            column: columnKey,
+            values: [],
+            examples: []
+          };
+        }
+        combinationData[comboKey].values.push(metric);
+        if (combinationData[comboKey].examples.length < 3) {
+          combinationData[comboKey].examples.push({
+            title: row.title,
+            palette: row.palette,
+            metric,
+            videoId: row.videoId
+          });
+        }
+        
+        // Single color heatmap
+        row.families.forEach(family => {
+          const colorKey = `${family}_${columnKey}`;
+          if (!singleColorData[colorKey]) {
+            singleColorData[colorKey] = {
+              color: family,
+              column: columnKey,
+              withColor: [],
+              withoutColor: []
+            };
+          }
+          singleColorData[colorKey].withColor.push(metric);
+        });
+      });
+      
+      // Calculate single color contributions (with vs without)
+      filteredData.forEach(row => {
+        const metric = heatmapMetric === 'views' ? row.views : row.rqs;
+        const columnKey = heatmapColumns === 'n_colors' ? row.nColors : row.contrastClass;
+        
+        // For each possible color family, check if this row contains it
+        const allFamilies = ['Black', 'White', 'Gray', 'Red', 'Red-Orange', 'Orange', 'Yellow', 'Yellow-Green', 'Green', 'Green-Cyan', 'Cyan', 'Blue', 'Blue-Violet', 'Violet', 'Magenta'];
+        
+        allFamilies.forEach(family => {
+          const colorKey = `${family}_${columnKey}`;
+          if (!singleColorData[colorKey]) {
+            singleColorData[colorKey] = {
+              color: family,
+              column: columnKey,
+              withColor: [],
+              withoutColor: []
+            };
+          }
+          
+          if (!row.families.includes(family)) {
+            singleColorData[colorKey].withoutColor.push(metric);
+          }
+        });
+      });
+      
+      // Process combination data
+      const combinationTable = Object.values(combinationData).map(item => {
+        const n = item.values.length;
+        if (n < heatmapMinN) return null;
+        
+        const mean = item.values.reduce((a, b) => a + b, 0) / n;
+        const sortedValues = [...item.values].sort((a, b) => a - b);
+        const median = n % 2 === 0 
+          ? (sortedValues[Math.floor(n / 2) - 1] + sortedValues[Math.floor(n / 2)]) / 2
+          : sortedValues[Math.floor(n / 2)];
+        const value = (heatmapMetric === 'views' && heatmapViewsMode === 'median') ? median : mean;
+        
+        return {
+          combo: item.combo,
+          column: item.column,
+          value,
+          mean,
+          median,
+          n,
+          examples: item.examples
+        };
+      }).filter(Boolean);
+      
+      console.log('📊 Final combination table:', {
+        totalCombinations: Object.keys(combinationData).length,
+        validCombinations: combinationTable.length,
+        minNFilter: heatmapMinN,
+        sampleEntries: combinationTable.slice(0, 3)
+      });
+      
+      // Process single color data
+      const singleColorTable = Object.values(singleColorData).map(item => {
+        const withN = item.withColor.length;
+        const withoutN = item.withoutColor.length;
+        
+        if (withN < heatmapMinN || withoutN < heatmapMinN) return null;
+        
+        const withMean = item.withColor.reduce((a, b) => a + b, 0) / withN;
+        const withoutMean = item.withoutColor.reduce((a, b) => a + b, 0) / withoutN;
+        const delta = withMean - withoutMean;
+        
+        return {
+          color: item.color,
+          column: item.column,
+          value: delta,
+          withMean,
+          withoutMean,
+          withN,
+          withoutN
+        };
+      }).filter(Boolean);
+      
+      return {
+        combinations: combinationTable,
+        singleColors: singleColorTable
+      };
+    } catch (error) {
+      console.error('Error generating heatmap tables:', error);
+      return null;
     }
   };
 
@@ -2185,21 +2502,481 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
                   {/* Heatmap View */}
                   {thumbnailAnalysisView === 'heatmap' && (
-                    <div className={`text-center py-20 rounded-lg ${
-                      darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
-                    }`}>
-                      <div className="text-6xl mb-4">🔥</div>
-                      <h5 className={`text-lg font-semibold mb-2 ${
-                        darkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        Heatmap Coming Soon
-                      </h5>
-                      <p className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        Interactive heatmap visualization will be available here
-                      </p>
-                    </div>
+                    <>
+                      {/* Heatmap Controls */}
+                      <div className="mb-6 space-y-4">
+                        <div className="flex flex-wrap gap-4">
+                          {/* Metric Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Metric:
+                            </label>
+                            <select
+                              value={heatmapMetric}
+                              onChange={(e) => setHeatmapMetric(e.target.value)}
+                              className={`px-3 py-1 rounded border text-sm ${
+                                darkMode 
+                                  ? 'bg-gray-700 border-gray-600 text-white' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                              <option value="rqs">RQS Score</option>
+                              <option value="views">Views</option>
+                            </select>
+                          </div>
+
+                          {/* Views Mode (only when views selected) */}
+                          {heatmapMetric === 'views' && (
+                            <div className="flex items-center gap-2">
+                              <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Views Mode:
+                              </label>
+                              <select
+                                value={heatmapViewsMode}
+                                onChange={(e) => setHeatmapViewsMode(e.target.value)}
+                                className={`px-3 py-1 rounded border text-sm ${
+                                  darkMode 
+                                    ? 'bg-gray-700 border-gray-600 text-white' 
+                                    : 'bg-white border-gray-300 text-gray-900'
+                                }`}
+                              >
+                                <option value="avg">Average</option>
+                                <option value="median">Median</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {/* Columns Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Group by:
+                            </label>
+                            <select
+                              value={heatmapColumns}
+                              onChange={(e) => setHeatmapColumns(e.target.value)}
+                              className={`px-3 py-1 rounded border text-sm ${
+                                darkMode 
+                                  ? 'bg-gray-700 border-gray-600 text-white' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                              <option value="n_colors"># of Colors</option>
+                              <option value="contrast">Contrast Level</option>
+                            </select>
+                          </div>
+
+                          {/* Min N Slider */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Min n:
+                            </label>
+                            <input
+                              type="range"
+                              min="5"
+                              max="50"
+                              value={heatmapMinN}
+                              onChange={(e) => setHeatmapMinN(parseInt(e.target.value))}
+                              className="w-20"
+                            />
+                            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {heatmapMinN}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Heatmap Type Toggle */}
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setHeatmapType('combinations')}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                              heatmapType === 'combinations'
+                                ? 'bg-blue-600 text-white'
+                                : darkMode
+                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            🎨 Color Combinations
+                          </button>
+                          <button
+                            onClick={() => setHeatmapType('single_colors')}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                              heatmapType === 'single_colors'
+                                ? 'bg-blue-600 text-white'
+                                : darkMode
+                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            🎯 Single Color Impact
+                          </button>
+                        </div>
+                      </div>
+
+                      {(() => {
+                        // Process heatmap data from the current filtered videos
+                        const heatmapData = processHeatmapData(filteredVideos);
+                        const heatmapTables = heatmapData ? generateHeatmapTables(heatmapData) : null;
+                        
+                        if (!heatmapTables) {
+                          return (
+                            <div className={`text-center py-20 rounded-lg ${
+                              darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                            }`}>
+                              <div className="text-6xl mb-4">🔥</div>
+                              <h5 className={`text-lg font-semibold mb-2 ${
+                                darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}>
+                                No Heatmap Data Available
+                              </h5>
+                              <p className={`text-sm ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                Try adjusting filters or lowering the minimum sample size
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        const currentTable = heatmapType === 'combinations' 
+                          ? heatmapTables.combinations 
+                          : heatmapTables.singleColors;
+
+                        console.log('🎨 Heatmap Tables Debug:', {
+                          heatmapType,
+                          combinationsCount: heatmapTables.combinations?.length || 0,
+                          singleColorsCount: heatmapTables.singleColors?.length || 0,
+                          currentTableLength: currentTable?.length || 0,
+                          sampleRows: currentTable?.slice(0, 3) || []
+                        });
+
+                        if (!currentTable || currentTable.length === 0) {
+                          return (
+                            <div className={`text-center py-20 rounded-lg ${
+                              darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                            }`}>
+                              <div className="text-6xl mb-4">📊</div>
+                              <h5 className={`text-lg font-semibold mb-2 ${
+                                darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}>
+                                Insufficient Data
+                              </h5>
+                              <p className={`text-sm ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                Need more samples (min: {heatmapMinN}) for this view
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        // Get unique columns and rows for the grid
+                        const columns = [...new Set(currentTable.map(item => item.column))].sort((a, b) => {
+                          if (heatmapColumns === 'n_colors') {
+                            return Number(a) - Number(b);
+                          }
+                          // For contrast: Low, Mid, High
+                          const order = { 'Low': 1, 'Mid': 2, 'High': 3 };
+                          return (order[a] || 999) - (order[b] || 999);
+                        });
+                        const rows = [...new Set(currentTable.map(item => 
+                          heatmapType === 'combinations' ? item.combo : item.color
+                        ))].sort((a, b) => {
+                          // Sort combinations by performance (best first)
+                          if (heatmapType === 'combinations') {
+                            const aAvg = currentTable.filter(item => item.combo === a).reduce((sum, item) => sum + item.value, 0) / currentTable.filter(item => item.combo === a).length;
+                            const bAvg = currentTable.filter(item => item.combo === b).reduce((sum, item) => sum + item.value, 0) / currentTable.filter(item => item.combo === b).length;
+                            return bAvg - aAvg;
+                          }
+                          // Sort colors alphabetically for single color view
+                          return a.localeCompare(b);
+                        });
+
+                        // Calculate value range for color scaling
+                        const values = currentTable.map(item => item.value).filter(v => !isNaN(v));
+                        const minValue = Math.min(...values);
+                        const maxValue = Math.max(...values);
+                        const absMax = Math.max(Math.abs(minValue), Math.abs(maxValue));
+
+                        const getHeatmapColor = (value) => {
+                          if (isNaN(value)) return darkMode ? 'bg-gray-700' : 'bg-gray-200';
+                          
+                          if (heatmapType === 'single_colors') {
+                            // Diverging color scale for contributions (red-white-green)
+                            const intensity = Math.min(Math.abs(value) / absMax, 1);
+                            const colorStrength = Math.max(1, Math.min(5, Math.ceil(intensity * 5)));
+                            
+                            if (value > 0) {
+                              // Positive contribution (green shades)
+                              const greenShades = ['bg-green-100', 'bg-green-200', 'bg-green-300', 'bg-green-400', 'bg-green-500'];
+                              return greenShades[colorStrength - 1];
+                            } else {
+                              // Negative contribution (red shades)
+                              const redShades = ['bg-red-100', 'bg-red-200', 'bg-red-300', 'bg-red-400', 'bg-red-500'];
+                              return redShades[colorStrength - 1];
+                            }
+                          } else {
+                            // Sequential color scale for absolute performance (blue)
+                            const normalized = Math.min((value - minValue) / (maxValue - minValue), 1);
+                            const colorStrength = Math.max(1, Math.min(5, Math.ceil(normalized * 5)));
+                            const blueShades = ['bg-blue-100', 'bg-blue-200', 'bg-blue-300', 'bg-blue-400', 'bg-blue-500'];
+                            return blueShades[colorStrength - 1];
+                          }
+                        };
+
+                        return (
+                          <div className="space-y-4">
+                            {/* Heatmap Grid */}
+                            <div className="overflow-x-auto">
+                              <table className={`w-full border-collapse rounded-lg overflow-hidden ${
+                                darkMode ? 'border border-gray-600' : 'border border-gray-300'
+                              }`}>
+                                <thead>
+                                  <tr className={`${
+                                    darkMode ? 'bg-gray-700/80' : 'bg-gray-100/80'
+                                  }`}>
+                                    <th className={`text-left px-4 py-3 text-sm font-semibold ${
+                                      darkMode ? 'text-gray-200' : 'text-gray-800'
+                                    }`}>
+                                      {heatmapType === 'combinations' ? 'Color Combination' : 'Color Family'}
+                                    </th>
+                                    {columns.map(col => (
+                                      <th key={col} className={`text-center px-4 py-3 text-sm font-semibold ${
+                                        darkMode ? 'text-gray-200' : 'text-gray-800'
+                                      }`}>
+                                        {col}
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {rows.map(row => (
+                                    <tr key={row} className={`border-t ${
+                                      darkMode ? 'border-gray-600' : 'border-gray-200'
+                                    }`}>
+                                      <td className={`px-4 py-3 font-medium text-sm ${
+                                        darkMode ? 'text-gray-200' : 'text-gray-800'
+                                      }`}>
+                                        {row}
+                                      </td>
+                                      {columns.map(col => {
+                                        const item = currentTable.find(item => 
+                                          (heatmapType === 'combinations' ? item.combo : item.color) === row && 
+                                          item.column === col
+                                        );
+                                        
+                                        if (!item) {
+                                          return (
+                                            <td key={col} className={`px-4 py-3 text-center text-sm ${
+                                              darkMode ? 'bg-gray-700/30 text-gray-500' : 'bg-gray-100/30 text-gray-400'
+                                            }`}>
+                                              -
+                                            </td>
+                                          );
+                                        }
+
+                                        return (
+                                          <td
+                                            key={col}
+                                            className={`px-4 py-3 text-center text-sm cursor-pointer transition-all hover:scale-105 ${
+                                              getHeatmapColor(item.value)
+                                            } text-gray-900 font-semibold shadow-sm`}
+                                            onClick={() => setSelectedHeatmapCell(item)}
+                                            title={
+                                              heatmapType === 'combinations'
+                                                ? `${item.combo} (${col}): ${item.value.toFixed(2)} (n=${item.n})`
+                                                : `${item.color} impact: ${item.value > 0 ? '+' : ''}${item.value.toFixed(2)} (n=${item.withN}/${item.withoutN})`
+                                            }
+                                          >
+                                            <div className="font-bold text-base">
+                                              {heatmapType === 'single_colors' && item.value > 0 ? '+' : ''}
+                                              {item.value.toFixed(1)}
+                                            </div>
+                                            <div className="text-xs opacity-75 font-medium">
+                                              n={heatmapType === 'combinations' ? item.n : item.withN}
+                                            </div>
+                                          </td>
+                                        );
+                                      })}
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Legend */}
+                            <div className={`p-4 rounded-lg ${
+                              darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
+                            }`}>
+                              <h6 className={`text-sm font-semibold mb-2 ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              }`}>
+                                Reading the Heatmap
+                              </h6>
+                              <div className="text-xs space-y-1">
+                                {heatmapType === 'combinations' ? (
+                                  <>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>Higher values</strong> (darker blue) = better performance
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • Each cell shows {heatmapMetric === 'rqs' ? 'average RQS score' : `${heatmapViewsMode} views`}
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • Click cells to see example thumbnails
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>Green</strong> = positive impact when color is present
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>Red</strong> = negative impact when color is present
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • Values show difference: with color - without color
+                                    </p>
+                                  </>
+                                )}
+                                <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                  • Gray cells have insufficient data (n &lt; {heatmapMinN})
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Selected Cell Details */}
+                            {selectedHeatmapCell && (
+                              <div className={`p-4 rounded-lg border ${
+                                darkMode 
+                                  ? 'bg-gray-800 border-gray-600' 
+                                  : 'bg-white border-gray-300'
+                              }`}>
+                                <div className="flex justify-between items-start mb-3">
+                                  <h6 className={`text-lg font-semibold ${
+                                    darkMode ? 'text-gray-200' : 'text-gray-800'
+                                  }`}>
+                                    {heatmapType === 'combinations' 
+                                      ? selectedHeatmapCell.combo 
+                                      : `${selectedHeatmapCell.color} Impact`
+                                    } ({selectedHeatmapCell.column})
+                                  </h6>
+                                  <button
+                                    onClick={() => setSelectedHeatmapCell(null)}
+                                    className={`text-sm px-2 py-1 rounded ${
+                                      darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                                
+                                {heatmapType === 'combinations' ? (
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-3 gap-4 text-sm">
+                                      <div>
+                                        <div className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          {heatmapMetric === 'rqs' ? 'Avg RQS' : `${heatmapViewsMode.charAt(0).toUpperCase() + heatmapViewsMode.slice(1)} Views`}
+                                        </div>
+                                        <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                          {selectedHeatmapCell.value.toLocaleString()}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          Sample Size
+                                        </div>
+                                        <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                          {selectedHeatmapCell.n}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          Median
+                                        </div>
+                                        <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                          {selectedHeatmapCell.median?.toFixed(1) || 'N/A'}
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    {selectedHeatmapCell.examples && selectedHeatmapCell.examples.length > 0 && (
+                                      <div>
+                                        <h7 className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          Example Thumbnails:
+                                        </h7>
+                                        <div className="mt-2 space-y-2">
+                                          {selectedHeatmapCell.examples.map((example, idx) => (
+                                            <div key={idx} className={`p-2 rounded text-xs ${
+                                              darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
+                                            }`}>
+                                              <div className="flex items-center gap-2 mb-1">
+                                                <div className="flex gap-1">
+                                                  {example.palette?.map((color, colorIdx) => (
+                                                    <div
+                                                      key={colorIdx}
+                                                      className="w-3 h-3 rounded border border-gray-400"
+                                                      style={{ backgroundColor: color }}
+                                                      title={color}
+                                                    />
+                                                  ))}
+                                                </div>
+                                                <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                                  {heatmapMetric === 'rqs' ? example.metric.toFixed(1) : example.metric.toLocaleString()} 
+                                                  {heatmapMetric === 'rqs' ? ' RQS' : ' views'}
+                                                </span>
+                                              </div>
+                                              <div className={`truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                                {example.title}
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="space-y-3">
+                                    <div className="grid grid-cols-4 gap-4 text-sm">
+                                      <div>
+                                        <div className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          Impact
+                                        </div>
+                                        <div className={`text-lg font-bold ${
+                                          selectedHeatmapCell.value > 0 
+                                            ? 'text-green-500' 
+                                            : selectedHeatmapCell.value < 0 
+                                              ? 'text-red-500' 
+                                              : darkMode ? 'text-white' : 'text-gray-900'
+                                        }`}>
+                                          {selectedHeatmapCell.value > 0 ? '+' : ''}{selectedHeatmapCell.value.toFixed(2)}
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          With Color
+                                        </div>
+                                        <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                          {selectedHeatmapCell.withMean.toFixed(1)} (n={selectedHeatmapCell.withN})
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className={`font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                          Without Color  
+                                        </div>
+                                        <div className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                          {selectedHeatmapCell.withoutMean.toFixed(1)} (n={selectedHeatmapCell.withoutN})
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </>
                   )}
 
                   {/* Color Frequency View */}
