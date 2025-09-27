@@ -192,6 +192,19 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [selectedFrequencyColor, setSelectedFrequencyColor] = useState(null);
   const [compareToCategory, setCompareToCategory] = useState(false);
   
+  // Leaderboard specific states
+  const [leaderboardMetric, setLeaderboardMetric] = useState('rqs'); // 'rqs' or 'views'
+  const [leaderboardViewsMode, setLeaderboardViewsMode] = useState('avg'); // 'avg' or 'median'
+  const [leaderboardEntity, setLeaderboardEntity] = useState('palettes'); // 'palettes' or 'single_colors'
+  const [leaderboardGrouping, setLeaderboardGrouping] = useState('12_family'); // '12_family' or 'coarse'
+  const [leaderboardView, setLeaderboardView] = useState('bars'); // 'bars', 'dartboard', 'grid'
+  const [leaderboardMinN, setLeaderboardMinN] = useState(10);
+  const [leaderboardDedup, setLeaderboardDedup] = useState(true);
+  const [leaderboardShowCI, setLeaderboardShowCI] = useState(false);
+  const [leaderboardNormalize, setLeaderboardNormalize] = useState(false);
+  const [selectedLeaderboardItem, setSelectedLeaderboardItem] = useState(null);
+  const [leaderboardExamples, setLeaderboardExamples] = useState(true);
+  
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -1042,6 +1055,223 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       
     } catch (error) {
       console.error('Error generating color frequency data:', error);
+      return null;
+    }
+  };
+
+  // Leaderboard: Create palette signature
+  const createPaletteSignature = (colorFamilies, grouping = '12_family') => {
+    if (!colorFamilies || colorFamilies.length === 0) return 'Unknown';
+    
+    try {
+      // Separate neutrals and hues
+      const neutrals = colorFamilies.filter(f => ['Black', 'White', 'Gray'].includes(f));
+      const hues = colorFamilies.filter(f => !['Black', 'White', 'Gray'].includes(f));
+      
+      // Apply grouping
+      const processedFamilies = [...colorFamilies].map(f => 
+        grouping === 'coarse' ? getCoarseGrouping(f) : f
+      );
+      
+      // Get unique families in consistent order
+      const uniqueNeutrals = [...new Set(processedFamilies.filter(f => ['Black', 'White', 'Gray'].includes(f)))]
+        .sort((a, b) => ['Black', 'White', 'Gray'].indexOf(a) - ['Black', 'White', 'Gray'].indexOf(b));
+      
+      const uniqueHues = [...new Set(processedFamilies.filter(f => !['Black', 'White', 'Gray'].includes(f)))];
+      
+      // Limit to top 3 hues for readability
+      const limitedHues = uniqueHues.slice(0, 3);
+      
+      // Combine in order: neutrals first, then hues
+      const signature = [...uniqueNeutrals, ...limitedHues].join(' + ');
+      
+      return signature || 'Unknown';
+    } catch (error) {
+      console.warn('Error creating palette signature:', error);
+      return 'Unknown';
+    }
+  };
+
+  // Generate leaderboard data
+  const generateLeaderboardData = (heatmapData) => {
+    if (!heatmapData || heatmapData.length === 0) return null;
+    
+    try {
+      // Apply filters
+      const filteredData = heatmapData.filter(row => {
+        if (activeFilters.genre !== 'all') {
+          const filterGenre = activeFilters.genre.toLowerCase();
+          let targetGenre = '';
+          
+          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
+          else if (filterGenre === 'education') targetGenre = 'Education';
+          else if (filterGenre === 'gaming') targetGenre = 'Gaming';
+          else if (filterGenre === 'music') targetGenre = 'Music';
+          else if (filterGenre === 'news') targetGenre = 'News & Politics';
+          else if (filterGenre === 'sports') targetGenre = 'Sports';
+          else if (filterGenre === 'tech') targetGenre = 'Science & Technology';
+          else if (filterGenre === 'catholic') targetGenre = 'Catholic';
+          else if (filterGenre === 'challenge') targetGenre = 'Challenge/Stunts';
+          else if (filterGenre === 'kids') targetGenre = 'Kids/Family';
+          else targetGenre = activeFilters.genre;
+          
+          if (row.genre !== targetGenre) return false;
+        }
+        if (activeFilters.tier !== 'all' && row.tier !== activeFilters.tier) return false;
+        return true;
+      });
+
+      if (filteredData.length === 0) return null;
+
+      // Group by palette signature or single color
+      const groups = {};
+      
+      filteredData.forEach(video => {
+        let key;
+        
+        if (leaderboardEntity === 'single_colors') {
+          // Single color mode - create separate entries for each color family
+          if (video.families && video.families.length > 0) {
+            video.families.forEach(family => {
+              if (!showNeutrals && ['Black', 'White', 'Gray'].includes(family)) return;
+              
+              const displayFamily = leaderboardGrouping === 'coarse' ? getCoarseGrouping(family) : family;
+              key = displayFamily;
+              
+              if (!groups[key]) {
+                groups[key] = {
+                  signature: key,
+                  type: 'single_color',
+                  palette: [getColorSwatch(family)],
+                  families: [family],
+                  videos: [],
+                  metrics: []
+                };
+              }
+              
+              groups[key].videos.push(video);
+              groups[key].metrics.push(leaderboardMetric === 'rqs' ? video.rqs : video.views);
+            });
+          }
+        } else {
+          // Palette mode
+          if (video.families && video.families.length > 0) {
+            let filteredFamilies = video.families;
+            if (!showNeutrals) {
+              filteredFamilies = video.families.filter(f => !['Black', 'White', 'Gray'].includes(f));
+            }
+            
+            if (filteredFamilies.length === 0) return; // Skip if no families after filtering
+            
+            key = createPaletteSignature(filteredFamilies, leaderboardGrouping);
+            
+            if (!groups[key]) {
+              groups[key] = {
+                signature: key,
+                type: 'palette',
+                palette: video.palette || [],
+                families: filteredFamilies,
+                videos: [],
+                metrics: []
+              };
+            }
+            
+            groups[key].videos.push(video);
+            groups[key].metrics.push(leaderboardMetric === 'rqs' ? video.rqs : video.views);
+          }
+        }
+      });
+
+      // Calculate statistics for each group
+      const rankedGroups = Object.values(groups)
+        .map(group => {
+          const n = group.videos.length;
+          if (n < leaderboardMinN) return null; // Filter out insufficient samples
+          
+          // Calculate metric
+          let metricValue;
+          if (leaderboardMetric === 'views' && leaderboardViewsMode === 'median') {
+            const sorted = [...group.metrics].sort((a, b) => a - b);
+            metricValue = sorted[Math.floor(sorted.length / 2)];
+          } else {
+            metricValue = group.metrics.reduce((sum, m) => sum + m, 0) / group.metrics.length;
+          }
+          
+          // Calculate confidence interval
+          const ci = leaderboardShowCI ? calculateBootstrapCI(group.metrics) : null;
+          
+          // Calculate usage rate
+          const usageRate = (n / filteredData.length) * 100;
+          
+          // Get top genres using this palette
+          const genreCounts = {};
+          group.videos.forEach(video => {
+            const genre = video.genre || 'Unknown';
+            genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+          });
+          const topGenres = Object.entries(genreCounts)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 2)
+            .map(([genre]) => genre);
+
+          // Get example thumbnails
+          const examples = group.videos
+            .sort((a, b) => (leaderboardMetric === 'rqs' ? b.rqs - a.rqs : b.views - a.views))
+            .slice(0, 3)
+            .map(video => ({
+              videoId: video.videoId,
+              title: video.title,
+              channelName: video.channelName,
+              metric: leaderboardMetric === 'rqs' ? video.rqs : video.views,
+              palette: video.palette
+            }));
+          
+          return {
+            ...group,
+            n,
+            metricValue,
+            ci,
+            usageRate,
+            topGenres,
+            examples,
+            rank: 0 // Will be set after sorting
+          };
+        })
+        .filter(Boolean); // Remove null entries
+
+      // Sort and rank
+      rankedGroups.sort((a, b) => {
+        // Primary: metric value (descending)
+        if (b.metricValue !== a.metricValue) {
+          return b.metricValue - a.metricValue;
+        }
+        // Tie-breaker 1: sample size (larger wins)
+        if (b.n !== a.n) {
+          return b.n - a.n;
+        }
+        // Tie-breaker 2: usage rate (more common wins)
+        if (b.usageRate !== a.usageRate) {
+          return b.usageRate - a.usageRate;
+        }
+        // Tie-breaker 3: lexical order (deterministic)
+        return a.signature.localeCompare(b.signature);
+      });
+
+      // Assign ranks and return top 10
+      const top10 = rankedGroups.slice(0, 10).map((group, index) => ({
+        ...group,
+        rank: index + 1
+      }));
+
+      return {
+        top10,
+        totalEligible: rankedGroups.length,
+        totalFiltered: filteredData.length,
+        belowThreshold: Object.keys(groups).length - rankedGroups.length
+      };
+      
+    } catch (error) {
+      console.error('Error generating leaderboard data:', error);
       return null;
     }
   };
@@ -4053,20 +4283,777 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
                   {/* Leaderboard View */}
                   {thumbnailAnalysisView === 'leaderboard' && (
-                    <div className={`text-center py-20 rounded-lg ${
-                      darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
-                    }`}>
-                      <div className="text-6xl mb-4">🏆</div>
-                      <h5 className={`text-lg font-semibold mb-2 ${
-                        darkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        Leaderboard Coming Soon
-                      </h5>
-                      <p className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        Performance leaderboard will be available here
-                      </p>
+                    <div className="space-y-6">
+                      {/* Leaderboard Controls */}
+                      <div className="space-y-4">
+                        {/* Primary Controls */}
+                        <div className="flex flex-wrap gap-4 items-center">
+                          {/* Metric Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Metric:
+                            </label>
+                            <div className={`inline-flex rounded-lg p-1 ${
+                              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                            }`}>
+                              <button
+                                onClick={() => setLeaderboardMetric('rqs')}
+                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                  leaderboardMetric === 'rqs'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : darkMode
+                                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                                }`}
+                              >
+                                RQS
+                              </button>
+                              <button
+                                onClick={() => setLeaderboardMetric('views')}
+                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                  leaderboardMetric === 'views'
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : darkMode
+                                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                                }`}
+                              >
+                                Views
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Views Mode (when Views is selected) */}
+                          {leaderboardMetric === 'views' && (
+                            <div className="flex items-center gap-2">
+                              <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Mode:
+                              </label>
+                              <select
+                                value={leaderboardViewsMode}
+                                onChange={(e) => setLeaderboardViewsMode(e.target.value)}
+                                className={`px-3 py-2 text-sm rounded-md border ${
+                                  darkMode 
+                                    ? 'bg-gray-800 border-gray-600 text-gray-200' 
+                                    : 'bg-white border-gray-300 text-gray-900'
+                                }`}
+                              >
+                                <option value="avg">Average</option>
+                                <option value="median">Median</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {/* Entity Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Entity:
+                            </label>
+                            <div className={`inline-flex rounded-lg p-1 ${
+                              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                            }`}>
+                              <button
+                                onClick={() => setLeaderboardEntity('palettes')}
+                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                  leaderboardEntity === 'palettes'
+                                    ? 'bg-green-600 text-white shadow-sm'
+                                    : darkMode
+                                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                                }`}
+                              >
+                                Palettes
+                              </button>
+                              <button
+                                onClick={() => setLeaderboardEntity('single_colors')}
+                                className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                                  leaderboardEntity === 'single_colors'
+                                    ? 'bg-green-600 text-white shadow-sm'
+                                    : darkMode
+                                      ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                                      : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                                }`}
+                              >
+                                Single Colors
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Grouping Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Grouping:
+                            </label>
+                            <select
+                              value={leaderboardGrouping}
+                              onChange={(e) => setLeaderboardGrouping(e.target.value)}
+                              className={`px-3 py-2 text-sm rounded-md border ${
+                                darkMode 
+                                  ? 'bg-gray-800 border-gray-600 text-gray-200' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                              <option value="12_family">12 Color Families</option>
+                              <option value="coarse">Warm/Cool/Neutral</option>
+                            </select>
+                          </div>
+
+                          {/* Min N Slider */}
+                          <div className="flex items-center gap-2">
+                            <label 
+                              className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                              title="Minimum number of videos required for a palette/color to be eligible for top 10"
+                            >
+                              Min n:
+                            </label>
+                            <input
+                              type="range"
+                              min="1"
+                              max="50"
+                              value={leaderboardMinN}
+                              onChange={(e) => setLeaderboardMinN(parseInt(e.target.value))}
+                              className="w-20"
+                            />
+                            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {leaderboardMinN}
+                            </span>
+                          </div>
+
+                          {/* Show Neutrals Toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={showNeutrals}
+                              onChange={(e) => setShowNeutrals(e.target.checked)}
+                              className="rounded"
+                            />
+                            <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Show Neutrals
+                            </span>
+                          </label>
+                        </div>
+
+                        {/* Secondary Controls */}
+                        <div className="flex flex-wrap gap-4 items-center">
+                          {/* Dedup Toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leaderboardDedup}
+                              onChange={(e) => setLeaderboardDedup(e.target.checked)}
+                              className="rounded"
+                            />
+                            <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Collapse near-duplicates
+                            </span>
+                          </label>
+
+                          {/* Show CI Toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leaderboardShowCI}
+                              onChange={(e) => setLeaderboardShowCI(e.target.checked)}
+                              className="rounded"
+                            />
+                            <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Show CI
+                            </span>
+                          </label>
+
+                          {/* Examples Toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={leaderboardExamples}
+                              onChange={(e) => setLeaderboardExamples(e.target.checked)}
+                              className="rounded"
+                            />
+                            <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Show examples
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* View Style Toggle */}
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={() => setLeaderboardView('bars')}
+                          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                            leaderboardView === 'bars'
+                              ? 'bg-blue-600 text-white'
+                              : darkMode
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          📊 Bars
+                        </button>
+                        <button
+                          onClick={() => setLeaderboardView('dartboard')}
+                          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                            leaderboardView === 'dartboard'
+                              ? 'bg-blue-600 text-white'
+                              : darkMode
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          🎯 Dartboard
+                        </button>
+                        <button
+                          onClick={() => setLeaderboardView('grid')}
+                          className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                            leaderboardView === 'grid'
+                              ? 'bg-blue-600 text-white'
+                              : darkMode
+                                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                        >
+                          🗂️ Grid
+                        </button>
+                      </div>
+
+                      {/* Leaderboard Content */}
+                      <div>
+                        {(() => {
+                          // Process heatmap data for leaderboard
+                          const processedHeatmapData = processHeatmapData(individualVideos);
+                          const leaderboardData = generateLeaderboardData(processedHeatmapData);
+
+                          if (!leaderboardData || leaderboardData.top10.length === 0) {
+                            return (
+                              <div className={`text-center py-20 rounded-lg ${
+                                darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                              }`}>
+                                <div className="text-4xl mb-4">📊</div>
+                                <h5 className={`text-lg font-semibold mb-2 ${
+                                  darkMode ? 'text-gray-300' : 'text-gray-700'
+                                }`}>
+                                  No Data Available
+                                </h5>
+                                <p className={`text-sm ${
+                                  darkMode ? 'text-gray-400' : 'text-gray-500'
+                                }`}>
+                                  Not enough data to generate top 10 leaderboard. Try lowering Min n or adjusting filters.
+                                </p>
+                              </div>
+                            );
+                          }
+
+                          // Render based on selected view
+                          return (
+                            <div className="space-y-6">
+                              {/* Header with stats */}
+                              <div className={`p-4 rounded-lg ${
+                                darkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'
+                              }`}>
+                                <h6 className={`font-semibold mb-2 ${
+                                  darkMode ? 'text-blue-200' : 'text-blue-800'
+                                }`}>
+                                  🏆 Top 10 {leaderboardEntity === 'palettes' ? 'Palettes' : 'Single Colors'} by {leaderboardMetric === 'rqs' ? 'RQS' : 'Views'}
+                                </h6>
+                                <div className={`text-sm space-y-1 ${
+                                  darkMode ? 'text-blue-300' : 'text-blue-700'
+                                }`}>
+                                  <p>• Found {leaderboardData.totalEligible} eligible items from {leaderboardData.totalFiltered} videos</p>
+                                  <p>• {leaderboardData.belowThreshold} items excluded (below Min n = {leaderboardMinN})</p>
+                                  <p>• {leaderboardEntity === 'palettes' ? 'Ranking complete color combinations' : 'Ranking individual color families'}</p>
+                                </div>
+                              </div>
+
+                              {/* Render based on view style */}
+                              {leaderboardView === 'bars' && (
+                                <div className="space-y-4">
+                                  {leaderboardData.top10.map((item, index) => (
+                                    <div key={item.signature} className={`p-4 rounded-lg border ${
+                                      darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                                    }`}>
+                                      {/* Rank and signature */}
+                                      <div className="flex items-center gap-4 mb-3">
+                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                          index === 0 ? 'bg-yellow-500 text-yellow-900' :
+                                          index === 1 ? 'bg-gray-400 text-gray-900' :
+                                          index === 2 ? 'bg-orange-600 text-orange-100' :
+                                          darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                                        }`}>
+                                          #{item.rank}
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-3 flex-1">
+                                          {/* Palette/Color Swatch */}
+                                          <div className="flex gap-1">
+                                            {item.type === 'single_color' ? (
+                                              <div
+                                                className="w-8 h-8 rounded border"
+                                                style={{ 
+                                                  backgroundColor: item.palette[0],
+                                                  borderColor: darkMode ? '#4B5563' : '#D1D5DB'
+                                                }}
+                                                title={item.signature}
+                                              />
+                                            ) : (
+                                              item.palette.slice(0, 5).map((color, i) => (
+                                                <div
+                                                  key={i}
+                                                  className="w-6 h-8 border-r last:border-r-0"
+                                                  style={{ 
+                                                    backgroundColor: color,
+                                                    borderColor: darkMode ? '#374151' : '#E5E7EB'
+                                                  }}
+                                                  title={`Color ${i + 1}: ${color}`}
+                                                />
+                                              ))
+                                            )}
+                                          </div>
+                                          
+                                          {/* Signature */}
+                                          <div>
+                                            <h6 className={`font-medium ${
+                                              darkMode ? 'text-gray-200' : 'text-gray-800'
+                                            }`}>
+                                              {item.signature}
+                                            </h6>
+                                            <div className="flex gap-2 text-xs">
+                                              {item.families.map(family => (
+                                                <span key={family} className={`px-2 py-1 rounded ${
+                                                  ['Black', 'White', 'Gray'].includes(family)
+                                                    ? darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-700'
+                                                    : getCoarseGrouping(family) === 'Warm'
+                                                      ? darkMode ? 'bg-red-900 text-red-300' : 'bg-red-200 text-red-800'
+                                                      : darkMode ? 'bg-blue-900 text-blue-300' : 'bg-blue-200 text-blue-800'
+                                                }`}>
+                                                  {family}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        </div>
+                                        
+                                        {/* Metric Value */}
+                                        <div className="text-right">
+                                          <div className={`text-lg font-bold ${
+                                            darkMode ? 'text-gray-200' : 'text-gray-800'
+                                          }`}>
+                                            {leaderboardMetric === 'rqs' 
+                                              ? item.metricValue.toFixed(2)
+                                              : (item.metricValue / 1000000).toFixed(1) + 'M'
+                                            }
+                                          </div>
+                                          <div className={`text-sm ${
+                                            darkMode ? 'text-gray-400' : 'text-gray-600'
+                                          }`}>
+                                            {leaderboardMetric === 'rqs' ? 'RQS' : 'Views'}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Performance Bar */}
+                                      <div className="mb-3">
+                                        <div className={`w-full h-3 rounded-full overflow-hidden ${
+                                          darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                                        }`}>
+                                          <div
+                                            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
+                                            style={{
+                                              width: `${Math.min(100, (item.metricValue / leaderboardData.top10[0].metricValue) * 100)}%`
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Metadata */}
+                                      <div className="flex justify-between items-center text-sm">
+                                        <div className={`space-x-4 ${
+                                          darkMode ? 'text-gray-400' : 'text-gray-600'
+                                        }`}>
+                                          <span>📊 {item.n} videos</span>
+                                          <span>📈 {item.usageRate.toFixed(1)}% usage</span>
+                                          {item.topGenres.length > 0 && (
+                                            <span>🎯 Top genres: {item.topGenres.join(', ')}</span>
+                                          )}
+                                        </div>
+                                        <button
+                                          onClick={() => setSelectedLeaderboardItem(item)}
+                                          className={`px-3 py-1 text-xs rounded-full transition-colors ${
+                                            darkMode 
+                                              ? 'bg-blue-900 text-blue-200 hover:bg-blue-800'
+                                              : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                                          }`}
+                                        >
+                                          View Details
+                                        </button>
+                                      </div>
+                                      
+                                      {/* Example thumbnails */}
+                                      {leaderboardExamples && item.examples.length > 0 && (
+                                        <div className="mt-3 pt-3 border-t border-gray-600">
+                                          <div className="flex gap-2 text-xs">
+                                            <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                              Examples:
+                                            </span>
+                                            {item.examples.slice(0, 3).map((example, i) => (
+                                              <span key={i} className={`px-2 py-1 rounded ${
+                                                darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                                              }`}>
+                                                {example.title.length > 30 
+                                                  ? example.title.substring(0, 30) + '...'
+                                                  : example.title
+                                                }
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Dartboard View */}
+                              {leaderboardView === 'dartboard' && (
+                                <div className="space-y-4">
+                                  {/* Dartboard Container */}
+                                  <div className="flex justify-center">
+                                    <div className="relative">
+                                      <svg width="600" height="600" className="rounded-lg">
+                                        {/* Background */}
+                                        <circle
+                                          cx="300"
+                                          cy="300"
+                                          r="290"
+                                          fill={darkMode ? '#1f2937' : '#f9fafb'}
+                                          stroke={darkMode ? '#374151' : '#e5e7eb'}
+                                          strokeWidth="2"
+                                        />
+                                        
+                                        {/* Ring guidelines */}
+                                        <circle cx="300" cy="300" r="80" fill="none" stroke={darkMode ? '#374151' : '#e5e7eb'} strokeWidth="1" opacity="0.3" />
+                                        <circle cx="300" cy="300" r="140" fill="none" stroke={darkMode ? '#374151' : '#e5e7eb'} strokeWidth="1" opacity="0.3" />
+                                        <circle cx="300" cy="300" r="200" fill="none" stroke={darkMode ? '#374151' : '#e5e7eb'} strokeWidth="1" opacity="0.3" />
+                                        <circle cx="300" cy="300" r="260" fill="none" stroke={darkMode ? '#374151' : '#e5e7eb'} strokeWidth="1" opacity="0.3" />
+
+                                        {/* Family segment lines */}
+                                        {(() => {
+                                          const segments = leaderboardGrouping === 'coarse' 
+                                            ? ['Warm', 'Cool', 'Neutral', 'Mixed']
+                                            : ['Red', 'Red-Orange', 'Orange', 'Yellow', 'Yellow-Green', 'Green', 'Green-Cyan', 'Cyan', 'Blue', 'Blue-Violet', 'Violet', 'Magenta'];
+                                          
+                                          return segments.map((segment, i) => {
+                                            const angle = (i / segments.length) * 360;
+                                            const radian = (angle * Math.PI) / 180;
+                                            const x2 = 300 + 290 * Math.cos(radian);
+                                            const y2 = 300 + 290 * Math.sin(radian);
+                                            
+                                            return (
+                                              <g key={segment}>
+                                                <line
+                                                  x1="300"
+                                                  y1="300"
+                                                  x2={x2}
+                                                  y2={y2}
+                                                  stroke={darkMode ? '#4b5563' : '#d1d5db'}
+                                                  strokeWidth="1"
+                                                  opacity="0.4"
+                                                />
+                                                {/* Segment labels */}
+                                                <text
+                                                  x={300 + 270 * Math.cos(radian)}
+                                                  y={300 + 270 * Math.sin(radian)}
+                                                  textAnchor="middle"
+                                                  dominantBaseline="middle"
+                                                  className={`text-xs font-medium ${darkMode ? 'fill-gray-400' : 'fill-gray-600'}`}
+                                                  transform={`rotate(${angle > 90 && angle < 270 ? angle + 180 : angle}, ${300 + 270 * Math.cos(radian)}, ${300 + 270 * Math.sin(radian)})`}
+                                                >
+                                                  {segment}
+                                                </text>
+                                              </g>
+                                            );
+                                          });
+                                        })()}
+
+                                        {/* Palette nodes */}
+                                        {leaderboardData.top10.map((item, index) => {
+                                          // Determine ring based on rank
+                                          let radius;
+                                          if (index === 0) radius = 40; // Bullseye
+                                          else if (index <= 4) radius = 110; // Ring 1
+                                          else radius = 170; // Ring 2
+                                          
+                                          // Determine segment angle based on primary color family
+                                          let segmentAngle = 0;
+                                          if (item.families && item.families.length > 0) {
+                                            const primaryFamily = item.families[0];
+                                            
+                                            if (leaderboardGrouping === 'coarse') {
+                                              const coarseGroup = getCoarseGrouping(primaryFamily);
+                                              const segments = ['Warm', 'Cool', 'Neutral', 'Mixed'];
+                                              const segmentIndex = segments.indexOf(coarseGroup);
+                                              segmentAngle = (segmentIndex / segments.length) * 360;
+                                            } else {
+                                              const families = ['Red', 'Red-Orange', 'Orange', 'Yellow', 'Yellow-Green', 'Green', 'Green-Cyan', 'Cyan', 'Blue', 'Blue-Violet', 'Violet', 'Magenta'];
+                                              const familyIndex = families.indexOf(primaryFamily);
+                                              if (familyIndex !== -1) {
+                                                segmentAngle = (familyIndex / families.length) * 360;
+                                              }
+                                            }
+                                          }
+                                          
+                                          // Add slight random offset within segment for multiple items
+                                          const segmentWidth = 360 / (leaderboardGrouping === 'coarse' ? 4 : 12);
+                                          const offsetAngle = segmentAngle + (index * 15) % segmentWidth - segmentWidth/2;
+                                          const radian = (offsetAngle * Math.PI) / 180;
+                                          
+                                          // Position
+                                          const x = 300 + radius * Math.cos(radian);
+                                          const y = 300 + radius * Math.sin(radian);
+                                          
+                                          // Node size based on sample size (normalized)
+                                          const maxN = Math.max(...leaderboardData.top10.map(i => i.n));
+                                          const nodeSize = 15 + (item.n / maxN) * 25; // 15-40px radius
+                                          
+                                          // Performance glow
+                                          const topPerformance = leaderboardData.top10[0].metricValue;
+                                          const relativePerformance = item.metricValue / topPerformance;
+                                          const glowColor = relativePerformance > 0.8 ? '#10b981' : 
+                                                          relativePerformance > 0.6 ? '#f59e0b' : 
+                                                          '#ef4444';
+                                          const glowIntensity = relativePerformance;
+                                          
+                                          return (
+                                            <g key={item.signature}>
+                                              {/* Glow effect */}
+                                              <circle
+                                                cx={x}
+                                                cy={y}
+                                                r={nodeSize + 8}
+                                                fill={glowColor}
+                                                opacity={glowIntensity * 0.3}
+                                                className="animate-pulse"
+                                              />
+                                              
+                                              {/* Main node - concentric color rings */}
+                                              {item.type === 'single_color' ? (
+                                                <circle
+                                                  cx={x}
+                                                  cy={y}
+                                                  r={nodeSize}
+                                                  fill={item.palette[0]}
+                                                  stroke={darkMode ? '#374151' : '#ffffff'}
+                                                  strokeWidth="2"
+                                                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                                                />
+                                              ) : (
+                                                // Multi-color palette as concentric rings
+                                                item.palette.slice(0, 5).reverse().map((color, i) => (
+                                                  <circle
+                                                    key={i}
+                                                    cx={x}
+                                                    cy={y}
+                                                    r={nodeSize - (i * (nodeSize / 5))}
+                                                    fill={color}
+                                                    stroke={darkMode ? '#374151' : '#ffffff'}
+                                                    strokeWidth={i === item.palette.length - 1 ? "2" : "1"}
+                                                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                                                  />
+                                                ))
+                                              )}
+                                              
+                                              {/* Rank indicator for bullseye */}
+                                              {index === 0 && (
+                                                <text
+                                                  x={x}
+                                                  y={y + 4}
+                                                  textAnchor="middle"
+                                                  dominantBaseline="middle"
+                                                  className="text-xs font-bold fill-white drop-shadow-md"
+                                                  style={{ filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.7))' }}
+                                                >
+                                                  #1
+                                                </text>
+                                              )}
+                                              
+                                              {/* Rank badges for other positions */}
+                                              {index > 0 && (
+                                                <g>
+                                                  <circle
+                                                    cx={x - nodeSize + 8}
+                                                    cy={y - nodeSize + 8}
+                                                    r="8"
+                                                    fill={index < 3 ? '#fbbf24' : darkMode ? '#4b5563' : '#6b7280'}
+                                                    stroke={darkMode ? '#1f2937' : '#ffffff'}
+                                                    strokeWidth="1"
+                                                  />
+                                                  <text
+                                                    x={x - nodeSize + 8}
+                                                    y={y - nodeSize + 8 + 2}
+                                                    textAnchor="middle"
+                                                    dominantBaseline="middle"
+                                                    className="text-xs font-bold fill-white"
+                                                  >
+                                                    #{item.rank}
+                                                  </text>
+                                                </g>
+                                              )}
+                                              
+                                              {/* Invisible hover area for tooltip */}
+                                              <circle
+                                                cx={x}
+                                                cy={y}
+                                                r={nodeSize + 10}
+                                                fill="transparent"
+                                                className="cursor-pointer"
+                                                onClick={() => setSelectedLeaderboardItem(item)}
+                                              >
+                                                <title>
+                                                  {item.signature}
+                                                  {'\n'}#{item.rank} • {leaderboardMetric === 'rqs' 
+                                                    ? item.metricValue.toFixed(2) + ' RQS'
+                                                    : (item.metricValue / 1000000).toFixed(1) + 'M Views'
+                                                  }
+                                                  {'\n'}{item.n} videos • {item.usageRate.toFixed(1)}% usage
+                                                  {item.topGenres.length > 0 && '\nTop genres: ' + item.topGenres.join(', ')}
+                                                </title>
+                                              </circle>
+                                            </g>
+                                          );
+                                        })}
+                                        
+                                        {/* Center label */}
+                                        <text
+                                          x="300"
+                                          y="320"
+                                          textAnchor="middle"
+                                          dominantBaseline="middle"
+                                          className={`text-sm font-bold ${darkMode ? 'fill-gray-300' : 'fill-gray-700'}`}
+                                        >
+                                          Top {leaderboardEntity === 'palettes' ? 'Palettes' : 'Colors'}
+                                        </text>
+                                        
+                                        {/* Ring labels */}
+                                        <text x="320" y="180" className={`text-xs ${darkMode ? 'fill-gray-400' : 'fill-gray-600'}`}>Top 5</text>
+                                        <text x="320" y="120" className={`text-xs ${darkMode ? 'fill-gray-400' : 'fill-gray-600'}`}>Top 10</text>
+                                      </svg>
+                                    </div>
+                                  </div>
+
+                                  {/* Dartboard Legend */}
+                                  <div className={`p-4 rounded-lg ${
+                                    darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                                  } border`}>
+                                    <h6 className={`font-semibold mb-3 ${
+                                      darkMode ? 'text-gray-200' : 'text-gray-800'
+                                    }`}>
+                                      🎯 How to Read the Dartboard
+                                    </h6>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded-full bg-yellow-400"></div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Center (Bullseye):</strong> #1 performer
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-3 h-3 rounded-full border-2 border-gray-400"></div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Inner Ring:</strong> Top 2-5 performers
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-2 h-2 rounded-full border border-gray-400"></div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Outer Ring:</strong> Top 6-10 performers
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded-full bg-green-500 opacity-50"></div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Green Glow:</strong> High performance
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded-full bg-yellow-500 opacity-50"></div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Yellow Glow:</strong> Good performance
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded-full bg-red-500 opacity-50"></div>
+                                          <span className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                                            <strong>Red Glow:</strong> Lower performance
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="mt-3 pt-3 border-t border-gray-600">
+                                      <p className={`text-xs ${
+                                        darkMode ? 'text-gray-400' : 'text-gray-600'
+                                      }`}>
+                                        <strong>Node Size:</strong> Larger = more videos use this palette • 
+                                        <strong> Segments:</strong> Color families grouped by hue • 
+                                        <strong> Click:</strong> View detailed breakdown
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* Quick Actions */}
+                                  <div className="flex gap-2 justify-center">
+                                    <button
+                                      onClick={() => {
+                                        // Export dartboard as PNG (placeholder)
+                                        console.log('Export dartboard functionality would go here');
+                                      }}
+                                      className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                                        darkMode 
+                                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      📸 Export PNG
+                                    </button>
+                                    <button
+                                      onClick={() => setLeaderboardView('bars')}
+                                      className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                                        darkMode 
+                                          ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                                      }`}
+                                    >
+                                      📊 Switch to Bars
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {leaderboardView === 'grid' && (
+                                <div className={`text-center py-20 rounded-lg ${
+                                  darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                                }`}>
+                                  <div className="text-6xl mb-4">🗂️</div>
+                                  <h5 className={`text-lg font-semibold mb-2 ${
+                                    darkMode ? 'text-gray-300' : 'text-gray-700'
+                                  }`}>
+                                    Grid View Coming Soon
+                                  </h5>
+                                  <p className={`text-sm ${
+                                    darkMode ? 'text-gray-400' : 'text-gray-500'
+                                  }`}>
+                                    Card-based grid layout will be available here
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </div>
                   )}
                 </div>
