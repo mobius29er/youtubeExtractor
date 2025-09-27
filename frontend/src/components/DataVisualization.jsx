@@ -15,7 +15,7 @@ import {
   ScatterChart,
   Scatter
 } from 'recharts';
-import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target } from 'lucide-react';
+import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target, Flame, BarChart2, Trophy } from 'lucide-react';
 import FilterControls from './FilterControls';
 
 const DataVisualization = ({ data, loading, darkMode }) => {
@@ -36,6 +36,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [correlationDataMode, setCorrelationDataMode] = useState('channel'); // 'channel' or 'video'
   const [correlationYAxis, setCorrelationYAxis] = useState('engagement'); // 'engagement', 'rqs', 'like_ratio', 'comment_ratio', 'subscribers'
   const [thumbnailView, setThumbnailView] = useState('table'); // 'table' or 'matrix'
+  const [thumbnailAnalysisView, setThumbnailAnalysisView] = useState('palette'); // 'palette', 'heatmap', 'frequency', 'leaderboard'
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -60,6 +62,20 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       processChartData(filteredData);
     }
   }, [filteredData]);
+
+  // Handle Escape key to exit fullscreen
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isFullscreen]);
 
   // Helper function to get filtered channels based on current filters
   const getFilteredChannels = () => {
@@ -1805,25 +1821,113 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
         return (
           <div 
-            className={`chart-section w-full overflow-y-auto overflow-x-hidden ${
+            className={`chart-section w-full overflow-y-auto overflow-x-hidden transition-all duration-300 ${
               darkMode ? 'bg-gray-900' : 'bg-gray-50'
-            }`}
-            style={{ height: '500px', maxHeight: '500px' }}
+            } ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+            style={{ height: isFullscreen ? '100vh' : '500px', maxHeight: isFullscreen ? '100vh' : '500px' }}
           >
             <div className="w-full space-y-6 p-6 pb-96">
               <div className={`sticky top-0 py-4 z-10 ${
                 darkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
               } border-b`}>
-                <h3 className={`text-2xl font-bold mb-2 ${
-                  darkMode ? 'text-white' : 'text-gray-900'
-                }`}>
-                  🎨 Thumbnail Analysis
-                </h3>
-                <p className={`text-sm ${
-                  darkMode ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Analyzing color palettes and performance metrics from YouTube thumbnails
-                </p>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={`text-2xl font-bold mb-2 ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      🎨 Thumbnail Analysis
+                    </h3>
+                    <p className={`text-sm ${
+                      darkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Analyzing color palettes and performance metrics from YouTube thumbnails
+                    </p>
+                  </div>
+                  
+                  {/* Fullscreen Toggle Button */}
+                  <button
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      darkMode
+                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                    }`}
+                    title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                  >
+                    {isFullscreen ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+                
+                {/* View Toggle Buttons */}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setThumbnailAnalysisView('palette')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      thumbnailAnalysisView === 'palette'
+                        ? darkMode
+                          ? 'bg-blue-600 text-white border border-blue-500'
+                          : 'bg-blue-600 text-white border border-blue-500'
+                        : darkMode
+                          ? 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    🎨 Palette List
+                  </button>
+                  
+                  <button
+                    onClick={() => setThumbnailAnalysisView('heatmap')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      thumbnailAnalysisView === 'heatmap'
+                        ? darkMode
+                          ? 'bg-blue-600 text-white border border-blue-500'
+                          : 'bg-blue-600 text-white border border-blue-500'
+                        : darkMode
+                          ? 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    🔥 Heatmap
+                  </button>
+                  
+                  <button
+                    onClick={() => setThumbnailAnalysisView('frequency')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      thumbnailAnalysisView === 'frequency'
+                        ? darkMode
+                          ? 'bg-blue-600 text-white border border-blue-500'
+                          : 'bg-blue-600 text-white border border-blue-500'
+                        : darkMode
+                          ? 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    📊 Color Frequency
+                  </button>
+                  
+                  <button
+                    onClick={() => setThumbnailAnalysisView('leaderboard')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      thumbnailAnalysisView === 'leaderboard'
+                        ? darkMode
+                          ? 'bg-blue-600 text-white border border-blue-500'
+                          : 'bg-blue-600 text-white border border-blue-500'
+                        : darkMode
+                          ? 'bg-gray-700 text-gray-300 border border-gray-600 hover:bg-gray-600'
+                          : 'bg-gray-100 text-gray-700 border border-gray-300 hover:bg-gray-200'
+                    }`}
+                  >
+                    🏆 Leaderboard
+                  </button>
+                </div>
               </div>
               
               {/* Main Content Container */}
@@ -1833,17 +1937,20 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   : 'bg-white border-gray-200 shadow-gray-300/50'
               }`}>
                 <div className="p-8">
-                  <div className="mb-8">
-                    <h4 className={`text-xl font-semibold mb-3 ${
-                      darkMode ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      Individual Video Color Palettes & Performance
-                    </h4>
-                    <p className={`text-sm leading-relaxed ${
-                      darkMode ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      Each row shows a unique video with its extracted thumbnail color palette (1-5 actual colors), 
-                      ranked by RQS performance score. Shows the real color data without artificial padding.
+                  {/* Palette List View */}
+                  {thumbnailAnalysisView === 'palette' && (
+                    <>
+                      <div className="mb-8">
+                        <h4 className={`text-xl font-semibold mb-3 ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          Individual Video Color Palettes & Performance
+                        </h4>
+                        <p className={`text-sm leading-relaxed ${
+                          darkMode ? 'text-gray-300' : 'text-gray-600'
+                        }`}>
+                          Each row shows a unique video with its extracted thumbnail color palette (1-5 actual colors), 
+                          ranked by RQS performance score. Shows the real color data without artificial padding.
                     </p>
                   </div>
                   
@@ -2073,11 +2180,72 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                       </div>
                     </div>
                   )}
+                    </>
+                  )}
+
+                  {/* Heatmap View */}
+                  {thumbnailAnalysisView === 'heatmap' && (
+                    <div className={`text-center py-20 rounded-lg ${
+                      darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                    }`}>
+                      <div className="text-6xl mb-4">🔥</div>
+                      <h5 className={`text-lg font-semibold mb-2 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        Heatmap Coming Soon
+                      </h5>
+                      <p className={`text-sm ${
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Interactive heatmap visualization will be available here
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Color Frequency View */}
+                  {thumbnailAnalysisView === 'frequency' && (
+                    <div className={`text-center py-20 rounded-lg ${
+                      darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                    }`}>
+                      <div className="text-6xl mb-4">📊</div>
+                      <h5 className={`text-lg font-semibold mb-2 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        Color Frequency Coming Soon
+                      </h5>
+                      <p className={`text-sm ${
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Color frequency analysis will be available here
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Leaderboard View */}
+                  {thumbnailAnalysisView === 'leaderboard' && (
+                    <div className={`text-center py-20 rounded-lg ${
+                      darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                    }`}>
+                      <div className="text-6xl mb-4">🏆</div>
+                      <h5 className={`text-lg font-semibold mb-2 ${
+                        darkMode ? 'text-gray-300' : 'text-gray-700'
+                      }`}>
+                        Leaderboard Coming Soon
+                      </h5>
+                      <p className={`text-sm ${
+                        darkMode ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        Performance leaderboard will be available here
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-        );      default:
+        );
+
+      default:
         return null;
     }
   };
