@@ -61,7 +61,8 @@ const FilterControls = ({
     { value: 'name', label: 'Name (A-Z)' },
     { value: 'videos', label: 'Video Count' },
     { value: 'views', label: 'Total Views' },
-    { value: 'engagement', label: 'Engagement Rate' }
+    { value: 'engagement', label: 'Engagement Rate' },
+    { value: 'rqs', label: 'RQS Score' }
   ];
 
   const hasActiveFilters = activeFilters.genre !== 'all' || 

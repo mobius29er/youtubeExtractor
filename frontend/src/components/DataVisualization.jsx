@@ -35,6 +35,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [correlationColorMode, setCorrelationColorMode] = useState('genre'); // 'genre' or 'tier'
   const [correlationDataMode, setCorrelationDataMode] = useState('channel'); // 'channel' or 'video'
   const [correlationYAxis, setCorrelationYAxis] = useState('engagement'); // 'engagement', 'rqs', 'like_ratio', 'comment_ratio', 'subscribers'
+  const [thumbnailView, setThumbnailView] = useState('table'); // 'table' or 'matrix'
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -59,6 +60,82 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       processChartData(filteredData);
     }
   }, [filteredData]);
+
+  // Helper function to get filtered channels based on current filters
+  const getFilteredChannels = () => {
+    if (!originalData || !originalData.engagement) {
+      console.warn('⚠️ No original data available for filtering');
+      return [];
+    }
+    
+    let filteredChannels = [...originalData.engagement];
+    
+    // Apply genre filter using the consistent getChannelGenre function
+    if (activeFilters.genre !== 'all') {
+      const filterGenre = activeFilters.genre.toLowerCase();
+      let targetGenre = '';
+      
+      if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
+      else if (filterGenre === 'education') targetGenre = 'Education';
+      else if (filterGenre === 'gaming') targetGenre = 'Gaming';
+      else if (filterGenre === 'music') targetGenre = 'Music';
+      else if (filterGenre === 'news') targetGenre = 'News & Politics';
+      else if (filterGenre === 'sports') targetGenre = 'Sports';
+      else if (filterGenre === 'tech') targetGenre = 'Science & Technology';
+      else if (filterGenre === 'catholic') targetGenre = 'Catholic';
+      else if (filterGenre === 'challenge') targetGenre = 'Challenge/Stunts';
+      else if (filterGenre === 'kids') targetGenre = 'Kids/Family';
+      else targetGenre = activeFilters.genre;
+      
+      filteredChannels = filteredChannels.filter(channel => {
+        const channelGenre = getChannelGenre(channel);
+        return channelGenre === targetGenre;
+      });
+    }
+    
+    // Apply tier filter
+    if (activeFilters.tier !== 'all') {
+      filteredChannels = filteredChannels.filter(channel => {
+        return channel.tier === activeFilters.tier;
+      });
+    }
+    
+    // Apply global tier filter
+    if (activeFilters.globalTier !== 'all') {
+      filteredChannels = filteredChannels.filter(channel => {
+        return channel.global_tier === activeFilters.globalTier;
+      });
+    }
+    
+    // Apply genre tier filter
+    if (activeFilters.genreTier !== 'all') {
+      filteredChannels = filteredChannels.filter(channel => {
+        return channel.genre_tier === activeFilters.genreTier;
+      });
+    }
+    
+    // Apply sorting
+    if (activeFilters.sortBy !== 'name') {
+      filteredChannels.sort((a, b) => {
+        switch (activeFilters.sortBy) {
+          case 'views':
+            return (b.views || 0) - (a.views || 0);
+          case 'videos':
+            return (b.videos || 0) - (a.videos || 0);
+          case 'engagement':
+            const aEngagement = ((a.likes || 0) + (a.comments || 0)) / (a.views || 1);
+            const bEngagement = ((b.likes || 0) + (b.comments || 0)) / (b.views || 1);
+            return bEngagement - aEngagement;
+          case 'rqs':
+            return (b.rqs || 75) - (a.rqs || 75);
+          default:
+            return a.name.localeCompare(b.name);
+        }
+      });
+    }
+    
+    return filteredChannels;
+  };
 
   // Handle filter changes
   const handleFilterChange = (filters) => {
@@ -170,6 +247,8 @@ const DataVisualization = ({ data, loading, darkMode }) => {
             const aEngagement = ((a.likes || 0) + (a.comments || 0)) / (a.views || 1);
             const bEngagement = ((b.likes || 0) + (b.comments || 0)) / (b.views || 1);
             return bEngagement - aEngagement;
+          case 'rqs':
+            return (b.rqs || 75) - (a.rqs || 75);
           default:
             return a.name.localeCompare(b.name);
         }
@@ -198,6 +277,24 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     if (subscribers >= 1_000_000) return 'mid';      // 1M-10M subscribers
     if (subscribers >= 100_000) return 'small';      // 100K-1M subscribers
     return 'new';                                     // <100K subscribers
+  };
+
+  // Helper function to get global tier (capitalized for filter matching)
+  const getGlobalTierForChannel = (channel) => {
+    const subscribers = channel.subscribers || 0;
+    if (subscribers >= 100_000_000) return 'Mega';   // 100M+ subscribers
+    if (subscribers >= 10_000_000) return 'Large';   // 10M+ subscribers  
+    if (subscribers >= 1_000_000) return 'Mid';      // 1M+ subscribers
+    if (subscribers >= 100_000) return 'Small';      // 100K+ subscribers
+    return 'New';                                     // <100K subscribers
+  };
+
+  // Helper function to get view-based tier for regular tier filter
+  const getViewTierForChannel = (channel) => {
+    const views = channel.views || 0;
+    if (views >= 10_000_000) return 'high';   // 10M+ views
+    if (views >= 1_000_000) return 'mid';     // 1M+ views
+    return 'low';                             // <1M views
   };
 
   // Process chart data based on filtered data
@@ -1466,10 +1563,26 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           sampleData: []
         };
         
-        if (filteredData?.engagement) {
-          debugInfo.totalChannels = filteredData.engagement.length;
+        // Get all channels from original data to extract videos, then filter the videos themselves
+        const allChannels = originalData?.engagement || [];
+        
+        if (allChannels && allChannels.length > 0) {
+          debugInfo.totalChannels = allChannels.length;
           
-          filteredData.engagement.forEach(channel => {
+          allChannels.forEach(channel => {
+            // Debug: log the first channel's structure to understand available fields
+            if (debugInfo.totalChannels === 1) {
+              console.log('🔍 Channel data structure:', {
+                name: channel.name,
+                tier: channel.tier,
+                global_tier: channel.global_tier,
+                genre_tier: channel.genre_tier,
+                genre: channel.genre,
+                category: channel.category,
+                subscribers: channel.subscribers,
+                availableFields: Object.keys(channel).slice(0, 20) // Show first 20 fields
+              });
+            }
             if (channel.videoDetails && Array.isArray(channel.videoDetails)) {
               channel.videoDetails.forEach((video, index) => {
                 debugInfo.totalVideos++;
@@ -1556,7 +1669,13 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                       views: views,
                       rqs: rqs,
                       source: colorSource,
-                      colorCount: colorData.length // Track actual number of colors
+                      colorCount: colorData.length, // Track actual number of colors
+                      // Add channel metadata for filtering (calculate tiers dynamically)
+                      genre: getChannelGenre(channel.name),
+                      tier: getViewTierForChannel(channel), // View-based tier for regular tier filter
+                      global_tier: getGlobalTierForChannel(channel), // Global subscriber tier
+                      genre_tier: getGlobalTierForChannel(channel), // Use same logic for genre tier
+                      subscribers: channel.subscribers
                     });
                   }
                   
@@ -1582,6 +1701,107 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         if (individualVideos.length > 0) {
           console.log('Sample processed videos:', individualVideos.slice(0, 3));
         }
+
+        // Apply main page filtering and sorting to individual videos
+        let filteredVideos = individualVideos;
+        console.log('🎨 THUMBNAIL FILTERING DEBUG:');
+        console.log('Total videos before filtering:', filteredVideos.length);
+        console.log('Active filters:', activeFilters);
+        if (filteredVideos.length > 0) {
+          console.log('Sample video metadata:', {
+            genre: filteredVideos[0].genre,
+            tier: filteredVideos[0].tier,
+            global_tier: filteredVideos[0].global_tier,
+            genre_tier: filteredVideos[0].genre_tier
+          });
+        }
+
+        // Apply filters to individual videos based on their inherited channel metadata
+        if (activeFilters.genre !== 'all') {
+          const filterGenre = activeFilters.genre.toLowerCase();
+          let targetGenre = '';
+          
+          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
+          else if (filterGenre === 'education') targetGenre = 'Education';
+          else if (filterGenre === 'gaming') targetGenre = 'Gaming';
+          else if (filterGenre === 'music') targetGenre = 'Music';
+          else if (filterGenre === 'news') targetGenre = 'News & Politics';
+          else if (filterGenre === 'sports') targetGenre = 'Sports';
+          else if (filterGenre === 'tech') targetGenre = 'Science & Technology';
+          else if (filterGenre === 'catholic') targetGenre = 'Catholic';
+          else if (filterGenre === 'challenge') targetGenre = 'Challenge/Stunts';
+          else if (filterGenre === 'kids') targetGenre = 'Kids/Family';
+          else targetGenre = activeFilters.genre;
+          
+          console.log(`🔍 Filtering by genre: "${activeFilters.genre}" → "${targetGenre}"`);
+          const beforeCount = filteredVideos.length;
+          filteredVideos = filteredVideos.filter(video => video.genre === targetGenre);
+          console.log(`Genre filter: ${beforeCount} → ${filteredVideos.length} videos`);
+        }
+        
+        // Debug tier values before filtering
+        if (filteredVideos.length > 0) {
+          console.log('🎯 TIER DEBUG - Sample video tier data:', {
+            tier: filteredVideos[0].tier,
+            global_tier: filteredVideos[0].global_tier,
+            genre_tier: filteredVideos[0].genre_tier,
+            available_tiers: [...new Set(filteredVideos.slice(0, 10).map(v => v.tier))],
+            available_global_tiers: [...new Set(filteredVideos.slice(0, 10).map(v => v.global_tier))],
+            available_genre_tiers: [...new Set(filteredVideos.slice(0, 10).map(v => v.genre_tier))]
+          });
+        }
+        
+        // Apply tier filter to videos
+        if (activeFilters.tier !== 'all') {
+          console.log(`🔍 Filtering by tier: "${activeFilters.tier}"`);
+          const beforeCount = filteredVideos.length;
+          filteredVideos = filteredVideos.filter(video => video.tier === activeFilters.tier);
+          console.log(`Tier filter: ${beforeCount} → ${filteredVideos.length} videos`);
+        }
+        
+        // Apply global tier filter to videos
+        if (activeFilters.globalTier !== 'all') {
+          console.log(`🔍 Filtering by global tier: "${activeFilters.globalTier}"`);
+          const beforeCount = filteredVideos.length;
+          filteredVideos = filteredVideos.filter(video => video.global_tier === activeFilters.globalTier);
+          console.log(`Global tier filter: ${beforeCount} → ${filteredVideos.length} videos`);
+        }
+        
+        // Apply genre tier filter to videos
+        if (activeFilters.genreTier !== 'all') {
+          console.log(`🔍 Filtering by genre tier: "${activeFilters.genreTier}"`);
+          const beforeCount = filteredVideos.length;
+          filteredVideos = filteredVideos.filter(video => video.genre_tier === activeFilters.genreTier);
+          console.log(`Genre tier filter: ${beforeCount} → ${filteredVideos.length} videos`);
+        }
+
+        console.log('🎨 Final filtered videos count:', filteredVideos.length);
+
+        // Apply sorting based on main filter controls
+        if (activeFilters.sortBy !== 'name') {
+          filteredVideos.sort((a, b) => {
+            switch (activeFilters.sortBy) {
+              case 'views':
+                return (b.views || 0) - (a.views || 0);
+              case 'videos':
+                // For individual videos, we don't have video count, so sort by RQS instead
+                return (b.rqs || 75) - (a.rqs || 75);
+              case 'engagement':
+                // For individual videos, use views as proxy for engagement
+                return (b.views || 0) - (a.views || 0);
+              case 'rqs':
+                return (b.rqs || 75) - (a.rqs || 75);
+              default:
+                return (a.title || '').localeCompare(b.title || '');
+            }
+          });
+        } else {
+          // Sort by title/name alphabetically
+          filteredVideos.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        }
+
+        // Limit results for performance
+        filteredVideos = filteredVideos.slice(0, 500);
 
         return (
           <div 
@@ -1627,7 +1847,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                     </p>
                   </div>
                   
-                  {individualVideos.length > 0 ? (
+                  {filteredVideos.length > 0 ? (
                     <div className="w-full pb-48">
                       <div className={`rounded-lg overflow-hidden border ${
                         darkMode ? 'border-gray-600' : 'border-gray-200'
@@ -1675,7 +1895,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                             </tr>
                           </thead>
                           <tbody>
-                            {individualVideos.map((video, index) => (
+                            {filteredVideos.map((video, index) => (
                               <tr key={`${video.videoId}-${index}`} className={`transition-all duration-200 border-b ${
                                 darkMode 
                                   ? 'hover:bg-gray-700/50 border-gray-700/50' 
@@ -1690,6 +1910,12 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                                         : 'bg-gray-200 text-gray-700'
                                   }`}>
                                     #{index + 1}
+                                  </div>
+                                  {/* Sort indicator */}
+                                  <div className={`text-xs text-center mt-1 ${
+                                    darkMode ? 'text-gray-400' : 'text-gray-500'
+                                  }`}>
+                                    RQS Rank
                                   </div>
                                 </td>
                                 <td className="px-8 py-10 max-w-xs">
@@ -1825,12 +2051,15 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                         <p>Debug Information:</p>
                         <p>• Total videos processed: {debugInfo.totalVideos}</p>
                         <p>• Individual videos found: {individualVideos.length}</p>
+                        <p>• Filtered videos shown: {filteredVideos.length}</p>
                         <p>• Parse errors: {debugInfo.parseErrors}</p>
                         <p className="mt-4 font-medium">
                           {debugInfo.totalVideos > 0 
                             ? debugInfo.videosWithColors === 0 
                               ? "All color_palette fields appear to be empty []" 
-                              : "Color palettes found but filtered out"
+                              : individualVideos.length === 0
+                                ? "Color palettes found but filtered out"
+                                : "Try adjusting your search or filter criteria"
                             : "No video data loaded"}
                         </p>
                         <details className="mt-4">
