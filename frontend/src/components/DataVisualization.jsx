@@ -96,6 +96,63 @@ const createPaletteCombo = (families) => {
   return combo || 'Mixed';
 };
 
+// Color frequency utilities
+const getCoarseGrouping = (family) => {
+  const warmColors = ['Red', 'Red-Orange', 'Orange', 'Yellow', 'Yellow-Green'];
+  const coolColors = ['Green', 'Green-Cyan', 'Cyan', 'Blue', 'Blue-Violet', 'Violet', 'Magenta'];
+  const neutrals = ['Black', 'White', 'Gray'];
+  
+  if (warmColors.includes(family)) return 'Warm';
+  if (coolColors.includes(family)) return 'Cool';
+  if (neutrals.includes(family)) return 'Neutral';
+  return 'Other';
+};
+
+const getColorSwatch = (family) => {
+  const colorMap = {
+    'Red': '#EF4444',
+    'Red-Orange': '#F97316',
+    'Orange': '#F59E0B',
+    'Yellow': '#EAB308',
+    'Yellow-Green': '#84CC16',
+    'Green': '#22C55E',
+    'Green-Cyan': '#10B981',
+    'Cyan': '#06B6D4',
+    'Blue': '#3B82F6',
+    'Blue-Violet': '#6366F1',
+    'Violet': '#8B5CF6',
+    'Magenta': '#D946EF',
+    'Black': '#000000',
+    'White': '#FFFFFF',
+    'Gray': '#6B7280'
+  };
+  return colorMap[family] || '#9CA3AF';
+};
+
+const calculateBootstrapCI = (values, confidence = 0.95) => {
+  if (values.length < 10) return null; // Need minimum samples for CI
+  
+  const numBootstraps = 1000;
+  const bootstrapMeans = [];
+  
+  for (let i = 0; i < numBootstraps; i++) {
+    const sample = [];
+    for (let j = 0; j < values.length; j++) {
+      sample.push(values[Math.floor(Math.random() * values.length)]);
+    }
+    bootstrapMeans.push(sample.reduce((a, b) => a + b, 0) / sample.length);
+  }
+  
+  bootstrapMeans.sort((a, b) => a - b);
+  const lowerIdx = Math.floor((1 - confidence) / 2 * numBootstraps);
+  const upperIdx = Math.floor((1 + confidence) / 2 * numBootstraps);
+  
+  return {
+    lower: bootstrapMeans[lowerIdx],
+    upper: bootstrapMeans[upperIdx]
+  };
+};
+
 const DataVisualization = ({ data, loading, darkMode }) => {
   const [activeChart, setActiveChart] = useState('engagement');
   const [chartData, setChartData] = useState(null);
@@ -124,6 +181,16 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [heatmapType, setHeatmapType] = useState('combinations'); // 'combinations' or 'single_colors'
   const [heatmapMinN, setHeatmapMinN] = useState(20);
   const [selectedHeatmapCell, setSelectedHeatmapCell] = useState(null);
+  
+  // Color Frequency specific states
+  const [frequencyMetric, setFrequencyMetric] = useState('rqs'); // 'rqs' or 'views'
+  const [frequencyViewsMode, setFrequencyViewsMode] = useState('avg'); // 'avg' or 'median'
+  const [frequencyGrouping, setFrequencyGrouping] = useState('12_family'); // '12_family' or 'coarse'
+  const [frequencyView, setFrequencyView] = useState('bubble'); // 'bubble', 'ranked', 'composition', 'multiples', 'timeline'
+  const [frequencyMinN, setFrequencyMinN] = useState(30);
+  const [showNeutrals, setShowNeutrals] = useState(true);
+  const [selectedFrequencyColor, setSelectedFrequencyColor] = useState(null);
+  const [compareToCategory, setCompareToCategory] = useState(false);
   
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
@@ -834,6 +901,147 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       };
     } catch (error) {
       console.error('Error generating heatmap tables:', error);
+      return null;
+    }
+  };
+
+  // Generate color frequency analysis
+  const generateColorFrequencyData = (heatmapData) => {
+    if (!heatmapData || heatmapData.length === 0) return null;
+    
+    try {
+      const filteredData = heatmapData.filter(row => {
+        // Apply current filters
+        if (activeFilters.genre !== 'all') {
+          const filterGenre = activeFilters.genre.toLowerCase();
+          let targetGenre = '';
+          
+          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
+          else if (filterGenre === 'education') targetGenre = 'Education';
+          else if (filterGenre === 'gaming') targetGenre = 'Gaming';
+          else if (filterGenre === 'music') targetGenre = 'Music';
+          else if (filterGenre === 'news') targetGenre = 'News & Politics';
+          else if (filterGenre === 'sports') targetGenre = 'Sports';
+          else if (filterGenre === 'tech') targetGenre = 'Science & Technology';
+          else if (filterGenre === 'catholic') targetGenre = 'Catholic';
+          else if (filterGenre === 'challenge') targetGenre = 'Challenge/Stunts';
+          else if (filterGenre === 'kids') targetGenre = 'Kids/Family';
+          else targetGenre = activeFilters.genre;
+          
+          if (row.genre !== targetGenre) return false;
+        }
+        if (activeFilters.tier !== 'all' && row.tier !== activeFilters.tier) return false;
+        return true;
+      });
+      
+      if (filteredData.length === 0) return null;
+      
+      console.log('📊 Color Frequency Analysis:', {
+        totalVideos: filteredData.length,
+        sampleFamilies: filteredData.slice(0, 3).map(row => row.families),
+        frequencyMetric,
+        frequencyGrouping
+      });
+      
+      // Get all unique color families
+      const allFamilies = [...new Set(
+        filteredData.flatMap(row => row.families || [])
+      )].filter(f => showNeutrals || !['Black', 'White', 'Gray'].includes(f));
+      
+      const colorStats = {};
+      
+      allFamilies.forEach(family => {
+        const presentMask = filteredData.filter(row => row.families.includes(family));
+        const absentMask = filteredData.filter(row => !row.families.includes(family));
+        
+        const nPresent = presentMask.length;
+        const nAbsent = absentMask.length;
+        const frequency = nPresent / filteredData.length;
+        
+        if (nPresent < frequencyMinN || nAbsent < frequencyMinN) {
+          colorStats[family] = {
+            color: family,
+            frequency,
+            nPresent,
+            nAbsent,
+            metricPresent: null,
+            metricAbsent: null,
+            delta: null,
+            ci: null,
+            insufficient: true
+          };
+          return;
+        }
+        
+        // Get metric values
+        const metricValues = (row) => {
+          const metric = frequencyMetric === 'views' ? row.views : row.rqs;
+          return isNaN(metric) ? null : metric;
+        };
+        
+        const presentValues = presentMask.map(metricValues).filter(v => v !== null);
+        const absentValues = absentMask.map(metricValues).filter(v => v !== null);
+        
+        if (presentValues.length === 0 || absentValues.length === 0) {
+          colorStats[family] = {
+            color: family,
+            frequency,
+            nPresent,
+            nAbsent,
+            metricPresent: null,
+            metricAbsent: null,
+            delta: null,
+            ci: null,
+            insufficient: true
+          };
+          return;
+        }
+        
+        // Calculate statistics
+        let metricPresent, metricAbsent;
+        if (frequencyMetric === 'views' && frequencyViewsMode === 'median') {
+          const sortedPresent = [...presentValues].sort((a, b) => a - b);
+          const sortedAbsent = [...absentValues].sort((a, b) => a - b);
+          metricPresent = sortedPresent[Math.floor(sortedPresent.length / 2)];
+          metricAbsent = sortedAbsent[Math.floor(sortedAbsent.length / 2)];
+        } else {
+          metricPresent = presentValues.reduce((a, b) => a + b, 0) / presentValues.length;
+          metricAbsent = absentValues.reduce((a, b) => a + b, 0) / absentValues.length;
+        }
+        
+        const delta = metricPresent - metricAbsent;
+        
+        // Calculate confidence intervals
+        const ci = calculateBootstrapCI(presentValues);
+        
+        // Group by coarse categories if needed
+        const displayFamily = frequencyGrouping === 'coarse' ? getCoarseGrouping(family) : family;
+        
+        colorStats[displayFamily] = {
+          color: displayFamily,
+          originalFamily: family,
+          frequency,
+          nPresent,
+          nAbsent,
+          metricPresent,
+          metricAbsent,
+          delta,
+          ci,
+          insufficient: false,
+          swatch: getColorSwatch(family),
+          examples: presentMask.slice(0, 3).map(row => ({
+            title: row.title,
+            palette: row.palette,
+            metric: metricValues(row),
+            videoId: row.videoId
+          }))
+        };
+      });
+      
+      return Object.values(colorStats).filter(stat => stat.color);
+      
+    } catch (error) {
+      console.error('Error generating color frequency data:', error);
       return null;
     }
   };
@@ -2981,21 +3189,866 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
                   {/* Color Frequency View */}
                   {thumbnailAnalysisView === 'frequency' && (
-                    <div className={`text-center py-20 rounded-lg ${
-                      darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
-                    }`}>
-                      <div className="text-6xl mb-4">📊</div>
-                      <h5 className={`text-lg font-semibold mb-2 ${
-                        darkMode ? 'text-gray-300' : 'text-gray-700'
-                      }`}>
-                        Color Frequency Coming Soon
-                      </h5>
-                      <p className={`text-sm ${
-                        darkMode ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        Color frequency analysis will be available here
-                      </p>
-                    </div>
+                    <>
+                      {/* Color Frequency Controls */}
+                      <div className="mb-6 space-y-4">
+                        <div className="flex flex-wrap gap-4">
+                          {/* Metric Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Metric:
+                            </label>
+                            <select
+                              value={frequencyMetric}
+                              onChange={(e) => setFrequencyMetric(e.target.value)}
+                              className={`px-3 py-1 rounded border text-sm ${
+                                darkMode 
+                                  ? 'bg-gray-700 border-gray-600 text-white' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                              <option value="rqs">RQS Score</option>
+                              <option value="views">Views</option>
+                            </select>
+                          </div>
+
+                          {/* Views Mode */}
+                          {frequencyMetric === 'views' && (
+                            <div className="flex items-center gap-2">
+                              <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Mode:
+                              </label>
+                              <select
+                                value={frequencyViewsMode}
+                                onChange={(e) => setFrequencyViewsMode(e.target.value)}
+                                className={`px-3 py-1 rounded border text-sm ${
+                                  darkMode 
+                                    ? 'bg-gray-700 border-gray-600 text-white' 
+                                    : 'bg-white border-gray-300 text-gray-900'
+                                }`}
+                              >
+                                <option value="avg">Average</option>
+                                <option value="median">Median</option>
+                              </select>
+                            </div>
+                          )}
+
+                          {/* Grouping Toggle */}
+                          <div className="flex items-center gap-2">
+                            <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Grouping:
+                            </label>
+                            <select
+                              value={frequencyGrouping}
+                              onChange={(e) => setFrequencyGrouping(e.target.value)}
+                              className={`px-3 py-1 rounded border text-sm ${
+                                darkMode 
+                                  ? 'bg-gray-700 border-gray-600 text-white' 
+                                  : 'bg-white border-gray-300 text-gray-900'
+                              }`}
+                            >
+                              <option value="12_family">12 Color Families</option>
+                              <option value="coarse">Warm/Cool/Neutral</option>
+                            </select>
+                          </div>
+
+                          {/* Min N Slider */}
+                          <div className="flex items-center gap-2">
+                            <label 
+                              className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}
+                              title="Minimum number of videos that must contain a color for it to be included in the analysis. Lower values show more colors but may be less statistically reliable."
+                            >
+                              Min n:
+                            </label>
+                            <input
+                              type="range"
+                              min="1"
+                              max="100"
+                              value={frequencyMinN}
+                              onChange={(e) => setFrequencyMinN(parseInt(e.target.value))}
+                              className="w-20"
+                              title={`Currently requiring at least ${frequencyMinN} videos to contain each color`}
+                            />
+                            <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {frequencyMinN}
+                            </span>
+                          </div>
+
+                          {/* Show Neutrals Toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={showNeutrals}
+                              onChange={(e) => setShowNeutrals(e.target.checked)}
+                              className="rounded"
+                            />
+                            <span className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Show Neutrals
+                            </span>
+                          </label>
+                        </div>
+
+                        {/* Explanation for Min n */}
+                        <div className={`p-3 rounded text-xs ${
+                          darkMode ? 'bg-gray-800/50 text-gray-400' : 'bg-gray-100/50 text-gray-600'
+                        }`}>
+                          <p>
+                            <strong>Min n:</strong> Minimum sample size for each color. 
+                            Set to 1 to include all colors (even rare ones), 
+                            or higher values (like 30+) for more statistically reliable results.
+                          </p>
+                        </div>
+
+                        {/* View Type Toggle */}
+                        <div className="flex gap-2 flex-wrap">
+                          <button
+                            onClick={() => setFrequencyView('bubble')}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                              frequencyView === 'bubble'
+                                ? 'bg-blue-600 text-white'
+                                : darkMode
+                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            🫧 Frequency-Performance
+                          </button>
+                          <button
+                            onClick={() => setFrequencyView('ranked')}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                              frequencyView === 'ranked'
+                                ? 'bg-blue-600 text-white'
+                                : darkMode
+                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            📊 Ranked Impact
+                          </button>
+                          <button
+                            onClick={() => setFrequencyView('composition')}
+                            className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                              frequencyView === 'composition'
+                                ? 'bg-blue-600 text-white'
+                                : darkMode
+                                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            }`}
+                          >
+                            🎨 Composition
+                          </button>
+                        </div>
+                      </div>
+
+                      {(() => {
+                        // Process color frequency data
+                        const heatmapData = processHeatmapData(filteredVideos);
+                        const frequencyData = heatmapData ? generateColorFrequencyData(heatmapData) : null;
+                        
+                        if (!frequencyData || frequencyData.length === 0) {
+                          return (
+                            <div className={`text-center py-20 rounded-lg ${
+                              darkMode ? 'bg-gray-700/30' : 'bg-gray-100/50'
+                            }`}>
+                              <div className="text-6xl mb-4">📊</div>
+                              <h5 className={`text-lg font-semibold mb-2 ${
+                                darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}>
+                                No Frequency Data Available
+                              </h5>
+                              <p className={`text-sm ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`}>
+                                Try adjusting filters or lowering the minimum sample size
+                              </p>
+                            </div>
+                          );
+                        }
+
+                        const validData = frequencyData.filter(d => !d.insufficient);
+                        const insufficientData = frequencyData.filter(d => d.insufficient);
+
+                        if (frequencyView === 'bubble') {
+                          return (
+                            <div className="space-y-6">
+                              {/* Bubble Chart */}
+                              <div className={`p-6 rounded-lg border ${
+                                darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                              }`}>
+                                <h6 className={`text-lg font-semibold mb-4 ${
+                                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                                }`}>
+                                  Frequency vs Performance Impact
+                                </h6>
+                                
+                                {/* SVG Bubble Chart */}
+                                <div className="w-full" style={{ height: '500px' }}>
+                                  <svg width="100%" height="100%" viewBox="0 0 800 500">
+                                    {/* Grid lines */}
+                                    <defs>
+                                      <pattern id="grid" width="80" height="50" patternUnits="userSpaceOnUse">
+                                        <path d="M 80 0 L 0 0 0 50" fill="none" stroke={darkMode ? '#374151' : '#E5E7EB'} strokeWidth="1"/>
+                                      </pattern>
+                                    </defs>
+                                    <rect width="100%" height="100%" fill="url(#grid)" />
+                                    
+                                    {/* Axes */}
+                                    <line x1="80" y1="450" x2="750" y2="450" stroke={darkMode ? '#6B7280' : '#4B5563'} strokeWidth="2"/>
+                                    <line x1="80" y1="50" x2="80" y2="450" stroke={darkMode ? '#6B7280' : '#4B5563'} strokeWidth="2"/>
+                                    
+                                    {/* Quadrant labels */}
+                                    <text x="200" y="80" fill={darkMode ? '#9CA3AF' : '#6B7280'} fontSize="12" fontWeight="bold">
+                                      Rare but Helpful
+                                    </text>
+                                    <text x="550" y="80" fill={darkMode ? '#9CA3AF' : '#6B7280'} fontSize="12" fontWeight="bold">
+                                      Common & Helpful
+                                    </text>
+                                    <text x="200" y="430" fill={darkMode ? '#9CA3AF' : '#6B7280'} fontSize="12" fontWeight="bold">
+                                      Rare & Hurts
+                                    </text>
+                                    <text x="550" y="430" fill={darkMode ? '#9CA3AF' : '#6B7280'} fontSize="12" fontWeight="bold">
+                                      Common but Hurts
+                                    </text>
+                                    
+                                    {/* Zero line */}
+                                    <line x1="80" y1="250" x2="750" y2="250" stroke={darkMode ? '#6B7280' : '#9CA3AF'} strokeWidth="1" strokeDasharray="5,5"/>
+                                    
+                                    {/* Axis labels */}
+                                    <text x="415" y="485" textAnchor="middle" fill={darkMode ? '#D1D5DB' : '#4B5563'} fontSize="14" fontWeight="semibold">
+                                      Frequency (% of thumbnails using this color)
+                                    </text>
+                                    <text x="25" y="250" textAnchor="middle" fill={darkMode ? '#D1D5DB' : '#4B5563'} fontSize="14" fontWeight="semibold" transform="rotate(-90 25 250)">
+                                      Performance Impact (Δ {frequencyMetric === 'rqs' ? 'RQS' : 'Views'})
+                                    </text>
+                                    
+                                    {/* Bubbles */}
+                                    {validData.map((d, idx) => {
+                                      const x = 80 + (d.frequency * 670); // Scale to chart width
+                                      const maxDelta = Math.max(...validData.map(item => Math.abs(item.delta)));
+                                      const y = 250 - (d.delta / maxDelta * 180); // Scale to chart height, center at 250
+                                      const r = Math.max(5, Math.min(30, Math.sqrt(d.nPresent) * 2)); // Bubble size based on sample size
+                                      
+                                      return (
+                                        <g key={d.color}>
+                                          <circle
+                                            cx={x}
+                                            cy={y}
+                                            r={r}
+                                            fill={d.swatch}
+                                            stroke={darkMode ? '#1F2937' : '#FFFFFF'}
+                                            strokeWidth="2"
+                                            opacity="0.8"
+                                            style={{ cursor: 'pointer' }}
+                                            onClick={() => setSelectedFrequencyColor(d)}
+                                          />
+                                          <text
+                                            x={x}
+                                            y={y + r + 15}
+                                            textAnchor="middle"
+                                            fill={darkMode ? '#D1D5DB' : '#4B5563'}
+                                            fontSize="10"
+                                            fontWeight="medium"
+                                          >
+                                            {d.color}
+                                          </text>
+                                        </g>
+                                      );
+                                    })}
+                                  </svg>
+                                </div>
+                                
+                                {/* Legend */}
+                                <div className={`mt-4 p-4 rounded ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'}`}>
+                                  <div className="text-sm space-y-1">
+                                    <p className={`font-semibold ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                      Reading the Chart:
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>X-axis:</strong> How often this color appears in thumbnails
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>Y-axis:</strong> Performance boost when color is present vs absent
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>Bubble size:</strong> Sample size (larger = more reliable)
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>Top-right quadrant:</strong> Colors to keep using and lean into
+                                    </p>
+                                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>
+                                      • <strong>Top-left quadrant:</strong> Untapped opportunities (rare but helpful)
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Insufficient data warning */}
+                              {insufficientData.length > 0 && (
+                                <div className={`p-4 rounded border-l-4 ${
+                                  darkMode 
+                                    ? 'bg-yellow-900/20 border-yellow-600 text-yellow-200' 
+                                    : 'bg-yellow-50 border-yellow-400 text-yellow-800'
+                                }`}>
+                                  <p className="text-sm font-medium mb-1">
+                                    Insufficient Data ({insufficientData.length} colors):
+                                  </p>
+                                  <p className="text-xs">
+                                    {insufficientData.map(d => d.color).join(', ')} need at least {frequencyMinN} samples each.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        if (frequencyView === 'ranked') {
+                          const rankedData = [...validData].sort((a, b) => b.delta - a.delta);
+                          
+                          return (
+                            <div className="space-y-4">
+                              <h6 className={`text-lg font-semibold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              }`}>
+                                Ranked by Performance Impact
+                              </h6>
+                              
+                              {rankedData.map((d, idx) => (
+                                <div
+                                  key={d.color}
+                                  className={`p-4 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                                    darkMode 
+                                      ? 'bg-gray-800 border-gray-600 hover:border-gray-500' 
+                                      : 'bg-white border-gray-200 hover:border-gray-300'
+                                  }`}
+                                  onClick={() => setSelectedFrequencyColor(d)}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`text-sm font-bold ${
+                                          idx < 3 
+                                            ? 'text-yellow-500' 
+                                            : darkMode ? 'text-gray-400' : 'text-gray-600'
+                                        }`}>
+                                          #{idx + 1}
+                                        </span>
+                                        <div
+                                          className="w-6 h-6 rounded border-2 border-gray-400"
+                                          style={{ backgroundColor: d.swatch }}
+                                        />
+                                        <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                          {d.color}
+                                        </span>
+                                      </div>
+                                      <div className="text-sm space-x-4">
+                                        <span className={`${d.delta > 0 ? 'text-green-500' : 'text-red-500'} font-semibold`}>
+                                          {d.delta > 0 ? '+' : ''}{d.delta.toFixed(2)} {frequencyMetric === 'rqs' ? 'RQS' : 'views'}
+                                        </span>
+                                        <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                          {(d.frequency * 100).toFixed(1)}% usage
+                                        </span>
+                                        <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                          n={d.nPresent}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    {/* Impact bar */}
+                                    <div className="w-32 h-4 bg-gray-200 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full ${d.delta > 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                                        style={{
+                                          width: `${Math.min(100, Math.abs(d.delta) / Math.max(...rankedData.map(item => Math.abs(item.delta))) * 100)}%`
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+
+                        if (frequencyView === 'composition') {
+                          // Debug: Let's see what data we have
+                          console.log('Composition debug - sample video:', filteredVideos[0]);
+                          
+                          // Group data for composition view with proper percentages
+                          const genreData = {};
+                          const colorTotals = {};
+                          
+                          filteredVideos.forEach(video => {
+                            const genre = video.genre || 'Unknown';
+                            if (!genreData[genre]) {
+                              genreData[genre] = { total: 0, colors: {} };
+                            }
+                            genreData[genre].total++;
+                            
+                            // Get color families from the video - process the colors field
+                            let videoFamilies = [];
+                            
+                            // Check if video has pre-processed families property (from heatmap processing)
+                            if (video.families && Array.isArray(video.families)) {
+                              videoFamilies = video.families;
+                            } else if (video.colors && Array.isArray(video.colors)) {
+                              // Process the colors array to get families
+                              try {
+                                const hslColors = video.colors.map(hex => {
+                                  try {
+                                    if (typeof hex === 'string' && hex.startsWith('#')) {
+                                      return hexToHsl(hex);
+                                    }
+                                    return null;
+                                  } catch {
+                                    return null;
+                                  }
+                                }).filter(Boolean);
+                                
+                                videoFamilies = hslColors.map(([h, s, l]) => getHueFamily(h, s, l));
+                              } catch (error) {
+                                console.warn('Error processing colors for video:', video.videoId, error);
+                              }
+                            }
+                            
+                            // Count unique colors per video (not per occurrence)
+                            const uniqueFamilies = [...new Set(videoFamilies)].filter(family => family && family !== 'undefined');
+                            
+                            uniqueFamilies.forEach(family => {
+                              const displayFamily = frequencyGrouping === 'coarse' ? getCoarseGrouping(family) : family;
+                              if (!showNeutrals && ['Black', 'White', 'Gray'].includes(family)) return;
+                              if (!displayFamily || displayFamily === 'undefined') return;
+                              
+                              genreData[genre].colors[displayFamily] = (genreData[genre].colors[displayFamily] || 0) + 1;
+                              colorTotals[displayFamily] = (colorTotals[displayFamily] || 0) + 1;
+                            });
+                          });
+
+                          console.log('Genre data:', genreData);
+                          console.log('Color totals:', colorTotals);
+
+                          // Get all unique colors across all genres for consistent ordering
+                          const allColors = Object.keys(colorTotals).filter(color => color && color !== 'undefined').sort((a, b) => colorTotals[b] - colorTotals[a]);
+                          const maxGenreTotal = Math.max(...Object.values(genreData).map(g => g.total), 1);
+                          
+                          return (
+                            <div className="space-y-6">
+                              <div>
+                                <h6 className={`text-lg font-semibold mb-4 ${
+                                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                                }`}>
+                                  Color Usage Composition by Genre
+                                </h6>
+                                <p className={`text-sm mb-6 ${
+                                  darkMode ? 'text-gray-400' : 'text-gray-600'
+                                }`}>
+                                  Shows what percentage of videos in each genre contain specific colors.
+                                  <span className="font-semibold"> Percentages exceed 100% because videos often use multiple colors.</span>
+                                  Compare your genre's color usage patterns to others.
+                                </p>
+                              </div>
+
+                              {/* Stacked Bar Chart */}
+                              <div className={`p-6 rounded-lg border ${
+                                darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                              }`}>
+                                <div className="space-y-4">
+                                  {Object.entries(genreData)
+                                    .sort(([,a], [,b]) => b.total - a.total)
+                                    .map(([genre, data]) => {
+                                      return (
+                                        <div key={genre} className="space-y-2">
+                                          <div className="flex justify-between items-center">
+                                            <h7 className={`font-medium ${
+                                              darkMode ? 'text-gray-200' : 'text-gray-800'
+                                            }`}>
+                                              {genre}
+                                            </h7>
+                                            <span className={`text-sm ${
+                                              darkMode ? 'text-gray-400' : 'text-gray-600'
+                                            }`}>
+                                              {data.total} videos
+                                            </span>
+                                          </div>
+                                          
+                                          {/* Individual color bars instead of stacked */}
+                                          <div className="space-y-2">
+                                            {allColors.map((color, idx) => {
+                                              const count = data.colors[color] || 0;
+                                              const percentage = (count / data.total) * 100;
+                                              
+                                              if (percentage === 0) return null;
+                                              
+                                              return (
+                                                <div key={color} className="flex items-center gap-3">
+                                                  <div className="flex items-center gap-2 min-w-[120px]">
+                                                    <div
+                                                      className="w-4 h-4 rounded border"
+                                                      style={{ 
+                                                        backgroundColor: getColorSwatch(color),
+                                                        borderColor: darkMode ? '#4B5563' : '#D1D5DB'
+                                                      }}
+                                                    />
+                                                    <span className={`text-sm font-medium ${
+                                                      darkMode ? 'text-gray-200' : 'text-gray-800'
+                                                    }`}>
+                                                      {color}
+                                                    </span>
+                                                  </div>
+                                                  
+                                                  <div className="flex-1">
+                                                    <div className={`w-full h-6 rounded-lg overflow-hidden ${
+                                                      darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                                                    }`}>
+                                                      <div
+                                                        className="h-full flex items-center justify-end pr-2 text-xs font-semibold text-white drop-shadow-sm"
+                                                        style={{
+                                                          width: `${Math.min(100, percentage)}%`,
+                                                          backgroundColor: getColorSwatch(color),
+                                                          minWidth: '50px'
+                                                        }}
+                                                        title={`${color}: ${count} videos (${percentage.toFixed(1)}%)`}
+                                                      >
+                                                        {percentage.toFixed(1)}%
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+
+                              {/* Color comparison matrix */}
+                              {allColors.length > 0 ? (
+                              <div className={`p-6 rounded-lg border ${
+                                darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                              }`}>
+                                <h6 className={`text-lg font-semibold mb-4 ${
+                                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                                }`}>
+                                  Cross-Genre Color Usage Matrix
+                                </h6>
+                                
+                                <div className="overflow-x-auto">
+                                  <table className="w-full border-collapse">
+                                    <thead>
+                                      <tr>
+                                        <th className={`text-left p-3 text-sm font-semibold ${
+                                          darkMode ? 'text-gray-300' : 'text-gray-700'
+                                        }`}>
+                                          Color
+                                        </th>
+                                        {Object.keys(genreData).sort().map(genre => (
+                                          <th key={genre} className={`text-center p-3 text-sm font-semibold ${
+                                            darkMode ? 'text-gray-300' : 'text-gray-700'
+                                          }`}>
+                                            <div className="whitespace-pre-line text-xs">
+                                              {genre.replace(/\//g, '/\n')}
+                                            </div>
+                                          </th>
+                                        ))}
+                                        <th className={`text-center p-3 text-sm font-semibold ${
+                                          darkMode ? 'text-gray-300' : 'text-gray-700'
+                                        }`}>
+                                          Overall
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {allColors.slice(0, 10).map(color => { // Limit to top 10 colors
+                                        const overallCount = Object.values(genreData).reduce((sum, data) => sum + (data.colors[color] || 0), 0);
+                                        const overallTotal = Object.values(genreData).reduce((sum, data) => sum + data.total, 0);
+                                        const overallPercentage = overallTotal > 0 ? (overallCount / overallTotal) * 100 : 0;
+                                        
+                                        return (
+                                          <tr key={color} className={`border-t ${
+                                            darkMode ? 'border-gray-600' : 'border-gray-200'
+                                          }`}>
+                                            <td className="p-3">
+                                              <div className="flex items-center gap-2">
+                                                <div
+                                                  className="w-4 h-4 rounded border"
+                                                  style={{ 
+                                                    backgroundColor: getColorSwatch(color),
+                                                    borderColor: darkMode ? '#4B5563' : '#D1D5DB'
+                                                  }}
+                                                />
+                                                <span className={`text-sm font-medium ${
+                                                  darkMode ? 'text-gray-200' : 'text-gray-800'
+                                                }`}>
+                                                  {color}
+                                                </span>
+                                              </div>
+                                            </td>
+                                            {Object.keys(genreData).sort().map(genre => {
+                                              const count = genreData[genre].colors[color] || 0;
+                                              const total = genreData[genre].total || 1;
+                                              const percentage = (count / total) * 100;
+                                              const intensity = Math.max(0.1, percentage / 100);
+                                              
+                                              // Determine if we need light or dark text based on the color
+                                              const needsLightText = (color === 'Black' || 
+                                                color === 'Blue' || 
+                                                color === 'Violet' || 
+                                                color === 'Blue-Violet' ||
+                                                (color === 'Red' && percentage > 30) ||
+                                                (color === 'Green' && percentage > 30) ||
+                                                (color === 'Orange' && percentage > 50));
+                                              
+                                              return (
+                                                <td key={genre} className="p-3 text-center">
+                                                  <div
+                                                    className={`inline-block px-2 py-1 rounded text-xs font-semibold min-w-[50px] ${
+                                                      percentage === 0 
+                                                        ? darkMode ? 'bg-gray-700 text-gray-500' : 'bg-gray-100 text-gray-400'
+                                                        : needsLightText ? 'text-white' : 'text-gray-900'
+                                                    }`}
+                                                    style={{
+                                                      backgroundColor: percentage > 0 
+                                                        ? `${getColorSwatch(color)}${Math.round(intensity * 128 + 127).toString(16).padStart(2, '0')}` 
+                                                        : undefined
+                                                    }}
+                                                    title={`${count} videos (${percentage.toFixed(1)}%)`}
+                                                  >
+                                                    {percentage.toFixed(1)}%
+                                                  </div>
+                                                </td>
+                                              );
+                                            })}
+                                            <td className="p-3 text-center">
+                                              <div className={`inline-block px-2 py-1 rounded text-xs font-bold ${
+                                                darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+                                              }`}>
+                                                {overallPercentage.toFixed(1)}%
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                                
+                                <div className={`mt-4 p-3 rounded text-sm ${
+                                  darkMode ? 'bg-gray-700/50 text-gray-300' : 'bg-gray-100/50 text-gray-600'
+                                }`}>
+                                  <p className="font-medium mb-1">How to read this matrix:</p>
+                                  <p>• Each cell shows what percentage of videos in that genre <strong>contain</strong> the color</p>
+                                  <p>• <strong>Percentages exceed 100%</strong> because most videos use multiple colors</p>
+                                  <p>• Darker backgrounds = higher usage in that genre</p>
+                                  <p>• Compare across rows to see which genres favor which colors</p>
+                                  <p>• The "Overall" column shows usage across all genres combined</p>
+                                </div>
+                              </div>
+                              ) : (
+                              <div className={`p-6 rounded-lg border ${
+                                darkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+                              }`}>
+                                <div className="text-center py-8">
+                                  <div className={`text-lg font-semibold mb-2 ${
+                                    darkMode ? 'text-gray-300' : 'text-gray-600'
+                                  }`}>
+                                    No Color Data Available
+                                  </div>
+                                  <p className={`text-sm ${
+                                    darkMode ? 'text-gray-400' : 'text-gray-500'
+                                  }`}>
+                                    The current filter settings don't show any color data. 
+                                    Try adjusting your filters or check if your data includes color information.
+                                  </p>
+                                </div>
+                              </div>
+                              )}
+
+                              {/* Key insights */}
+                              <div className={`p-4 rounded-lg ${
+                                darkMode ? 'bg-blue-900/20 border border-blue-700' : 'bg-blue-50 border border-blue-200'
+                              }`}>
+                                <h6 className={`font-semibold mb-2 ${
+                                  darkMode ? 'text-blue-200' : 'text-blue-800'
+                                }`}>
+                                  📊 Quick Insights
+                                </h6>
+                                <div className="text-sm space-y-1">
+                                  {(() => {
+                                    const insights = [];
+                                    
+                                    if (allColors.length === 0) {
+                                      insights.push("• No color data available for the current filters");
+                                      return insights.map((insight, idx) => (
+                                        <p key={idx} className={darkMode ? 'text-blue-300' : 'text-blue-700'}>
+                                          {insight}
+                                        </p>
+                                      ));
+                                    }
+                                    
+                                    // Find most used color overall
+                                    const topColor = allColors[0];
+                                    const totalVideos = Object.values(genreData).reduce((sum, data) => sum + data.total, 0);
+                                    const topColorUsage = totalVideos > 0 ? (colorTotals[topColor] / totalVideos * 100).toFixed(1) : '0';
+                                    insights.push(`• **${topColor}** is the most popular color (${topColorUsage}% of all thumbnails)`);
+                                    
+                                    // Find genre with most diverse color usage
+                                    const diversityScores = Object.entries(genreData).map(([genre, data]) => ({
+                                      genre,
+                                      diversity: Object.keys(data.colors).length,
+                                      total: data.total
+                                    })).filter(item => item.total > 0);
+                                    
+                                    if (diversityScores.length > 0) {
+                                      const mostDiverse = diversityScores.reduce((a, b) => a.diversity > b.diversity ? a : b);
+                                      insights.push(`• **${mostDiverse.genre}** uses the most diverse color palette (${mostDiverse.diversity} different colors)`);
+                                    }
+                                    
+                                    // Find color with biggest genre preference
+                                    if (allColors.length > 1) {
+                                      let maxVariance = 0;
+                                      let mostPolarizedColor = '';
+                                      allColors.slice(0, 5).forEach(color => {
+                                        const usages = Object.values(genreData).map(data => (data.colors[color] || 0) / Math.max(data.total, 1) * 100);
+                                        const mean = usages.reduce((a, b) => a + b, 0) / usages.length;
+                                        const variance = usages.reduce((sum, usage) => sum + Math.pow(usage - mean, 2), 0) / usages.length;
+                                        if (variance > maxVariance) {
+                                          maxVariance = variance;
+                                          mostPolarizedColor = color;
+                                        }
+                                      });
+                                      if (mostPolarizedColor) {
+                                        insights.push(`• **${mostPolarizedColor}** shows the biggest variation across genres (some love it, some avoid it)`);
+                                      }
+                                    }
+                                    
+                                    return insights.map((insight, idx) => (
+                                      <p key={idx} className={darkMode ? 'text-blue-300' : 'text-blue-700'}>
+                                        {insight}
+                                      </p>
+                                    ));
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })()}
+
+                      {/* Selected Color Details Modal */}
+                      {selectedFrequencyColor && (
+                        <div className={`mt-6 p-6 rounded-lg border ${
+                          darkMode 
+                            ? 'bg-gray-800 border-gray-600' 
+                            : 'bg-white border-gray-300'
+                        }`}>
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="w-8 h-8 rounded border-2 border-gray-400"
+                                style={{ backgroundColor: selectedFrequencyColor.swatch }}
+                              />
+                              <h6 className={`text-xl font-bold ${
+                                darkMode ? 'text-gray-200' : 'text-gray-800'
+                              }`}>
+                                {selectedFrequencyColor.color} Analysis
+                              </h6>
+                            </div>
+                            <button
+                              onClick={() => setSelectedFrequencyColor(null)}
+                              className={`text-sm px-3 py-1 rounded hover:bg-opacity-80 ${
+                                darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                              }`}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+                            <div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                Usage Frequency
+                              </div>
+                              <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {(selectedFrequencyColor.frequency * 100).toFixed(1)}%
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                Performance Impact
+                              </div>
+                              <div className={`text-2xl font-bold ${
+                                selectedFrequencyColor.delta > 0 ? 'text-green-500' : 'text-red-500'
+                              }`}>
+                                {selectedFrequencyColor.delta > 0 ? '+' : ''}{selectedFrequencyColor.delta.toFixed(2)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                With Color
+                              </div>
+                              <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {selectedFrequencyColor.metricPresent.toFixed(1)}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                n={selectedFrequencyColor.nPresent}
+                              </div>
+                            </div>
+                            <div>
+                              <div className={`text-sm font-medium ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                Without Color
+                              </div>
+                              <div className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                                {selectedFrequencyColor.metricAbsent.toFixed(1)}
+                              </div>
+                              <div className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                                n={selectedFrequencyColor.nAbsent}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {selectedFrequencyColor.examples && (
+                            <div>
+                              <h7 className={`text-sm font-semibold mb-3 block ${
+                                darkMode ? 'text-gray-300' : 'text-gray-700'
+                              }`}>
+                                Example Thumbnails Using {selectedFrequencyColor.color}:
+                              </h7>
+                              <div className="space-y-2">
+                                {selectedFrequencyColor.examples.map((example, idx) => (
+                                  <div key={idx} className={`p-3 rounded text-sm ${
+                                    darkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
+                                  }`}>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="flex gap-1">
+                                        {example.palette?.map((color, colorIdx) => (
+                                          <div
+                                            key={colorIdx}
+                                            className="w-4 h-4 rounded border border-gray-400"
+                                            style={{ backgroundColor: color }}
+                                          />
+                                        ))}
+                                      </div>
+                                      <span className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                                        {frequencyMetric === 'rqs' 
+                                          ? example.metric.toFixed(1) + ' RQS' 
+                                          : example.metric.toLocaleString() + ' views'
+                                        }
+                                      </span>
+                                    </div>
+                                    <div className={`truncate ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                      {example.title}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   )}
 
                   {/* Leaderboard View */}

@@ -6,3 +6,4 @@
 - thumbnail heatmap visualization using the data from the analysis
 - visualization of the title names using a word cloud or similar representation
 - visualization of the thumbnail text using a word cloud or similar representation
+- word cloud visualization for sentimental analysis for comments
