@@ -2,6 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, SlidersHorizontal, TrendingUp, TrendingDown } from 'lucide-react';
 import { getRQSColor } from '../utils/rqsUtils';
 
+// Constants
+const DEFAULT_RQS_SCORE = 75; // Default RQS score for videos without data
+
 const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('views'); // views, rqs, engagement, likes, comments
@@ -20,7 +23,7 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
     return allVideos.map(video => ({
       ...video,
       engagement_rate: video.likes && video.views ? ((video.likes / video.views) * 100) : 0,
-      rqs: video.rqs != null ? video.rqs : 75, // Use actual RQS if available, else fallback to 75
+      rqs: video.rqs != null ? video.rqs : DEFAULT_RQS_SCORE, // Use actual RQS if available, else fallback to default
     }));
   }, [allVideos]);
 

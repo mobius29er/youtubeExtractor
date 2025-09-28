@@ -9,14 +9,24 @@ import {
   BarChart3,
   Eye,
   Heart,
-  MessageCircle
+  MessageCircle,
+  Calendar,
+  Activity
 } from 'lucide-react';
 import FilterControls from './FilterControls';
 import VideoDetailsModal from './VideoDetailsModal';
 import AllVideosModal from './AllVideosModal';
+import { getRQSColor } from '../utils/rqsUtils';
 
-  // Helper function to determine global tier based on subscriber count
-  const getGlobalTier = (channelName) => {
+// Debug logging utility - defined outside component to avoid recreation on every render
+const debugLog = (...args) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(...args);
+  }
+};
+
+// Helper function to determine global tier based on subscriber count
+const getGlobalTier = (channelName) => {
     if (!channelName) return 'Unknown';
     
     const name = channelName.toLowerCase();
@@ -97,7 +107,9 @@ import AllVideosModal from './AllVideosModal';
     if (views >= 1000000) return 'high';   // 1M+ views = high tier
     if (views >= 100000) return 'mid';     // 100K-1M views = mid tier  
     return 'low';                          // <100K views = low tier
-  };const Dashboard = ({ data, loading, darkMode }) => {
+  };
+
+  const Dashboard = ({ data, loading, darkMode }) => {
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [allVideosModalOpen, setAllVideosModalOpen] = useState(false);
@@ -321,9 +333,9 @@ import AllVideosModal from './AllVideosModal';
         
         return false; // No match found
       });
-      console.log(`Found ${channelsToFilter.length} channels for genre ${filters.genre}`);
+      debugLog(`Found ${channelsToFilter.length} channels for genre ${filters.genre}`);
     } else {
-      console.log('No genre filter applied, showing all channels');
+      debugLog('No genre filter applied, showing all channels');
     }
     
     // Apply tier filter
