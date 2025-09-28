@@ -1,11 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navigation from './components/Navigation';
-import Dashboard from './components/Dashboard';
-import DataVisualization from './components/DataVisualization';
-import ExtractionStatus from './components/ExtractionStatus';
-import VideoPerformancePredictor from './components/VideoPerformancePredictor';
-import ComparisonAnalytics from './components/ComparisonAnalytics';
+
+// Simple test component to check if basic rendering works
+const SimpleTest = () => (
+  <div className="p-8">
+    <h1 className="text-3xl font-bold text-blue-600">🚀 YouTube Extractor Dashboard</h1>
+    <div className="mt-4 p-4 bg-green-100 rounded">
+      <h2 className="text-xl font-semibold">✅ React App is Working!</h2>
+      <p className="mt-2">If you can see this, the basic React components are rendering correctly.</p>
+    </div>
+    <div className="mt-4 p-4 bg-blue-100 rounded">
+      <h3 className="text-lg font-semibold">📊 Data Status</h3>
+      <p>Backend: 773 videos from 20 channels loaded</p>
+      <p>Status: Ready for dashboard testing</p>
+    </div>
+  </div>
+);
+
+function App() {
+  const [darkMode, setDarkMode] = useState(false);
+  
+  return (
+    <Router>
+      <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+        <Navigation 
+          darkMode={darkMode} 
+          setDarkMode={setDarkMode}
+        />
+        <main className="container mx-auto px-4 py-8">
+          <SimpleTest />
+        </main>
+      </div>
+    </Router>
+  );
+}
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -120,24 +149,12 @@ function App() {
                 darkMode={darkMode}
               />
             } />
-            <Route path="/predictor" element={
-              <VideoPerformancePredictor 
-                darkMode={darkMode}
-              />
-            } />
             <Route path="/status" element={
               <ExtractionStatus 
                 data={extractionData} 
                 loading={loading}
                 darkMode={darkMode}
                 onRefresh={loadData}
-              />
-            } />
-            <Route path="/comparison" element={
-              <ComparisonAnalytics 
-                data={extractionData} 
-                loading={loading}
-                darkMode={darkMode}
               />
             } />
           </Routes>

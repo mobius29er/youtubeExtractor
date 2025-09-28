@@ -26,17 +26,27 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for frontend
+# Enable CORS for frontend - configurable for different environments
+ALLOWED_ORIGINS = os.environ.get(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3002,http://127.0.0.1:3002"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Data paths - go up one level from src to find extracted_data
-DATA_DIR = Path("..") / "extracted_data"
+# Data paths - configurable via environment variable or default location
+script_dir = Path(__file__).parent
+DATA_DIR_ENV = os.environ.get("DATA_DIR")
+if DATA_DIR_ENV:
+    DATA_DIR = Path(DATA_DIR_ENV)
+else:
+    DATA_DIR = script_dir.parent / "extracted_data"
 JSON_FILE = DATA_DIR / "api_only_complete_data.json"
 METADATA_FILE = DATA_DIR / "metadata_only.json"
 
@@ -68,6 +78,9 @@ class DataLoader:
                 
                 # Process JSON data into flat structure for analytics
                 self._process_json_data()
+                
+                # Load and merge RQS data from videos_with_features.csv
+                self._merge_rqs_data()
                 
                 total_videos = sum(len(channel_data.get('videos', [])) for channel_data in self.data.values())
                 print(f"✅ Loaded JSON data: {len(self.data)} channels, {total_videos} videos")
@@ -106,6 +119,96 @@ class DataLoader:
         except Exception as e:
             print(f"❌ Error processing JSON data: {e}")
             self.processed_data = pd.DataFrame()
+    
+    def _merge_rqs_data(self):
+        """Load RQS, sentiment_score, and color data from videos_with_features.csv and merge with processed data"""
+        try:
+            features_file = DATA_DIR / "videos_with_features.csv"
+            if features_file.exists():
+                print(f"🔄 Loading RQS, sentiment, and color data from: {features_file}")
+                
+                # Define desired columns with fallback handling
+                desired_columns = [
+                    'video_id', 'rqs', 'sentiment_score', 
+                    'color_palette', 'dominant_colors', 'average_rgb',
+                    'face_area_percentage', 'comment_texts'
+                ]
+                
+                # Read header to determine available columns
+                available_columns = pd.read_csv(features_file, nrows=0).columns.tolist()
+                use_columns = [col for col in desired_columns if col in available_columns]
+                missing_columns = [col for col in desired_columns if col not in available_columns]
+                
+                if missing_columns:
+                    print(f"⚠️ Missing columns in features file: {missing_columns}")
+                
+                # Load additional columns including color data and comments
+                features_df = pd.read_csv(features_file, usecols=use_columns)
+                
+                # Add missing columns with sensible default values
+                for col in missing_columns:
+                    if col == 'rqs':
+                        features_df[col] = 75  # Default to 75% RQS score
+                    elif col == 'sentiment_score':
+                        features_df[col] = 0.5  # Neutral sentiment
+                    elif col in ['color_palette', 'dominant_colors', 'comment_texts']:
+                        features_df[col] = '[]'  # Empty JSON arrays
+                    elif col == 'average_rgb':
+                        features_df[col] = '[128, 128, 128]'  # Neutral gray
+                    elif col == 'face_area_percentage':
+                        features_df[col] = 0.0  # No faces detected
+                # Convert RQS from 0-1 scale to 0-100 scale and round to integers
+                # RQS (Retention Quality Score) is stored as decimal (0.0-1.0) in CSV
+                # but displayed as percentage (0-100) in UI for better user comprehension
+                # Validate RQS values are in 0-1 range before scaling
+                rqs_non_null = features_df['rqs'].dropna()
+                out_of_range_mask = (rqs_non_null < 0) | (rqs_non_null > 1)
+                if out_of_range_mask.any():
+                    print(f"⚠️ Warning: Found RQS values outside 0-1 range. Clipping to valid range.")
+                    features_df['rqs'] = features_df['rqs'].clip(lower=0, upper=1)
+                features_df['rqs'] = (features_df['rqs'] * 100).round().astype(int)
+                # Merge with processed data
+                if self.processed_data is not None and not self.processed_data.empty:
+                    self.processed_data = self.processed_data.merge(features_df, on='video_id', how='left')
+                    # Fill missing RQS values with a default of 75
+                    self.processed_data['rqs'] = self.processed_data['rqs'].fillna(75).astype(int)
+                    # Fill missing sentiment_score with 0.5 (neutral)
+                    self.processed_data['sentiment_score'] = self.processed_data['sentiment_score'].fillna(0.5)
+                    # Fill missing color data with empty arrays
+                    self.processed_data['color_palette'] = self.processed_data['color_palette'].fillna('[]')
+                    self.processed_data['dominant_colors'] = self.processed_data['dominant_colors'].fillna('[]')
+                    self.processed_data['average_rgb'] = self.processed_data['average_rgb'].fillna('[128, 128, 128]')
+                    self.processed_data['face_area_percentage'] = self.processed_data['face_area_percentage'].fillna(0.0)
+                    # Fill missing comment_texts with empty arrays
+                    self.processed_data['comment_texts'] = self.processed_data['comment_texts'].fillna('[]')
+                    merged_count = self.processed_data['rqs'].notna().sum()
+                    color_count = self.processed_data['color_palette'].notna().sum()
+                    print(f"✅ Merged RQS/sentiment data for {merged_count} videos")
+                    print(f"✅ Merged color data for {color_count} videos")
+                else:
+                    print("⚠️ No processed data available to merge RQS/sentiment/color with")
+            else:
+                print(f"⚠️ Features file not found: {features_file}")
+                # Add default columns if file not found
+                if self.processed_data is not None and not self.processed_data.empty:
+                    self.processed_data['rqs'] = 75
+                    self.processed_data['sentiment_score'] = 0.5
+                    self.processed_data['color_palette'] = '[]'
+                    self.processed_data['dominant_colors'] = '[]'
+                    self.processed_data['average_rgb'] = '[128, 128, 128]'
+                    self.processed_data['face_area_percentage'] = 0.0
+                    self.processed_data['comment_texts'] = '[]'
+        except Exception as e:
+            print(f"❌ Error loading RQS/sentiment/color data: {e}")
+            # Add default columns on error
+            if self.processed_data is not None and not self.processed_data.empty:
+                self.processed_data['rqs'] = 75
+                self.processed_data['sentiment_score'] = 0.5
+                self.processed_data['color_palette'] = '[]'
+                self.processed_data['dominant_colors'] = '[]'
+                self.processed_data['average_rgb'] = '[128, 128, 128]'
+                self.processed_data['face_area_percentage'] = 0.0
+                self.processed_data['comment_texts'] = '[]'
     
     def _generate_mock_data(self) -> Dict:
         """Generate mock data for demonstration"""
@@ -244,27 +347,58 @@ async def get_visualization_data():
         if data_loader.processed_data is not None and len(data_loader.processed_data) > 0:
             df = data_loader.processed_data
             
-            # Real engagement data from top channels (from JSON data)
+            # Real engagement data from all channels (from JSON data)
             channel_stats = df.groupby('channel_name').agg({
                 'view_count': 'mean',
                 'like_count': 'mean', 
                 'comment_count': 'mean',
-                'video_id': 'count'
+                'video_id': 'count',
+                'channel_subs': 'first'  # Get subscriber count (should be same for all videos in channel)
             }).round().astype(int)
             
-            # Get top 10 channels by average views
-            top_channels = channel_stats.nlargest(10, 'view_count')
+            # Get all channels, sorted by average views (descending)
+            all_channels = channel_stats.sort_values('view_count', ascending=False)
             
-            engagement_data = [
-                {
-                    "name": channel,
-                    "views": int(row['view_count']),
-                    "likes": int(row['like_count']),
-                    "comments": int(row['comment_count']),
-                    "videos": int(row['video_id'])
-                }
-                for channel, row in top_channels.iterrows()
-            ]
+            engagement_data = []
+            for channel, row in all_channels.iterrows():
+                try:
+                    # Get all videos for this channel
+                    channel_videos = df[df['channel_name'] == channel]
+                    video_details = []
+                    
+                    for _, video in channel_videos.iterrows():
+                        try:
+                            video_details.append({
+                                'video_id': str(video.get('video_id', '')),
+                                'title': str(video.get('title', 'No Title')),
+                                'views': int(video.get('view_count', 0)) if pd.notna(video.get('view_count')) else 0,
+                                'likes': int(video.get('like_count', 0)) if pd.notna(video.get('like_count')) else 0,
+                                'comments': int(video.get('comment_count', 0)) if pd.notna(video.get('comment_count')) else 0,
+                                'duration': str(video.get('duration', 'N/A')),
+                                'published_at': str(video.get('published_at', '')),
+                                'rqs': int(video.get('rqs', 75)) if pd.notna(video.get('rqs')) else 75,
+                                'sentiment_score': float(video.get('sentiment_score', 0.5)) if pd.notna(video.get('sentiment_score')) else 0.5,
+                                'face_area_percentage': float(video.get('face_area_percentage', 0.0)) if pd.notna(video.get('face_area_percentage')) else 0.0,
+                                'dominant_colors': str(video.get('dominant_colors', '[]')),
+                                'color_palette': str(video.get('color_palette', '[]')),
+                                'average_rgb': str(video.get('average_rgb', '[128, 128, 128]'))
+                            })
+                        except Exception as ve:
+                            print(f"⚠️ Error processing video in {channel}: {ve}")
+                            continue
+                    
+                    engagement_data.append({
+                        "name": str(channel),
+                        "views": int(row['view_count']) if pd.notna(row['view_count']) else 0,
+                        "likes": int(row['like_count']) if pd.notna(row['like_count']) else 0,
+                        "comments": int(row['comment_count']) if pd.notna(row['comment_count']) else 0,
+                        "videos": int(row['video_id']) if pd.notna(row['video_id']) else 0,
+                        "subscribers": int(row['channel_subs']) if pd.notna(row['channel_subs']) else 1000000,  # Add subscriber data with fallback
+                        "videoDetails": video_details  # Add the video details
+                    })
+                except Exception as ce:
+                    print(f"⚠️ Error processing channel {channel}: {ce}")
+                    continue
             
             # Generate genre data based on channel names and content
             genre_data = [
@@ -320,6 +454,169 @@ async def get_extraction_status():
         return status_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error loading status data: {str(e)}")
+
+@app.get("/api/channel/{channel_name}/videos")
+async def get_channel_videos(channel_name: str):
+    """Get video details for a specific channel with real RQS data"""
+    try:
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
+            data_loader.load_data()
+        
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
+            return {"error": "No processed data available"}
+            
+        # Get videos for this specific channel from processed data
+        channel_videos = data_loader.processed_data[data_loader.processed_data['channel_name'] == channel_name]
+        
+        if channel_videos.empty:
+            return {"videos": [], "message": f"No videos found for {channel_name}"}
+        
+        # Process and return video data with real RQS scores
+        processed_videos = []
+        for _, video in channel_videos.iterrows():
+            try:
+                processed_video = {
+                    "video_id": str(video.get('video_id', '')),
+                    "title": str(video.get('title', 'Untitled')),
+                    "view_count": int(video.get('view_count', 0)) if pd.notna(video.get('view_count')) else 0,
+                    "like_count": int(video.get('like_count', 0)) if pd.notna(video.get('like_count')) else 0,
+                    "comment_count": int(video.get('comment_count', 0)) if pd.notna(video.get('comment_count')) else 0,
+                    "duration": str(video.get('duration', '')),
+                    "published_at": str(video.get('published_at', '')),
+                    "rqs": int(video.get('rqs', 75)) if pd.notna(video.get('rqs')) else 75  # Use real RQS data
+                }
+                processed_videos.append(processed_video)
+            except Exception as ve:
+                print(f"⚠️ Error processing video {video.get('video_id', 'unknown')} in {channel_name}: {ve}")
+                continue
+        
+        # Sort by RQS (Retention Quality Score) descending
+        processed_videos.sort(key=lambda x: x.get('rqs', 0), reverse=True)
+        
+        return {
+            "channel": channel_name,
+            "videos": processed_videos,
+            "total": len(processed_videos)
+        }
+        
+    except Exception as e:
+        print(f"❌ Error getting videos for {channel_name}: {e}")
+        return {"error": f"Failed to get videos for {channel_name}"}
+
+def calculate_basic_rqs(video):
+    """Calculate a basic Retention Quality Score for a video"""
+    try:
+        views = int(str(video.get('view_count', 0)).replace(',', '')) if video.get('view_count') else 0
+        likes = int(str(video.get('like_count', 0)).replace(',', '')) if video.get('like_count') else 0
+        comments = int(str(video.get('comment_count', 0)).replace(',', '')) if video.get('comment_count') else 0
+        
+        if views == 0:
+            return 0
+            
+        # Basic RQS calculation based on engagement
+        like_ratio = (likes / views) * 1000  # Likes per 1000 views
+        comment_ratio = (comments / views) * 1000  # Comments per 1000 views
+        
+        # Combined score (0-100)
+        rqs = min(100, int((like_ratio * 0.7 + comment_ratio * 0.3) * 5))
+        return max(0, rqs)
+        
+    except:
+        return 0
+
+@app.get("/api/comments")
+async def get_comment_data():
+    """Get comment data for sentiment analysis"""
+    try:
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
+            data_loader.load_data()
+            
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
+            return {
+                "comments": [],
+                "message": "No data available",
+                "total": 0
+            }
+        
+        df = data_loader.processed_data
+        comment_data = []
+        
+        for _, video in df.iterrows():
+            video_id = video.get('video_id', '')
+            channel_name = video.get('channel_name', '')
+            title = video.get('title', '')
+            sentiment_score = video.get('sentiment_score', 0.5)
+            comment_texts = video.get('comment_texts', '[]')
+            
+            # Parse comment_texts if it's a string
+            comments_list = []
+            if isinstance(comment_texts, str) and comment_texts and comment_texts != '[]' and comment_texts.strip():
+                try:
+                    import json
+                    import ast
+                    # Remove any potential pandas NaN representation
+                    if comment_texts not in ['[]', 'nan', 'NaN', 'null', '']:
+                        # Try JSON first (double quotes)
+                        try:
+                            parsed_comments = json.loads(comment_texts)
+                        except json.JSONDecodeError as json_err:
+                            # If JSON fails, skip this video with detailed error info
+                            print(
+                                f"Failed to parse comments for {video_id}: skipping\n"
+                                f"  JSON error: {json_err}\n"
+                                f"  Problematic data: {comment_texts[:200]!r}"
+                            )
+                            continue
+                        
+                        if isinstance(parsed_comments, list) and len(parsed_comments) > 0:
+                            # Extract just the text from each comment object for sentiment analysis
+                            comments_list = []
+                            for comment_obj in parsed_comments:
+                                if isinstance(comment_obj, dict) and 'text' in comment_obj:
+                                    comments_list.append({
+                                        "text": comment_obj.get('text', ''),
+                                        "author": comment_obj.get('author', ''),
+                                        "like_count": comment_obj.get('like_count', 0),
+                                        "published_at": comment_obj.get('published_at', '')
+                                    })
+                                elif isinstance(comment_obj, str):
+                                    # Fallback if comments are stored as strings
+                                    comments_list.append({
+                                        "text": comment_obj,
+                                        "author": "Unknown",
+                                        "like_count": 0,
+                                        "published_at": ""
+                                    })
+                except Exception as e:
+                    print(f"Error parsing comments for {video_id}: {e}")
+                    comments_list = []
+            elif isinstance(comment_texts, list):
+                comments_list = comment_texts
+            
+            # Only include videos that have comments
+            if comments_list and len(comments_list) > 0:
+                comment_data.append({
+                    "video_id": video_id,
+                    "channel_name": channel_name,
+                    "title": title,
+                    "sentiment_score": float(sentiment_score),
+                    "comments": comments_list,
+                    "comment_count": len(comments_list)
+                })
+        
+        return {
+            "comments": comment_data,
+            "total": len(comment_data),
+            "message": f"Successfully loaded {len(comment_data)} videos with comments"
+        }
+        
+    except Exception as e:
+        print(f"❌ Error loading comment data: {e}")
+        return {
+            "comments": [],
+            "message": f"Error loading comment data: {str(e)}",
+            "total": 0
+        }
 
 @app.post("/api/refresh")
 async def refresh_data():

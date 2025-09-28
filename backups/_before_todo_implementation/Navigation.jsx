@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BarChart3, Database, Activity, RefreshCw, Moon, Sun, Youtube, Brain, TrendingUp } from 'lucide-react';
+import { BarChart3, Database, Activity, RefreshCw, Moon, Sun, Youtube, Brain } from 'lucide-react';
 
 const Navigation = ({ darkMode, setDarkMode, onRefresh }) => {
   const location = useLocation();
@@ -8,7 +8,6 @@ const Navigation = ({ darkMode, setDarkMode, onRefresh }) => {
   const navItems = [
     { path: '/', icon: BarChart3, label: 'Dashboard' },
     { path: '/visualization', icon: Database, label: 'Data Viz' },
-    { path: '/comparison', icon: TrendingUp, label: 'Compare' },
     { path: '/predictor', icon: Brain, label: 'AI Predictor' },
     { path: '/status', icon: Activity, label: 'Status' },
   ];
