@@ -43,7 +43,11 @@ class YouTubePredictionSystem:
         """Load all trained ML models and scalers"""
         # Get the directory where this script is located
         script_dir = Path(__file__).parent
-        models_dir = script_dir.parent / "extracted_data" / "models"
+        models_dir_env = os.environ.get("MODELS_DIR")
+        if models_dir_env:
+            models_dir = Path(models_dir_env)
+        else:
+            models_dir = script_dir.parent / "extracted_data" / "models"
         
         print("🔄 Loading ML models...")
         print(f"📁 Script directory: {script_dir.absolute()}")

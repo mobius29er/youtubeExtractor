@@ -35,9 +35,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Data paths - go up one level from src to find extracted_data
+# Data paths - configurable via environment variable or default location
 script_dir = Path(__file__).parent
-DATA_DIR = script_dir.parent / "extracted_data"
+DATA_DIR_ENV = os.environ.get("DATA_DIR")
+if DATA_DIR_ENV:
+    DATA_DIR = Path(DATA_DIR_ENV)
+else:
+    DATA_DIR = script_dir.parent / "extracted_data"
 JSON_FILE = DATA_DIR / "api_only_complete_data.json"
 METADATA_FILE = DATA_DIR / "metadata_only.json"
 
@@ -114,7 +118,7 @@ class DataLoader:
     def _merge_rqs_data(self):
         """Load RQS, sentiment_score, and color data from videos_with_features.csv and merge with processed data"""
         try:
-            features_file = script_dir.parent / "extracted_data" / "videos_with_features.csv"
+            features_file = DATA_DIR / "videos_with_features.csv"
             if features_file.exists():
                 print(f"🔄 Loading RQS, sentiment, and color data from: {features_file}")
                 # Load additional columns including color data and comments

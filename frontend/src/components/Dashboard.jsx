@@ -263,35 +263,42 @@ import AllVideosModal from './AllVideosModal';
     return 'low';                          // <100K views = low tier
   };
 
+  // Helper function for conditional logging (development only)
+  const debugLog = (...args) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(...args);
+    }
+  };
+
   // Handle filter changes
   const handleFilterChange = (filters) => {
-    console.log('=== FILTER CHANGE START ===');
-    console.log('New filters received:', filters);
-    console.log('Previous activeFilters:', activeFilters);
-    console.log('Current filteredData:', filteredData ? filteredData.channels?.length : 'null');
-    console.log('Original data:', data ? data.channels?.length : 'null');
+    debugLog('=== FILTER CHANGE START ===');
+    debugLog('New filters received:', filters);
+    debugLog('Previous activeFilters:', activeFilters);
+    debugLog('Current filteredData:', filteredData ? filteredData.channels?.length : 'null');
+    debugLog('Original data:', data ? data.channels?.length : 'null');
     
     setActiveFilters(filters);
     
     if (!data || !originalEnhancedData) {
-      console.log('❌ Missing data or originalEnhancedData');
-      console.log('data:', !!data, 'originalEnhancedData:', !!originalEnhancedData);
+      debugLog('❌ Missing data or originalEnhancedData');
+      debugLog('data:', !!data, 'originalEnhancedData:', !!originalEnhancedData);
       return;
     }
     
     // Always start with the original enhanced data, not the current filteredData
     let channelsToFilter = [...originalEnhancedData.channels]; // Create a copy
-    console.log('Starting with original enhanced channels:', channelsToFilter.length);
-    console.log('Channel names:', channelsToFilter.map(c => c.name));
+    debugLog('Starting with original enhanced channels:', channelsToFilter.length);
+    debugLog('Channel names:', channelsToFilter.map(c => c.name));
     
     // Apply genre filter
     if (filters.genre && filters.genre !== 'all') {
-      console.log('Filtering by genre:', filters.genre);
+      debugLog('Filtering by genre:', filters.genre);
       channelsToFilter = channelsToFilter.filter(channel => {
         const channelGenre = channel.genre?.toLowerCase() || 'unknown';
         const filterGenre = filters.genre.toLowerCase();
         
-        console.log(`Checking channel: ${channel.name}, genre: ${channelGenre} vs filter: ${filterGenre}`);
+        debugLog(`Checking channel: ${channel.name}, genre: ${channelGenre} vs filter: ${filterGenre}`);
         
         // Direct genre matching with proper case handling
         if (filterGenre === 'catholic' && channelGenre === 'catholic') {
