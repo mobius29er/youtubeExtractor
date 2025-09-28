@@ -15,53 +15,6 @@ import FilterControls from './FilterControls';
 import VideoDetailsModal from './VideoDetailsModal';
 import AllVideosModal from './AllVideosModal';
 
-// Helper function to assign genres based on channel name
-const getChannelGenre = (channelName) => {
-  if (!channelName) return 'Unknown';
-  
-  const name = channelName.toLowerCase();
-  
-  // Catholic/Christian channels
-  if (name.includes('ascension presents') || name.includes('bishop robert barron') || 
-      name.includes('catholic talk show') || name.includes('father leo show') ||
-      name.includes('veggie') || name.includes('veggie tales') ||
-      name.includes('catholic') || name.includes('christian') || name.includes('bishop') || name.includes('church')) {
-    return 'Catholic';
-  }
-  
-  // Challenge/Stunts channels
-  if (name.includes('mrbeast') || name.includes('mr beast') || name.includes('zach king') || 
-      name.includes('hangtime') || name.includes('ryan trahan') ||
-      name.includes('stunt') || name.includes('challenge') || name.includes('dude perfect')) {
-    return 'Challenge/Stunts';
-  }
-  
-  // Education channels
-  if (name.includes('kurzgesagt') || name.includes('veritasium') || name.includes('scishow') || 
-      name.includes('fun science') || name.includes('up and atom') ||
-      name.includes('education') || name.includes('learn') || name.includes('science') || 
-      name.includes('crash course') || name.includes('khan') || name.includes('ted') || name.includes('vsauce')) {
-    return 'Education';
-  }
-  
-  // Family channels
-  if (name.includes('cocomelon') || name.includes('kids roma show') || name.includes('sheriff labrador') ||
-      name.includes('miss honey bear') || name.includes('veggietal') ||
-      name.includes('family') || name.includes('kids') || name.includes('children') || 
-      name.includes('blippi') || name.includes('ryan')) {
-    return 'Family';
-  }
-  
-  // Gaming channels
-  if (name.includes('pewdiepie') || name.includes('jacksepticeye') || name.includes('call me kevin') ||
-      name.includes('gaming') || name.includes('gamer') || name.includes('gameplay') || 
-      name.includes('markiplier') || name.includes('ninja') || name.includes('fortnite')) {
-    return 'Gaming';
-  }
-  
-  return 'Unknown';
-};
-
   // Helper function to determine global tier based on subscriber count
   const getGlobalTier = (channelName) => {
     if (!channelName) return 'Unknown';
