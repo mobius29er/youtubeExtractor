@@ -18,6 +18,52 @@ import {
 import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target, Flame, BarChart2, Trophy } from 'lucide-react';
 import FilterControls from './FilterControls';
 
+// Scrollbar styles
+const scrollbarStyles = `
+  .scrollbar-light::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-light::-webkit-scrollbar-track {
+    background: #f9fafb;
+    border-radius: 4px;
+  }
+  .scrollbar-light::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+  }
+  .scrollbar-light::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+  
+  .scrollbar-dark::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-dark::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 4px;
+  }
+  .scrollbar-dark::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 4px;
+  }
+  .scrollbar-dark::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+`;
+
+// Inject styles
+if (typeof document !== 'undefined') {
+  const styleElement = document.getElementById('scrollbar-styles');
+  if (!styleElement) {
+    const style = document.createElement('style');
+    style.id = 'scrollbar-styles';
+    style.textContent = scrollbarStyles;
+    document.head.appendChild(style);
+  }
+}
+
 // YouTube thumbnail utility
 const getYouTubeThumbnail = (videoId, quality = 'mqdefault') => {
   if (!videoId) return null;
@@ -168,6 +214,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [chartLoading, setChartLoading] = useState(false);
   const [filteredData, setFilteredData] = useState(null);
   const [originalData, setOriginalData] = useState(null);
+  const [commentData, setCommentData] = useState(null); // New state for comment data
   const [showDebugInfo, setShowDebugInfo] = useState(false);
   const [engagementViewMode, setEngagementViewMode] = useState('raw'); // 'raw' or 'per_subscriber'
   const [engagementMetricFilter, setEngagementMetricFilter] = useState('all'); // 'all', 'views', 'likes', 'comments', 'rqs'
@@ -222,6 +269,14 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [faceAnalysisView, setFaceAnalysisView] = useState('leaderboard'); // 'leaderboard', 'curve', 'distribution'
   const [selectedFaceBin, setSelectedFaceBin] = useState(null); // for drill-down
   
+  // Sentiment analysis enhanced state
+  const [sentimentDisplayMode, setSentimentDisplayMode] = useState('unigrams'); // 'unigrams', 'bigrams', 'both'
+  const [sentimentWeighting, setSentimentWeighting] = useState('count'); // 'count' or 'engagement'
+  const [sentimentMinFreq, setSentimentMinFreq] = useState(10); // minimum word frequency (increased default)
+  const [sentimentMaxWords, setSentimentMaxWords] = useState(50); // maximum words to display
+  const [selectedSentimentWord, setSelectedSentimentWord] = useState(null); // for drill-down
+  const [sentimentDrilldownOpen, setSentimentDrilldownOpen] = useState(false); // drill-down panel state
+  
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
     tier: 'all',
@@ -269,14 +324,16 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     }
     
     let filteredChannels = [...originalData.engagement];
+    console.log('📊 Starting with', filteredChannels.length, 'channels');
+    console.log('🔍 Sample channel names:', filteredChannels.slice(0, 5).map(c => c.name));
     
     // Apply genre filter using the consistent getChannelGenre function
     if (activeFilters.genre !== 'all') {
+      const beforeFilter = filteredChannels.length;
       const filterGenre = activeFilters.genre.toLowerCase();
       let targetGenre = '';
       
-      if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
-      else if (filterGenre === 'education') targetGenre = 'Education';
+      if (filterGenre === 'education') targetGenre = 'Education';
       else if (filterGenre === 'gaming') targetGenre = 'Gaming';
       else if (filterGenre === 'music') targetGenre = 'Music';
       else if (filterGenre === 'news') targetGenre = 'News & Politics';
@@ -287,10 +344,28 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       else if (filterGenre === 'kids') targetGenre = 'Kids/Family';
       else targetGenre = activeFilters.genre;
       
+      console.log(`🎯 Filtering for genre: "${targetGenre}"`);
+      
+      // Debug: Check which channels should match gaming
+      if (targetGenre === 'Gaming') {
+        console.log('🎮 Gaming channels in mapping:', ['PewdiePie', 'Jacksepticeye', 'Call Me Kevin', 'Floydson', 'Lizz']);
+        console.log('🎮 Available channels to filter:', filteredChannels.map(c => c.name));
+      }
+      
       filteredChannels = filteredChannels.filter(channel => {
-        const channelGenre = getChannelGenre(channel);
-        return channelGenre === targetGenre;
+        const channelGenre = getChannelGenre(channel.name);
+        const matches = channelGenre === targetGenre;
+        
+        if (targetGenre === 'Gaming') {
+          console.log(`🎮 Gaming filter - Channel "${channel.name}" -> Genre: "${channelGenre}" (${matches ? 'MATCH' : 'no match'})`);
+        } else if (matches) {
+          console.log(`✅ Channel "${channel.name}" matches genre "${targetGenre}"`);
+        }
+        
+        return matches;
       });
+      console.log(`🎯 Genre filter result: ${beforeFilter} -> ${filteredChannels.length} channels`);
+      console.log('🎯 Filtered channel names:', filteredChannels.map(c => c.name));
     }
     
     // Apply tier filter
@@ -363,8 +438,6 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           targetGenre = 'Education';
         } else if (filterGenre === 'gaming') {
           targetGenre = 'Gaming';
-        } else if (filterGenre === 'entertainment') {
-          targetGenre = 'Gaming';  // Keep this for backwards compatibility with quick action buttons
         } else if (filterGenre === 'kids') {
           targetGenre = 'Kids/Family';
         } else if (filterGenre === 'catholic') {
@@ -592,6 +665,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
   useEffect(() => {
     loadVisualizationData();
+    loadCommentData(); // Also load comment data on mount
   }, []); // Run once on mount
 
   // Update chart data when engagement view mode changes
@@ -614,6 +688,14 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       processChartData(filteredData);
     }
   }, [tierViewMode, tierMetricFilter, activeChart, filteredData]);
+
+  // Regenerate sentiment analysis when sentiment toggles change
+  useEffect(() => {
+    if (activeChart === 'sentiment') {
+      // Force re-render by updating a state that will trigger chart regeneration
+      console.log('🔄 Sentiment analysis settings changed, regenerating word clouds...');
+    }
+  }, [sentimentDisplayMode, sentimentWeighting, sentimentMinFreq, sentimentMaxWords, activeFilters, activeChart]);
 
   // Process chart data when correlation toggles change
   useEffect(() => {
@@ -705,6 +787,25 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     }
   };
 
+  const loadCommentData = async () => {
+    try {
+      console.log('🔄 Loading comment data from API...');
+      const response = await fetch('/api/comments');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Comment data loaded:', data);
+        setCommentData(data);
+        return data;
+      } else {
+        console.warn('⚠️ Comment API failed');
+        return null;
+      }
+    } catch (error) {
+      console.error('❌ Error loading comment data:', error);
+      return null;
+    }
+  };
+
   // Process heatmap data from thumbnail videos
   const processHeatmapData = (videos) => {
     if (!videos || videos.length === 0) return null;
@@ -768,8 +869,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           const filterGenre = activeFilters.genre.toLowerCase();
           let targetGenre = '';
           
-          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
-          else if (filterGenre === 'education') targetGenre = 'Education';
+          if (filterGenre === 'education') targetGenre = 'Education';
           else if (filterGenre === 'gaming') targetGenre = 'Gaming';
           else if (filterGenre === 'music') targetGenre = 'Music';
           else if (filterGenre === 'news') targetGenre = 'News & Politics';
@@ -947,8 +1047,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           const filterGenre = activeFilters.genre.toLowerCase();
           let targetGenre = '';
           
-          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
-          else if (filterGenre === 'education') targetGenre = 'Education';
+          if (filterGenre === 'education') targetGenre = 'Education';
           else if (filterGenre === 'gaming') targetGenre = 'Gaming';
           else if (filterGenre === 'music') targetGenre = 'Music';
           else if (filterGenre === 'news') targetGenre = 'News & Politics';
@@ -1284,8 +1383,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           const filterGenre = activeFilters.genre.toLowerCase();
           let targetGenre = '';
           
-          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
-          else if (filterGenre === 'education') targetGenre = 'Education';
+          if (filterGenre === 'education') targetGenre = 'Education';
           else if (filterGenre === 'gaming') targetGenre = 'Gaming';
           else if (filterGenre === 'music') targetGenre = 'Music';
           else if (filterGenre === 'news') targetGenre = 'News & Politics';
@@ -1458,40 +1556,410 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     }
   };
 
-  if (loading || chartLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          Loading visualization data...
-        </p>
-      </div>
-    );
-  }
+  // Generate sentiment word cloud data
+  const generateSentimentWordClouds = () => {
+    // Use filtered comment data based on current filters
+    if (!commentData || !commentData.comments || commentData.comments.length === 0) {
+      console.log('⚠️ No comment data available, using minimal mock data');
+      return { positive: [], neutral: [], negative: [] };
+    }
 
-  if (chartLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <div className={`p-4 rounded-lg ${darkMode ? 'bg-blue-900 border-blue-600' : 'bg-blue-100 border-blue-400'} border`}>
-          <p className={`text-sm ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
-            Loading visualization data...
-          </p>
-        </div>
-      </div>
+    console.log('✅ Using real comment data from API:', commentData.comments.length, 'videos with comments');
+    
+    // Debug: Check what channel names we have in comment data
+    const commentChannelNames = [...new Set(commentData.comments.map(v => v.channel_name || v.channelName || ''))];
+    console.log('📺 All channel names in comment data:', commentChannelNames);
+    console.log('📺 Total unique channels with comments:', commentChannelNames.length);
+    
+    // Check for gaming-related channels specifically
+    const gamingRelated = commentChannelNames.filter(name => 
+      name.toLowerCase().includes('gaming') || 
+      name.toLowerCase().includes('pewdie') ||
+      name.toLowerCase().includes('jacksep') ||
+      name.toLowerCase().includes('kevin') ||
+      name.toLowerCase().includes('floydson') ||
+      name.toLowerCase().includes('lizz')
     );
-  }
+    console.log('🎮 Potential gaming channels found:', gamingRelated);
+    
+    const allComments = [];
+    
+    // Apply current genre/tier filters to comment data
+    const filteredChannels = getFilteredChannels(); // Use existing filter logic
+    const filteredChannelNames = new Set();
+    
+    // Create a more flexible channel name mapping
+    filteredChannels.forEach(channel => {
+      filteredChannelNames.add(channel.name);
+      // Also add variations that might appear in comment data
+      filteredChannelNames.add(channel.name.toLowerCase());
+      filteredChannelNames.add(channel.name.replace(/\s+/g, ''));
+      filteredChannelNames.add(channel.name.replace(/[^\w\s]/g, ''));
+    });
+    
+    console.log('🎯 Available filtered channels:', Array.from(filteredChannelNames).slice(0, 10));
+    console.log('🎯 Active filters:', activeFilters);
+    
+    commentData.comments.forEach(video => {
+      const videoChannelName = video.channel_name || video.channelName || '';
+      
+      // Skip if video doesn't match current filters
+      if (activeFilters.genre !== 'all' || activeFilters.tier !== 'all') {
+        const videoChannelVariations = [
+          videoChannelName,
+          videoChannelName.toLowerCase(),
+          videoChannelName.replace(/\s+/g, ''),
+          videoChannelName.replace(/[^\w\s]/g, '')
+        ];
+        
+        // Check if any variation matches
+        const hasMatch = videoChannelVariations.some(variation => 
+          filteredChannelNames.has(variation)
+        );
+        
+        if (!hasMatch) {
+          console.log('🚫 Skipping video from channel:', videoChannelName, '- not in filtered set');
+          return; // Skip this video if channel doesn't match filters
+        } else {
+          console.log('✅ Including video from channel:', videoChannelName);
+        }
+      } else {
+        console.log('📂 Including video from channel (no filters):', videoChannelName);
+      }
+      
+      const sentimentScore = video.sentiment_score || 0.5;
+      const comments = video.comments || [];
+      const currentVideoChannelName = video.channel_name || video.channelName || '';
+      
+      comments.forEach(comment => {
+        // Skip comments from the channel owner/creator
+        const commentAuthor = comment.author || '';
+        if (commentAuthor === currentVideoChannelName || 
+            commentAuthor.toLowerCase() === currentVideoChannelName.toLowerCase() ||
+            commentAuthor === 'MrBeast' && currentVideoChannelName === 'MrBeast' ||
+            commentAuthor.includes(currentVideoChannelName) || 
+            currentVideoChannelName.includes(commentAuthor)) {
+          console.log('🚫 Skipping creator comment from:', commentAuthor, 'on channel:', currentVideoChannelName);
+          return; // Skip creator's own comments
+        }
+        
+        allComments.push({
+          text: comment.text || comment,
+          sentiment_score: sentimentScore,
+          like_count: comment.like_count || 0,
+          engagement: (comment.like_count || 0) + (comment.reply_count || 0),
+          channel_name: currentVideoChannelName,
+          author: commentAuthor
+        });
+      });
+    });
+    
+    console.log('✅ Filtered comments processed:', allComments.length, 'from', filteredChannelNames.size, 'channels');
+    
+    if (allComments.length === 0) {
+      return { positive: [], neutral: [], negative: [] };
+    }
+    
+    return processCommentsByCategories(allComments);
+  };
 
-  if (!filteredData || !filteredData.engagement) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 space-y-4">
-        <div className={`p-4 rounded-lg ${darkMode ? 'bg-yellow-900 border-yellow-600' : 'bg-yellow-100 border-yellow-400'} border`}>
-          <p className={`text-sm ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
-            No data available for visualization. Please check your API connection.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const processCommentsByCategories = (allComments) => {
+    // Categorize comments by sentiment score
+    const positive = allComments.filter(c => c.sentiment_score > 0.6);
+    const neutral = allComments.filter(c => c.sentiment_score >= 0.4 && c.sentiment_score <= 0.6);
+    const negative = allComments.filter(c => c.sentiment_score < 0.4);
+    
+    // Extract and count words from each category
+    const extractWords = (comments) => {
+      const wordCounts = {};
+      const wordExamples = {};
+      const wordEngagement = {};
+      
+      try {
+        comments.forEach(comment => {
+          if (!comment || !comment.text) return;
+          
+          let words = [];
+          
+          // Handle different display modes
+          if (sentimentDisplayMode === 'unigrams' || sentimentDisplayMode === 'both') {
+            // Single words (unigrams)
+            const unigrams = (comment.text || '').toLowerCase()
+              .replace(/[^\w\s]/g, ' ')
+              .split(/\s+/)
+              .filter(word => {
+                // Filter out short words
+                if (word.length < 3) return false;
+                
+                // Filter out numbers (including mixed alphanumeric that are mostly numbers)
+                if (/^\d+$/.test(word) || /^\d+[a-z]*$/.test(word) || /^[a-z]*\d+$/.test(word)) return false;
+                
+                // Filter out common stop words and artifacts
+                const stopWords = [
+                  // Common stop words
+                  'the', 'and', 'you', 'for', 'are', 'with', 'this', 'that', 'was', 'but', 'not', 'have', 
+                  'his', 'her', 'can', 'had', 'she', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 
+                  'old', 'see', 'now', 'way', 'who', 'its', 'did', 'yes', 'been', 'each', 'than', 
+                  'two', 'may', 'use', 'all', 'any', 'more', 'new', 'will', 'how', 'just', 'what',
+                  'when', 'where', 'why', 'who', 'would', 'could', 'should', 'here', 'there', 'into',
+                  'from', 'they', 'them', 'then', 'than', 'your', 'very', 'much', 'some', 'time',
+                  'well', 'make', 'like', 'good', 'such', 'even', 'come', 'know', 'think', 'take',
+                  'back', 'over', 'only', 'first', 'after', 'work', 'life', 'look', 'find', 'right',
+                  'still', 'want', 'give', 'most', 'before', 'also', 'being', 'other', 'many',
+                  'same', 'need', 'call', 'does', 'part', 'long', 'feel', 'fact', 'hand', 'high',
+                  'last', 'next', 'place', 'state', 'week', 'year', 'years', 'best', 'great',
+                  
+                  // HTML/web artifacts
+                  'quot', 'amp', 'nbsp', 'lt', 'gt', 'href', 'http', 'https', 'www', 'com', 'org', 'net',
+                  'html', 'url', 'link', 'src', 'img', 'div', 'span', 'class', 'title', 'alt',
+                  
+                  // YouTube/video specific
+                  'youtube', 'video', 'videos', 'channel', 'subscribe', 'comment', 'comments', 'like', 'likes',
+                  'watch', 'link', 'description', 'playlist', 'upload', 'uploaded', 'views', 'view',
+                  'thumbnail', 'duration', 'quality', 'resolution', 'streaming', 'stream',
+                  'beast', 'mrbeast', 'mr', 'thank', 'thanks', 'please', 'sub', 'subs',
+                  
+                  // Common social media
+                  'lol', 'omg', 'wtf', 'lmao', 'haha', 'yeah', 'yep', 'nah', 'nope', 'ok', 'okay',
+                  'hahaha', 'lmfao', 'rofl', 'tbh', 'imo', 'imho', 'btw', 'fyi', 'aka',
+                  
+                  // Random YouTube artifacts observed
+                  'got', 'bank', 'zxyjttxc', 'watch', '21efwbb48se', 'jyecrgp', 'sw8', 'shopkgs',
+                  'kgs', 'kurzgesagt', 'shop', 'link', 'href', 'shipping', 'available', 'worldwide',
+                  'sciency', 'products', 'designed', 'support', 'keep', 'free', 'everyone', 'getting',
+                  'something', 'way', 'best', 'animations', 'internet', 'biggest', 'made', 'fastest',
+                  'ever', 'talking', 'science', 'nature', 'show', 'situation', 'middle', 'world',
+                  'earth', 'future', 'guys', 'weapons', 'nuclear', 'around', 'while', 'might',
+                  'doing', 'great', 'work', 'excellent', 'say', 'love', 'use', 'know', 'thank',
+                  'been', 'them', 'will', 'here', 'vids', 'channel'
+                ];
+                
+                return !stopWords.includes(word);
+              });
+            words = words.concat(unigrams);
+          }
+          
+          if (sentimentDisplayMode === 'bigrams' || sentimentDisplayMode === 'both') {
+            // Two-word phrases (bigrams)
+            const cleanText = (comment.text || '').toLowerCase().replace(/[^\w\s]/g, ' ');
+            const textWords = cleanText.split(/\s+/)
+              .filter(w => w.length > 2)
+              .filter(word => {
+                // Apply same aggressive filtering to individual words in bigrams
+                if (/^\d+$/.test(word)) return false;
+                if (/^\d+[a-z]*$/.test(word)) return false;
+                if (/^[a-z]*\d+[a-z]*$/.test(word)) return false;
+                if (/\d{3,}/.test(word)) return false;
+                if (word.includes('http') || word.includes('www') || word.includes('.com')) return false;
+                
+                const artifactWords = [
+                  // Core stop words
+                  'the', 'and', 'you', 'for', 'are', 'with', 'this', 'that', 'was', 'but', 'not', 'have',
+                  'his', 'her', 'can', 'had', 'she', 'one', 'our', 'out', 'day', 'get', 'has', 'him',
+                  'old', 'see', 'now', 'way', 'who', 'its', 'did', 'yes', 'been', 'each', 'than',
+                  'two', 'may', 'use', 'all', 'any', 'more', 'new', 'will', 'how', 'just', 'what',
+                  'when', 'where', 'why', 'would', 'could', 'should', 'here', 'there', 'into',
+                  'from', 'they', 'them', 'then', 'your', 'very', 'much', 'some', 'time', 'well',
+                  'make', 'like', 'good', 'such', 'even', 'come', 'know', 'think', 'take', 'back',
+                  'over', 'only', 'first', 'after', 'work', 'life', 'look', 'find', 'right', 'still',
+                  'want', 'give', 'most', 'before', 'also', 'being', 'other', 'many', 'same', 'need',
+                  // Web/HTML artifacts
+                  'quot', 'amp', 'nbsp', 'href', 'http', 'https', 'www', 'com', 'org', 'net', 'link',
+                  'html', 'url', 'src', 'img', 'div', 'span', 'class', 'title', 'alt', 'rel', 'target',
+                  // YouTube specific
+                  'youtube', 'youtu', 'video', 'videos', 'channel', 'subscribe', 'watch', 'vids',
+                  'kurzgesagt', 'shop', 'shopkgs', 'kgs', 'shipping', 'available', 'worldwide',
+                  'sciency', 'products', 'designed', 'love', 'support', 'keep', 'free', 'everyone',
+                  // Random IDs and artifacts
+                  '21efwbb48se', 'jyecrgp', 'sw8', 'amp'
+                ];
+                
+                return !artifactWords.includes(word);
+              });
+              
+            const bigrams = [];
+            for (let i = 0; i < textWords.length - 1; i++) {
+              const bigram = `${textWords[i]} ${textWords[i + 1]}`;
+              // Additional filtering for common bigram patterns
+              if (!bigram.includes('http') && 
+                  !bigram.includes('www') && 
+                  !bigram.includes('href') && 
+                  !bigram.includes('quot') &&
+                  !bigram.includes('amp') &&
+                  !bigram.includes('kgs') &&
+                  !bigram.includes('shop') &&
+                  bigram.length > 6) { // Filter out very short bigrams
+                bigrams.push(bigram);
+              }
+            }
+            words = words.concat(bigrams);
+          }
+            
+            words.forEach(word => {
+              if (!word || typeof word !== 'string') return;
+              
+              // Additional post-processing filtering
+              if (word.length < 4) return; // Increase minimum length
+              if (word.includes('quot') || word.includes('href') || word.includes('http')) return;
+              if (word.includes('www') || word.includes('youtube') || word.includes('com')) return;
+              if (word.includes('kurzgesagt') || word.includes('shop') || word.includes('kgs')) return;
+              if (word.includes('amp') || word.includes('link') || word.includes('watch')) return;
+              
+              // Skip common meaningless combinations
+              const meaninglessWords = ['that', 'this', 'from', 'with', 'were', 'have', 'been', 'will', 'would', 'could', 'should'];
+              if (meaninglessWords.includes(word)) return;
+              
+              if (!wordCounts[word]) {
+                wordCounts[word] = 0;
+                wordExamples[word] = [];
+                wordEngagement[word] = [];
+              }
+              wordCounts[word]++;            // Ensure wordExamples[word] is still an array (defensive programming)
+            if (!Array.isArray(wordExamples[word])) {
+              wordExamples[word] = [];
+            }
+            if (!Array.isArray(wordEngagement[word])) {
+              wordEngagement[word] = [];
+            }
+            
+            if (wordExamples[word].length < 3) {
+              wordExamples[word].push((comment.text || '').slice(0, 100));
+            }
+            wordEngagement[word].push(comment.engagement || 0);
+          });
+        });
+      } catch (error) {
+        console.error('Error in extractWords:', error);
+        return [];
+      }
+      
+      return Object.entries(wordCounts)
+        .map(([word, count]) => {
+          const avgEngagement = wordEngagement[word].length > 0 ? 
+            wordEngagement[word].reduce((a, b) => a + b, 0) / wordEngagement[word].length : 0;
+          
+          // Apply weighting based on toggle
+          const displayWeight = sentimentWeighting === 'engagement' ? 
+            avgEngagement * count : count;
+          
+          return {
+            text: word,
+            count,
+            engagement: avgEngagement,
+            displayWeight,
+            examples: wordExamples[word] || []
+          };
+        })
+        .filter(word => word.count >= sentimentMinFreq)
+        .sort((a, b) => b.displayWeight - a.displayWeight)
+        .slice(0, sentimentMaxWords);
+    };
+    
+    return {
+      positive: extractWords(positive),
+      neutral: extractWords(neutral),  
+      negative: extractWords(negative)
+    };
+  };
+
+  const generateMockComments = () => {
+    // Fallback mock data for demonstration
+    const mockComments = [];
+    
+    // Generate positive comments
+    const positiveTexts = [
+      "This is amazing! Great work!",
+      "I love this video so much",
+      "Awesome content as always",
+      "Perfect explanation, thank you",
+      "Best channel on YouTube",
+      "Excellent quality and editing",
+      "Incredible work, keep it up",
+      "Fantastic video, learned a lot",
+      "Brilliant idea and execution"
+    ];
+    
+    const neutralTexts = [
+      "When is the next video coming?",
+      "Where can I find the link?",
+      "How did you make this?",
+      "What software do you use?",
+      "Can you share the source?",
+      "Music name please",
+      "Make a tutorial on this",
+      "When is part 2?"
+    ];
+    
+    const negativeTexts = [
+      "This video is too long",
+      "Getting boring after 5 minutes",
+      "Total clickbait title",
+      "Music is too loud",
+      "This looks fake to me",
+      "Too slow paced",
+      "Very confusing explanation"
+    ];
+    
+    // Create mock comment objects
+    positiveTexts.forEach(text => {
+      mockComments.push({
+        text,
+        sentiment_score: 0.8,
+        like_count: Math.floor(Math.random() * 100) + 10,
+        engagement: Math.floor(Math.random() * 50) + 5
+      });
+    });
+    
+    neutralTexts.forEach(text => {
+      mockComments.push({
+        text,
+        sentiment_score: 0.5,
+        like_count: Math.floor(Math.random() * 50) + 5,
+        engagement: Math.floor(Math.random() * 20) + 2
+      });
+    });
+    
+    negativeTexts.forEach(text => {
+      mockComments.push({
+        text,
+        sentiment_score: 0.2,
+        like_count: Math.floor(Math.random() * 30) + 1,
+        engagement: Math.floor(Math.random() * 40) + 10
+      });
+    });
+    
+    return mockComments;
+  };
+
+  const getWordsForSentiment = (sentiment) => {
+    // This function needs to work with the new word cloud data structure
+    const wordClouds = generateSentimentWordClouds();
+    const data = wordClouds[sentiment] || [];
+    
+    if (!data || data.length === 0) return [];
+
+    let words = [...data]; // Copy the array
+
+    // Apply frequency filter
+    words = words.filter(word => word.count >= sentimentMinFreq);
+
+    // Apply weighting
+    if (sentimentWeighting === 'engagement') {
+      words = words.map(word => ({
+        ...word,
+        displayWeight: word.count * (word.engagement || 1)
+      }));
+    } else {
+      words = words.map(word => ({
+        ...word,
+        displayWeight: word.count
+      }));
+    }
+
+    // Sort by display weight and limit results
+    words.sort((a, b) => b.displayWeight - a.displayWeight);
+    return words.slice(0, sentimentMaxWords);
+  };
 
   // Mock visualization data - replace with real data processing
   const mockChartData = {
@@ -1554,6 +2022,30 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     </div>
   );
 
+  // Handle loading and error states
+  if (loading || chartLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+          Loading visualization data...
+        </p>
+      </div>
+    );
+  }
+
+  if (!filteredData || !filteredData.engagement) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <div className={`p-4 rounded-lg ${darkMode ? 'bg-yellow-900 border-yellow-600' : 'bg-yellow-100 border-yellow-400'} border`}>
+          <p className={`text-sm ${darkMode ? 'text-yellow-200' : 'text-yellow-800'}`}>
+            No data available for visualization. Please check your API connection.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const charts = [
     { id: 'engagement', label: 'Channel Engagement', icon: BarChart3 },
     { id: 'genres', label: 'Genre Comparison', icon: PieIcon },
@@ -1588,12 +2080,17 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       'Fun Science': 'Education',
       'Up and Atom': 'Education',
       
-      // Gaming
+      // Gaming (expanded with potential name variations)
       'PewdiePie': 'Gaming',
+      'PewDiePie': 'Gaming',
       'Jacksepticeye': 'Gaming',
+      'JackSepticEye': 'Gaming',
       'Call Me Kevin': 'Gaming',
+      'CallMeKevin': 'Gaming',
       'Floydson': 'Gaming', 
       'Lizz': 'Gaming',
+      'Gaming': 'Gaming',
+      'Lizz Gaming': 'Gaming',
       
       // Kids/Family
       'Cocomelon': 'Kids/Family',
@@ -2286,51 +2783,401 @@ const DataVisualization = ({ data, loading, darkMode }) => {
 
       case 'sentiment':
         const sentimentData = getChartData('sentiment') || [];
+        let wordClouds;
+        
+        try {
+          wordClouds = generateSentimentWordClouds();
+        } catch (error) {
+          console.error('Error generating word clouds:', error);
+          wordClouds = { positive: [], neutral: [], negative: [] };
+        }
+        
         return (
-          <ResponsiveContainer {...chartProps}>
-            <BarChart 
-              data={sentimentData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
-              <XAxis 
-                dataKey="sentiment" 
-                stroke={darkMode ? '#9CA3AF' : '#6B7280'}
-                fontSize={12}
-                textAnchor="middle"
-              />
-              <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
-                  border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
-                  borderRadius: '8px'
-                }}
-                formatter={(value, name) => {
-                  if (name === 'videoCount') return [value.toLocaleString(), 'Videos'];
-                  if (name === 'channelCount') return [value.toLocaleString(), 'Channels'];
-                  if (name === 'avgViews') return [`${(value / 1000000).toFixed(1)}M`, 'Avg Views'];
-                  if (name === 'totalViews') return [`${(value / 1000000).toFixed(1)}M`, 'Total Views'];
-                  return [value, name];
-                }}
-              />
-              <Bar 
-                dataKey="videoCount" 
-                name="Video Count"
-                radius={[2, 2, 0, 0]}
-                fill="#8884d8"
-              >
-                {sentimentData.map((entry, index) => {
-                  let fillColor;
-                  if (entry.sentiment === 'Positive') fillColor = '#10B981'; // Green
-                  else if (entry.sentiment === 'Negative') fillColor = '#EF4444'; // Red
-                  else fillColor = '#FCD34D'; // Yellow for Neutral
-                  
-                  return <Cell key={`cell-${index}`} fill={fillColor} />;
-                })}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          <div className={`${isFullscreen ? 'fixed inset-0 bg-white dark:bg-gray-900 z-50' : 'h-[500px]'} ${isFullscreen ? '' : 'overflow-y-auto'} ${darkMode ? 'scrollbar-dark' : 'scrollbar-light'}`}
+               style={!isFullscreen ? {
+                 scrollbarWidth: 'thin',
+                 scrollbarColor: darkMode ? '#4B5563 #1F2937' : '#D1D5DB #F9FAFB'
+               } : {}}>
+            <div className={`${isFullscreen ? 'h-full flex flex-col overflow-hidden p-6' : 'p-4'} space-y-6`}>
+              {/* Header with Fullscreen Toggle */}
+              <div className="text-center space-y-2 relative flex-shrink-0">
+                <button
+                  onClick={() => setIsFullscreen(!isFullscreen)}
+                  className={`absolute top-0 right-0 p-2 rounded-md transition-colors z-10 ${
+                    darkMode 
+                      ? 'hover:bg-gray-800 text-gray-400 hover:text-gray-200 bg-gray-800/80' 
+                      : 'hover:bg-gray-100 text-gray-600 hover:text-gray-800 bg-white/80'
+                  } shadow-sm border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}
+                  title={isFullscreen ? 'Exit Fullscreen (ESC)' : 'Enter Fullscreen'}
+                >
+                  {isFullscreen ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                  )}
+                </button>
+                
+                <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'} pr-12`}>
+                  💬 Comment Sentiment Analysis
+                </h3>
+                <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Overview of sentiment distribution + the words driving each category
+                </p>
+              </div>
+
+              {/* Bar Chart */}
+              <div className="flex-shrink-0">
+                <ResponsiveContainer width="100%" height={isFullscreen ? 400 : 350}>
+                  <BarChart 
+                    data={sentimentData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
+                    <XAxis 
+                      dataKey="sentiment" 
+                      stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                      fontSize={12}
+                      textAnchor="middle"
+                    />
+                    <YAxis stroke={darkMode ? '#9CA3AF' : '#6B7280'} fontSize={12} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
+                        border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value, name) => {
+                        if (name === 'videoCount') return [value.toLocaleString(), 'Videos'];
+                        if (name === 'channelCount') return [value.toLocaleString(), 'Channels'];
+                        if (name === 'avgViews') return [`${(value / 1000000).toFixed(1)}M`, 'Avg Views'];
+                        if (name === 'totalViews') return [`${(value / 1000000).toFixed(1)}M`, 'Total Views'];
+                        return [value, name];
+                      }}
+                    />
+                    <Bar 
+                      dataKey="videoCount" 
+                      name="Video Count"
+                      radius={[2, 2, 0, 0]}
+                      fill="#8884d8"
+                    >
+                      {sentimentData.map((entry, index) => {
+                        let fillColor;
+                        if (entry.sentiment === 'Positive') fillColor = '#10B981'; // Green
+                        else if (entry.sentiment === 'Negative') fillColor = '#EF4444'; // Red
+                        else fillColor = '#FCD34D'; // Yellow for Neutral
+                        
+                        return <Cell key={`cell-${index}`} fill={fillColor} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Word Cloud Controls */}
+              <div className="space-y-4 flex-shrink-0">
+                <div className="flex flex-wrap gap-4 items-center justify-center">
+                  {/* Display Mode */}
+                  <div className="flex items-center gap-2">
+                    <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Words:
+                    </label>
+                    <div className={`inline-flex rounded-lg p-1 ${
+                      darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => setSentimentDisplayMode('unigrams')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          sentimentDisplayMode === 'unigrams'
+                            ? 'bg-blue-600 text-white'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Single
+                      </button>
+                      <button
+                        onClick={() => setSentimentDisplayMode('bigrams')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          sentimentDisplayMode === 'bigrams'
+                            ? 'bg-blue-600 text-white'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Phrases
+                      </button>
+                      <button
+                        onClick={() => setSentimentDisplayMode('both')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          sentimentDisplayMode === 'both'
+                            ? 'bg-blue-600 text-white'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Both
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Weighting */}
+                  <div className="flex items-center gap-2">
+                    <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Weight by:
+                    </label>
+                    <div className={`inline-flex rounded-lg p-1 ${
+                      darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => setSentimentWeighting('count')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          sentimentWeighting === 'count'
+                            ? 'bg-blue-600 text-white'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Count
+                      </button>
+                      <button
+                        onClick={() => setSentimentWeighting('engagement')}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          sentimentWeighting === 'engagement'
+                            ? 'bg-blue-600 text-white'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Engagement
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Min Frequency */}
+                  <div className="flex items-center gap-2">
+                    <label className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                      Min freq:
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="50"
+                      value={sentimentMinFreq}
+                      onChange={(e) => setSentimentMinFreq(parseInt(e.target.value))}
+                      className="w-16"
+                    />
+                    <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      {sentimentMinFreq}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Word Clouds - Visible Container */}
+              <div className={`mt-8 ${isFullscreen ? 'flex-1' : ''}`}>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                  {/* Positive Word Cloud */}
+                    <div className={`p-6 rounded-lg border-2 shadow-lg ${
+                      darkMode ? 'bg-green-900/20 border-green-600/50' : 'bg-green-50 border-green-300'
+                    }`}>
+                      <h4 className={`font-semibold mb-4 text-center text-lg ${
+                        darkMode ? 'text-green-200' : 'text-green-800'
+                      }`}>
+                        😊 Positive Comments
+                      </h4>
+                      <div className={`flex flex-wrap gap-2 justify-center ${isFullscreen ? 'min-h-96' : 'min-h-80'} p-4 rounded-md ${
+                        darkMode ? 'bg-gray-800/30' : 'bg-white/70'
+                      } border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                        {wordClouds.positive.map((word, index) => {
+                          const maxWeight = Math.max(...wordClouds.positive.map(w => w.displayWeight));
+                          const minWeight = Math.min(...wordClouds.positive.map(w => w.displayWeight));
+                          const normalizedWeight = maxWeight === minWeight ? 1 : 
+                            (word.displayWeight - minWeight) / (maxWeight - minWeight);
+                          const fontSize = (isFullscreen ? 16 : 12) + (normalizedWeight * (isFullscreen ? 28 : 20));
+                          const opacity = 0.6 + (normalizedWeight * 0.4);
+                          
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSelectedSentimentWord(word);
+                                setSentimentDrilldownOpen(true);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.title = `"${word.text}" - ${word.count} mentions, ${word.engagement.toFixed(1)}x engagement`;
+                              }}
+                              className={`px-2 py-1 rounded-md transition-all hover:scale-105 ${
+                                darkMode ? 'bg-green-700/20 hover:bg-green-600/30 text-green-200' : 'bg-green-200 hover:bg-green-300 text-green-800'
+                              }`}
+                              style={{
+                                fontSize: `${fontSize}px`,
+                                opacity: opacity,
+                                fontWeight: normalizedWeight > 0.7 ? 'bold' : 'normal'
+                              }}
+                            >
+                              {word.text}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Neutral Word Cloud */}
+                    <div className={`p-6 rounded-lg border-2 shadow-lg ${
+                      darkMode ? 'bg-yellow-900/20 border-yellow-600/50' : 'bg-yellow-50 border-yellow-300'
+                    }`}>
+                      <h4 className={`font-semibold mb-4 text-center text-lg ${
+                        darkMode ? 'text-yellow-200' : 'text-yellow-800'
+                      }`}>
+                        😐 Neutral Comments
+                      </h4>
+                      <div className={`flex flex-wrap gap-2 justify-center ${isFullscreen ? 'min-h-96' : 'min-h-80'} p-4 rounded-md ${
+                        darkMode ? 'bg-gray-800/30' : 'bg-white/70'
+                      } border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                        {wordClouds.neutral.map((word, index) => {
+                          const maxWeight = Math.max(...wordClouds.neutral.map(w => w.displayWeight));
+                          const minWeight = Math.min(...wordClouds.neutral.map(w => w.displayWeight));
+                          const normalizedWeight = maxWeight === minWeight ? 1 : 
+                            (word.displayWeight - minWeight) / (maxWeight - minWeight);
+                          const fontSize = (isFullscreen ? 16 : 12) + (normalizedWeight * (isFullscreen ? 28 : 20));
+                          const opacity = 0.6 + (normalizedWeight * 0.4);
+                          
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSelectedSentimentWord(word);
+                                setSentimentDrilldownOpen(true);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.title = `"${word.text}" - ${word.count} mentions, ${word.engagement.toFixed(1)}x engagement`;
+                              }}
+                              className={`px-2 py-1 rounded-md transition-all hover:scale-105 ${
+                                darkMode ? 'bg-yellow-700/20 hover:bg-yellow-600/30 text-yellow-200' : 'bg-yellow-200 hover:bg-yellow-300 text-yellow-800'
+                              }`}
+                              style={{
+                                fontSize: `${fontSize}px`,
+                                opacity: opacity,
+                                fontWeight: normalizedWeight > 0.7 ? 'bold' : 'normal'
+                              }}
+                            >
+                              {word.text}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Negative Word Cloud */}
+                    <div className={`p-6 rounded-lg border-2 shadow-lg ${
+                      darkMode ? 'bg-red-900/20 border-red-600/50' : 'bg-red-50 border-red-300'
+                    }`}>
+                      <h4 className={`font-semibold mb-4 text-center text-lg ${
+                        darkMode ? 'text-red-200' : 'text-red-800'
+                      }`}>
+                        😠 Negative Comments
+                      </h4>
+                      <div className={`flex flex-wrap gap-2 justify-center ${isFullscreen ? 'min-h-96' : 'min-h-80'} p-4 rounded-md ${
+                        darkMode ? 'bg-gray-800/30' : 'bg-white/70'
+                      } border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                        {wordClouds.negative.map((word, index) => {
+                          const maxWeight = Math.max(...wordClouds.negative.map(w => w.displayWeight));
+                          const minWeight = Math.min(...wordClouds.negative.map(w => w.displayWeight));
+                          const normalizedWeight = maxWeight === minWeight ? 1 : 
+                            (word.displayWeight - minWeight) / (maxWeight - minWeight);
+                          const fontSize = (isFullscreen ? 16 : 12) + (normalizedWeight * (isFullscreen ? 28 : 20));
+                          const opacity = 0.6 + (normalizedWeight * 0.4);
+                          
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setSelectedSentimentWord(word);
+                                setSentimentDrilldownOpen(true);
+                              }}
+                              onMouseEnter={(e) => {
+                                e.target.title = `"${word.text}" - ${word.count} mentions, ${word.engagement.toFixed(1)}x engagement`;
+                              }}
+                              className={`px-2 py-1 rounded-md transition-all hover:scale-105 ${
+                                darkMode ? 'bg-red-700/20 hover:bg-red-600/30 text-red-200' : 'bg-red-200 hover:bg-red-300 text-red-800'
+                              }`}
+                              style={{
+                                fontSize: `${fontSize}px`,
+                                opacity: opacity,
+                                fontWeight: normalizedWeight > 0.7 ? 'bold' : 'normal'
+                              }}
+                            >
+                              {word.text}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              {/* Drill-down Panel */}
+              {sentimentDrilldownOpen && selectedSentimentWord && (
+                <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4`}>
+                  <div className={`max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-lg ${
+                    darkMode ? 'bg-gray-800 border border-gray-600' : 'bg-white border border-gray-300'
+                  } shadow-xl`}>
+                    <div className={`p-6 border-b ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                      <div className="flex items-center justify-between">
+                        <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          Comments mentioning "{selectedSentimentWord.text}"
+                        </h3>
+                        <button
+                          onClick={() => setSentimentDrilldownOpen(false)}
+                          className={`p-2 rounded-md hover:bg-gray-100 ${
+                            darkMode ? 'hover:bg-gray-700 text-gray-400' : 'text-gray-600'
+                          }`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div className={`mt-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {selectedSentimentWord.count} mentions • {selectedSentimentWord.engagement.toFixed(1)}x average engagement
+                      </div>
+                    </div>
+                    
+                    <div className="p-6 space-y-4">
+                      <h4 className={`font-medium ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                        Example Comments:
+                      </h4>
+                      {selectedSentimentWord.examples.map((example, index) => (
+                        <div key={index} className={`p-3 rounded-lg ${
+                          darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                        }`}>
+                          <p className={`text-sm ${darkMode ? 'text-gray-200' : 'text-gray-800'}`}>
+                            "{example}"
+                          </p>
+                        </div>
+                      ))}
+                      
+                      <div className="pt-4 border-t border-gray-600">
+                        <button
+                          onClick={() => setSentimentDrilldownOpen(false)}
+                          className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         );
 
       case 'correlation':
@@ -2675,8 +3522,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           const filterGenre = activeFilters.genre.toLowerCase();
           let targetGenre = '';
           
-          if (filterGenre === 'entertainment') targetGenre = 'Entertainment';
-          else if (filterGenre === 'education') targetGenre = 'Education';
+          if (filterGenre === 'education') targetGenre = 'Education';
           else if (filterGenre === 'gaming') targetGenre = 'Gaming';
           else if (filterGenre === 'music') targetGenre = 'Music';
           else if (filterGenre === 'news') targetGenre = 'News & Politics';
@@ -6443,9 +7289,9 @@ const DataVisualization = ({ data, loading, darkMode }) => {
           🎓 Education Channels
         </button>
         <button
-          onClick={() => handleFilterChange({...activeFilters, genre: 'entertainment', sortBy: 'views'})}
+          onClick={() => handleFilterChange({...activeFilters, genre: 'gaming', sortBy: 'views'})}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-            activeFilters.genre === 'entertainment'
+            activeFilters.genre === 'gaming'
               ? 'bg-purple-600 text-white'
               : darkMode 
                 ? 'bg-gray-700 hover:bg-gray-600 text-gray-200 border border-gray-600' 
