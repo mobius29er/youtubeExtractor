@@ -26,10 +26,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for frontend
+# Enable CORS for frontend - configurable for different environments
+ALLOWED_ORIGINS = os.environ.get(
+    "ALLOWED_ORIGINS", 
+    "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3002,http://127.0.0.1:3002"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3002", "http://127.0.0.1:3002"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -128,6 +133,8 @@ class DataLoader:
                     'face_area_percentage', 'comment_texts'
                 ])
                 # Convert RQS from 0-1 scale to 0-100 scale and round to integers
+                # RQS (Retention Quality Score) is stored as decimal (0.0-1.0) in CSV
+                # but displayed as percentage (0-100) in UI for better user comprehension
                 features_df['rqs'] = (features_df['rqs'] * 100).round().astype(int)
                 # Merge with processed data
                 if self.processed_data is not None and not self.processed_data.empty:
@@ -521,13 +528,18 @@ async def get_comment_data():
                         # Try JSON first (double quotes)
                         try:
                             parsed_comments = json.loads(comment_texts)
-                        except json.JSONDecodeError:
+                        except json.JSONDecodeError as json_err:
                             # If JSON fails, try ast.literal_eval (single quotes)
                             try:
                                 parsed_comments = ast.literal_eval(comment_texts)
-                            except (ValueError, SyntaxError):
-                                # If both fail, skip this video
-                                print(f"Failed to parse comments for {video_id}: skipping")
+                            except (ValueError, SyntaxError) as ast_err:
+                                # If both fail, skip this video with detailed error info
+                                print(
+                                    f"Failed to parse comments for {video_id}: skipping\n"
+                                    f"  JSON error: {json_err}\n"
+                                    f"  ast.literal_eval error: {ast_err}\n"
+                                    f"  Problematic data: {comment_texts[:200]!r}"
+                                )
                                 continue
                         
                         if isinstance(parsed_comments, list) and len(parsed_comments) > 0:

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Eye, Heart, MessageCircle, Clock, TrendingUp, ExternalLink, Play } from 'lucide-react';
+import { getRQSBadgeColor } from '../utils/rqsUtils';
 
 const VideoDetailsModal = ({ 
   isOpen, 
@@ -246,12 +247,7 @@ const VideoDetailsModal = ({
 
                       {/* RQS Score */}
                       <td className="px-4 py-4 text-center">
-                        <span className={`font-bold text-sm px-2 py-1 rounded ${
-                          video.rqs >= 80 ? 'bg-green-100 text-green-800' :
-                          video.rqs >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                          video.rqs >= 40 ? 'bg-orange-100 text-orange-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`font-bold text-sm px-2 py-1 rounded ${getRQSBadgeColor(video.rqs)}`}>
                           {video.rqs ? `${Math.round(video.rqs)}%` : 'N/A'}
                         </span>
                       </td>

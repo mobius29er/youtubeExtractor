@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, Search, SlidersHorizontal, TrendingUp, TrendingDown } from 'lucide-react';
+import { getRQSColor } from '../utils/rqsUtils';
 
 const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -87,13 +88,6 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
 
     return filtered;
   }, [processedVideos, searchTerm, sortBy, sortOrder, rqsFilter, viewsFilter, likesFilter, commentsFilter, engagementFilter]);
-
-  const getRQSColor = (rqs) => {
-    if (rqs >= 80) return 'text-green-600 bg-green-100';
-    if (rqs >= 60) return 'text-yellow-600 bg-yellow-100';
-    if (rqs >= 40) return 'text-orange-600 bg-orange-100';
-    return 'text-red-600 bg-red-100';
-  };
 
   const formatNumber = (num) => {
     if (!num) return '0';

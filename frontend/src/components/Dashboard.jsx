@@ -449,19 +449,92 @@ import AllVideosModal from './AllVideosModal';
     return num.toLocaleString();
   };
 
+  // Helper function to get unique genres from filtered channels
+  const getUniqueGenres = (channels) => {
+    if (!channels) return [];
+    const genres = channels.map(channel => channel.genre || 'Unknown');
+    return [...new Set(genres)];
+  };
+
   const displayData = filteredData || data || {};
 
-  // Provide safe defaults
+  // Calculate statistics based on filtered data
+  const calculateFilteredStats = (channels) => {
+    if (!channels || channels.length === 0) {
+      return {
+        totalVideos: 0,
+        totalChannels: 0,
+        avgViews: 0,
+        avgLikes: 0,
+        avgComments: 0,
+        topPerformingGenre: 'Unknown'
+      };
+    }
+
+    let totalVideos = 0;
+    let totalViews = 0;
+    let totalLikes = 0;
+    let totalComments = 0;
+    const genreStats = {};
+
+    channels.forEach(channel => {
+      const channelVideos = channel.videos || 0;
+      totalVideos += channelVideos;
+      
+      // Sum up channel-level stats
+      totalViews += (channel.totalViews || channel.views || 0);
+      totalLikes += (channel.totalLikes || channel.likes || 0);
+      totalComments += (channel.totalComments || channel.comments || 0);
+      
+      // Track genre performance
+      const genre = channel.genre || 'Unknown';
+      if (!genreStats[genre]) {
+        genreStats[genre] = { views: 0, count: 0 };
+      }
+      genreStats[genre].views += (channel.totalViews || channel.views || 0);
+      genreStats[genre].count += 1;
+    });
+
+    // Calculate averages per video
+    const avgViews = totalVideos > 0 ? Math.round(totalViews / totalVideos) : 0;
+    const avgLikes = totalVideos > 0 ? Math.round(totalLikes / totalVideos) : 0;
+    const avgComments = totalVideos > 0 ? Math.round(totalComments / totalVideos) : 0;
+
+    // Find top performing genre by average views
+    let topGenre = 'Unknown';
+    let topGenreAvg = 0;
+    Object.entries(genreStats).forEach(([genre, stats]) => {
+      const avgViews = stats.count > 0 ? stats.views / stats.count : 0;
+      if (avgViews > topGenreAvg) {
+        topGenreAvg = avgViews;
+        topGenre = genre;
+      }
+    });
+
+    return {
+      totalVideos,
+      totalChannels: channels.length,
+      avgViews: formatNumber(avgViews),
+      avgLikes: formatNumber(avgLikes),
+      avgComments: formatNumber(avgComments),
+      topPerformingGenre: topGenre
+    };
+  };
+
+  // Get filtered statistics
+  const filteredStats = calculateFilteredStats(displayData.channels);
+
+  // Provide safe defaults with filtered statistics
   const safeDisplayData = {
-    totalVideos: displayData.totalVideos || 0,
-    totalChannels: displayData.totalChannels || 0,
-    healthScore: displayData.healthScore || 0,
+    totalVideos: filteredStats.totalVideos,
+    totalChannels: filteredStats.totalChannels,
+    healthScore: displayData.healthScore || 100, // Keep original health score
     lastUpdated: displayData.lastUpdated || new Date().toISOString(),
-    stats: displayData.stats || {
-      avgViews: 0,
-      avgLikes: 0,
-      avgComments: 0,
-      topPerformingGenre: 'Unknown'
+    stats: {
+      avgViews: filteredStats.avgViews,
+      avgLikes: filteredStats.avgLikes,
+      avgComments: filteredStats.avgComments,
+      topPerformingGenre: filteredStats.topPerformingGenre
     },
     channels: displayData.channels || []
   };
@@ -639,8 +712,8 @@ import AllVideosModal from './AllVideosModal';
         onFilterChange={handleFilterChange}
         activeFilters={activeFilters}
         darkMode={darkMode}
-        totalChannels={safeDisplayData.totalChannels}
-        filteredChannels={safeDisplayData.channels?.length || 0}
+        totalChannels={data?.totalChannels || 0}
+        filteredChannels={safeDisplayData.totalChannels}
       />
 
       {/* Key Metrics */}
@@ -658,7 +731,7 @@ import AllVideosModal from './AllVideosModal';
           icon={Users}
           title="Channels Analyzed"
           value={safeDisplayData.totalChannels}
-          subtitle="Across 5 genres"
+          subtitle={`${getUniqueGenres(safeDisplayData.channels).length} genres filtered`}
           color="blue"
         />
         <StatCard
