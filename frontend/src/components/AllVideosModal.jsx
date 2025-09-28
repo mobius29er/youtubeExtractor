@@ -294,6 +294,7 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
             <table className="w-full">
               <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-50'} sticky top-0`}>
                 <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Thumbnail</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Video</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Channel</th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Views</th>
@@ -306,6 +307,25 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
               <tbody className={`${darkMode ? 'bg-gray-800' : 'bg-white'} divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
                 {filteredAndSortedVideos.map((video, index) => (
                   <tr key={`${video.video_id || index}`} className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors`}>
+                    {/* Thumbnail */}
+                    <td className="px-4 py-4">
+                      <div className="w-20 h-12 rounded flex-shrink-0 overflow-hidden">
+                        <img
+                          src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
+                          alt={video.title}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // Fallback to placeholder if thumbnail fails to load
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                        <div className={`w-20 h-12 rounded flex-shrink-0 items-center justify-center ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} style={{display: 'none'}}>
+                          <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>No Image</span>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Video Info */}
                     <td className="px-6 py-4">
                       <div className="max-w-xs">
                         <p className="font-medium text-sm" 

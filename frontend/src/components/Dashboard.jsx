@@ -594,7 +594,6 @@ import AllVideosModal from './AllVideosModal';
         <h4 
           className="font-semibold text-sm truncate"
           title={channel.name}
-          aria-label={`Channel name: ${channel.name}`}
         >
           {channel.name}
         </h4>

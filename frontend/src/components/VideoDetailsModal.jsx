@@ -207,12 +207,25 @@ const VideoDetailsModal = ({
                       {/* Video Title and Thumbnail */}
                       <td className="px-4 py-4">
                         <div className="flex items-start gap-3">
-                          <div className={`w-16 h-10 rounded flex-shrink-0 flex items-center justify-center ${
-                            darkMode ? 'bg-gray-700' : 'bg-gray-200'
-                          }`}>
-                            <Eye className={`w-4 h-4 ${
-                              darkMode ? 'text-gray-400' : 'text-gray-500'
-                            }`} />
+                          {/* YouTube Thumbnail */}
+                          <div className="w-16 h-10 rounded flex-shrink-0 overflow-hidden">
+                            <img
+                              src={`https://img.youtube.com/vi/${video.video_id}/mqdefault.jpg`}
+                              alt={video.title}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // Fallback to placeholder if thumbnail fails to load
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
+                            <div className={`w-16 h-10 rounded flex-shrink-0 items-center justify-center ${
+                              darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                            }`} style={{display: 'none'}}>
+                              <Eye className={`w-4 h-4 ${
+                                darkMode ? 'text-gray-400' : 'text-gray-500'
+                              }`} />
+                            </div>
                           </div>
                           <div className="min-w-0">
                             <h3 className="font-medium text-sm line-clamp-2 mb-1">

@@ -46,6 +46,10 @@ class YouTubePredictionSystem:
         models_dir_env = os.environ.get("MODELS_DIR")
         if models_dir_env:
             models_dir = Path(models_dir_env)
+            # Validate that the environment variable points to an existing directory
+            if not models_dir.exists() or not models_dir.is_dir():
+                print(f"⚠️ Warning: MODELS_DIR environment variable '{models_dir_env}' does not point to an existing directory. Falling back to default.")
+                models_dir = script_dir.parent / "extracted_data" / "models"
         else:
             models_dir = script_dir.parent / "extracted_data" / "models"
         
