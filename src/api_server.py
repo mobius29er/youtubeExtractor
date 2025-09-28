@@ -126,12 +126,37 @@ class DataLoader:
             features_file = DATA_DIR / "videos_with_features.csv"
             if features_file.exists():
                 print(f"🔄 Loading RQS, sentiment, and color data from: {features_file}")
-                # Load additional columns including color data and comments
-                features_df = pd.read_csv(features_file, usecols=[
+                
+                # Define desired columns with fallback handling
+                desired_columns = [
                     'video_id', 'rqs', 'sentiment_score', 
                     'color_palette', 'dominant_colors', 'average_rgb',
                     'face_area_percentage', 'comment_texts'
-                ])
+                ]
+                
+                # Read header to determine available columns
+                available_columns = pd.read_csv(features_file, nrows=0).columns.tolist()
+                use_columns = [col for col in desired_columns if col in available_columns]
+                missing_columns = [col for col in desired_columns if col not in available_columns]
+                
+                if missing_columns:
+                    print(f"⚠️ Missing columns in features file: {missing_columns}")
+                
+                # Load additional columns including color data and comments
+                features_df = pd.read_csv(features_file, usecols=use_columns)
+                
+                # Add missing columns with sensible default values
+                for col in missing_columns:
+                    if col == 'rqs':
+                        features_df[col] = 75  # Default to 75% RQS score
+                    elif col == 'sentiment_score':
+                        features_df[col] = 0.5  # Neutral sentiment
+                    elif col in ['color_palette', 'dominant_colors', 'comment_texts']:
+                        features_df[col] = '[]'  # Empty JSON arrays
+                    elif col == 'average_rgb':
+                        features_df[col] = '[128, 128, 128]'  # Neutral gray
+                    elif col == 'face_area_percentage':
+                        features_df[col] = 0.0  # No faces detected
                 # Convert RQS from 0-1 scale to 0-100 scale and round to integers
                 # RQS (Retention Quality Score) is stored as decimal (0.0-1.0) in CSV
                 # but displayed as percentage (0-100) in UI for better user comprehension

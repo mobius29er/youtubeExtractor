@@ -80,10 +80,13 @@ const ComparisonAnalytics = ({ data, loading, darkMode }) => {
       };
     }
 
+    // Default genre for channels without assigned genre
+    const DEFAULT_GENRE = 'other';
+
     const genreMap = {};
     channels.forEach(channel => {
-      // Normalize genre to match our filter options
-      let genre = (channel.genre || 'education').toLowerCase();
+      // Normalize genre to match our filter options with explicit fallback
+      let genre = (channel.genre || DEFAULT_GENRE).toLowerCase();
       
       // Map variations to our standard genres
       if (genre.includes('christian') || genre.includes('religious') || genre.includes('catholic')) {

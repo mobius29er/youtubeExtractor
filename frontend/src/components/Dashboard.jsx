@@ -295,25 +295,27 @@ import AllVideosModal from './AllVideosModal';
     if (filters.genre && filters.genre !== 'all') {
       debugLog('Filtering by genre:', filters.genre);
       channelsToFilter = channelsToFilter.filter(channel => {
-        const channelGenre = channel.genre?.toLowerCase() || 'unknown';
+        const channelGenre = channel.genre || 'Unknown'; // Keep original case
         const filterGenre = filters.genre.toLowerCase();
         
         debugLog(`Checking channel: ${channel.name}, genre: ${channelGenre} vs filter: ${filterGenre}`);
         
-        // Direct genre matching with proper case handling
-        if (filterGenre === 'catholic' && channelGenre === 'catholic') {
-          return true;
-        }
-        if (filterGenre === 'challenge/stunts' && channelGenre === 'challenge/stunts') {
-          return true;
-        }
-        if (filterGenre === 'education' && channelGenre === 'education') {
-          return true;
-        }
-        if (filterGenre === 'gaming' && channelGenre === 'gaming') {
-          return true;
-        }
-        if (filterGenre === 'family' && channelGenre === 'family') {
+        // Map filter values to actual channel genre values (exact case match)
+        const genreMatches = {
+          'catholic': ['Catholic'],
+          'challenge': ['Challenge/Stunts'], 
+          'education': ['Education'],
+          'gaming': ['Gaming'],
+          'kids': ['Family'] // kids filter maps to Family genre
+        };
+        
+        // Check if the channel's genre matches any of the mapped values for this filter
+        const matchingGenres = genreMatches[filterGenre] || [];
+        const isMatch = matchingGenres.includes(channelGenre);
+        
+        debugLog(`  Genre mapping for '${filterGenre}':`, matchingGenres, `- Channel has '${channelGenre}' - Match: ${isMatch}`);
+        
+        if (isMatch) {
           return true;
         }
         
@@ -589,7 +591,13 @@ import AllVideosModal from './AllVideosModal';
       onClick={() => handleChannelClick(channel)}
     >
       <div className="flex items-center justify-between mb-3">
-        <h4 className="font-semibold text-sm">{channel.name}</h4>
+        <h4 
+          className="font-semibold text-sm truncate"
+          title={channel.name}
+          aria-label={`Channel name: ${channel.name}`}
+        >
+          {channel.name}
+        </h4>
         <span className={`metric-badge ${
           channel.status === 'complete' ? 'metric-badge-success' : 'metric-badge-warning'
         }`}>

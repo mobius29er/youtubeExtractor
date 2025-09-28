@@ -59,7 +59,12 @@ const VideoDetailsModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="video-details-modal-title"
+    >
       <div className={`max-w-5xl w-full max-h-[90vh] rounded-xl shadow-2xl overflow-hidden ${
         darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
       }`}>
@@ -69,7 +74,7 @@ const VideoDetailsModal = ({
         }`}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold flex items-center gap-3">
+              <h2 id="video-details-modal-title" className="text-2xl font-bold flex items-center gap-3">
                 <Play className="w-6 h-6 text-red-500" />
                 {channel} Videos
                 <span className={`text-sm font-normal px-3 py-1 rounded-full ${

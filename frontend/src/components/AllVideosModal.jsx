@@ -112,12 +112,17 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="all-videos-modal-title"
+    >
       <div className={`${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} rounded-lg shadow-xl max-w-7xl w-full max-h-[90vh] flex flex-col`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 className="text-2xl font-bold">All Videos</h2>
+            <h2 id="all-videos-modal-title" className="text-2xl font-bold">All Videos</h2>
             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               {filteredAndSortedVideos.length} videos shown
             </p>
