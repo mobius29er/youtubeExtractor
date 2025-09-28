@@ -19,7 +19,7 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
     return allVideos.map(video => ({
       ...video,
       engagement_rate: video.likes && video.views ? ((video.likes / video.views) * 100) : 0,
-      rqs: video.rqs || Math.floor(Math.random() * 100), // Use actual RQS if available
+      rqs: video.rqs != null ? video.rqs : 75, // Use actual RQS if available, else fallback to 75
     }));
   }, [allVideos]);
 
