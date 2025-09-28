@@ -117,11 +117,11 @@ class DataLoader:
             features_file = script_dir.parent / "extracted_data" / "videos_with_features.csv"
             if features_file.exists():
                 print(f"🔄 Loading RQS, sentiment, and color data from: {features_file}")
-                # Load additional columns including color data
+                # Load additional columns including color data and comments
                 features_df = pd.read_csv(features_file, usecols=[
                     'video_id', 'rqs', 'sentiment_score', 
                     'color_palette', 'dominant_colors', 'average_rgb',
-                    'face_area_percentage'
+                    'face_area_percentage', 'comment_texts'
                 ])
                 # Convert RQS from 0-1 scale to 0-100 scale and round to integers
                 features_df['rqs'] = (features_df['rqs'] * 100).round().astype(int)
@@ -137,6 +137,8 @@ class DataLoader:
                     self.processed_data['dominant_colors'] = self.processed_data['dominant_colors'].fillna('[]')
                     self.processed_data['average_rgb'] = self.processed_data['average_rgb'].fillna('[128, 128, 128]')
                     self.processed_data['face_area_percentage'] = self.processed_data['face_area_percentage'].fillna(0.0)
+                    # Fill missing comment_texts with empty arrays
+                    self.processed_data['comment_texts'] = self.processed_data['comment_texts'].fillna('[]')
                     merged_count = self.processed_data['rqs'].notna().sum()
                     color_count = self.processed_data['color_palette'].notna().sum()
                     print(f"✅ Merged RQS/sentiment data for {merged_count} videos")
@@ -153,6 +155,9 @@ class DataLoader:
                     self.processed_data['dominant_colors'] = '[]'
                     self.processed_data['average_rgb'] = '[128, 128, 128]'
                     self.processed_data['face_area_percentage'] = 0.0
+                    self.processed_data['comment_texts'] = '[]'
+                    self.processed_data['average_rgb'] = '[128, 128, 128]'
+                    self.processed_data['face_area_percentage'] = 0.0
         except Exception as e:
             print(f"❌ Error loading RQS/sentiment/color data: {e}")
             # Add default columns on error
@@ -163,6 +168,7 @@ class DataLoader:
                 self.processed_data['dominant_colors'] = '[]'
                 self.processed_data['average_rgb'] = '[128, 128, 128]'
                 self.processed_data['face_area_percentage'] = 0.0
+                self.processed_data['comment_texts'] = '[]'
     
     def _generate_mock_data(self) -> Dict:
         """Generate mock data for demonstration"""
@@ -477,6 +483,100 @@ def calculate_basic_rqs(video):
         
     except:
         return 0
+
+@app.get("/api/comments")
+async def get_comment_data():
+    """Get comment data for sentiment analysis"""
+    try:
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
+            data_loader.load_data()
+            
+        if data_loader.processed_data is None or data_loader.processed_data.empty:
+            return {
+                "comments": [],
+                "message": "No data available",
+                "total": 0
+            }
+        
+        df = data_loader.processed_data
+        comment_data = []
+        
+        for _, video in df.iterrows():
+            video_id = video.get('video_id', '')
+            channel_name = video.get('channel_name', '')
+            title = video.get('title', '')
+            sentiment_score = video.get('sentiment_score', 0.5)
+            comment_texts = video.get('comment_texts', '[]')
+            
+            # Parse comment_texts if it's a string
+            comments_list = []
+            if isinstance(comment_texts, str) and comment_texts and comment_texts != '[]' and comment_texts.strip():
+                try:
+                    import json
+                    import ast
+                    # Remove any potential pandas NaN representation
+                    if comment_texts not in ['[]', 'nan', 'NaN', 'null', '']:
+                        # Try JSON first (double quotes)
+                        try:
+                            parsed_comments = json.loads(comment_texts)
+                        except json.JSONDecodeError:
+                            # If JSON fails, try ast.literal_eval (single quotes)
+                            try:
+                                parsed_comments = ast.literal_eval(comment_texts)
+                            except (ValueError, SyntaxError):
+                                # If both fail, skip this video
+                                print(f"Failed to parse comments for {video_id}: skipping")
+                                continue
+                        
+                        if isinstance(parsed_comments, list) and len(parsed_comments) > 0:
+                            # Extract just the text from each comment object for sentiment analysis
+                            comments_list = []
+                            for comment_obj in parsed_comments:
+                                if isinstance(comment_obj, dict) and 'text' in comment_obj:
+                                    comments_list.append({
+                                        "text": comment_obj.get('text', ''),
+                                        "author": comment_obj.get('author', ''),
+                                        "like_count": comment_obj.get('like_count', 0),
+                                        "published_at": comment_obj.get('published_at', '')
+                                    })
+                                elif isinstance(comment_obj, str):
+                                    # Fallback if comments are stored as strings
+                                    comments_list.append({
+                                        "text": comment_obj,
+                                        "author": "Unknown",
+                                        "like_count": 0,
+                                        "published_at": ""
+                                    })
+                except Exception as e:
+                    print(f"Error parsing comments for {video_id}: {e}")
+                    comments_list = []
+            elif isinstance(comment_texts, list):
+                comments_list = comment_texts
+            
+            # Only include videos that have comments
+            if comments_list and len(comments_list) > 0:
+                comment_data.append({
+                    "video_id": video_id,
+                    "channel_name": channel_name,
+                    "title": title,
+                    "sentiment_score": float(sentiment_score),
+                    "comments": comments_list,
+                    "comment_count": len(comments_list)
+                })
+        
+        return {
+            "comments": comment_data,
+            "total": len(comment_data),
+            "message": f"Successfully loaded {len(comment_data)} videos with comments"
+        }
+        
+    except Exception as e:
+        print(f"❌ Error loading comment data: {e}")
+        return {
+            "comments": [],
+            "message": f"Error loading comment data: {str(e)}",
+            "total": 0
+        }
 
 @app.post("/api/refresh")
 async def refresh_data():

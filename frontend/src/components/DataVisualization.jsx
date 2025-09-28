@@ -15,7 +15,7 @@ import {
   ScatterChart,
   Scatter
 } from 'recharts';
-import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target, Flame, BarChart2, Trophy } from 'lucide-react';
+import { TrendingUp, PieChart as PieIcon, BarChart3, Activity, Filter, Layers, Target, Flame, BarChart2, Trophy, Type } from 'lucide-react';
 import FilterControls from './FilterControls';
 
 // Scrollbar styles
@@ -276,6 +276,16 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   const [sentimentMaxWords, setSentimentMaxWords] = useState(50); // maximum words to display
   const [selectedSentimentWord, setSelectedSentimentWord] = useState(null); // for drill-down
   const [sentimentDrilldownOpen, setSentimentDrilldownOpen] = useState(false); // drill-down panel state
+
+  // Title Analysis state
+  const [titleView, setTitleView] = useState('wordcloud'); // 'wordcloud', 'structures', 'leaderboard'
+  const [titleMetric, setTitleMetric] = useState('rqs'); // 'rqs', 'views', 'like_ratio'
+  const [titleViewsMode, setTitleViewsMode] = useState('median'); // 'avg' or 'median'
+  const [titleWordMode, setTitleWordMode] = useState('unigrams'); // 'unigrams', 'bigrams', 'both'
+  const [titleMinN, setTitleMinN] = useState(10); // minimum samples for patterns
+  const [titleStopwords, setTitleStopwords] = useState(true); // enable stopword filtering
+  const [selectedTitlePattern, setSelectedTitlePattern] = useState(null); // for drill-down
+  const [titleDrilldownOpen, setTitleDrilldownOpen] = useState(false); // drill-down panel state
   
   const [activeFilters, setActiveFilters] = useState({
     genre: 'all',
@@ -409,6 +419,45 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       });
     }
     
+    return filteredChannels;
+  };
+
+  // Specific function for filtering channels by genre (for title analysis)
+  const filterChannelsByGenre = (channels, filters) => {
+    if (!channels || !Array.isArray(channels)) return [];
+    
+    let filteredChannels = [...channels];
+
+    // Apply genre filter
+    if (filters && filters.genre && filters.genre !== 'all') {
+      const filterGenre = filters.genre.toLowerCase();
+      let targetGenre = '';
+      
+      if (filterGenre === 'education') targetGenre = 'Education';
+      else if (filterGenre === 'gaming') targetGenre = 'Gaming';
+      else if (filterGenre === 'music') targetGenre = 'Music';
+      else if (filterGenre === 'news') targetGenre = 'News & Politics';
+      else if (filterGenre === 'sports') targetGenre = 'Sports';
+      else if (filterGenre === 'tech') targetGenre = 'Science & Technology';
+      else if (filterGenre === 'catholic') targetGenre = 'Catholic';
+      else if (filterGenre === 'challenge') targetGenre = 'Challenge/Stunts';
+      else if (filterGenre === 'kids') targetGenre = 'Kids/Family';
+      else targetGenre = filters.genre;
+      
+      filteredChannels = filteredChannels.filter(channel => {
+        const channelGenre = getChannelGenre(channel.name);
+        return channelGenre === targetGenre;
+      });
+    }
+
+    // Apply tier filter
+    if (filters && filters.tier && filters.tier !== 'all') {
+      filteredChannels = filteredChannels.filter(channel => {
+        const tier = getChannelTier(channel.name);
+        return tier === filters.tier;
+      });
+    }
+
     return filteredChannels;
   };
 
@@ -1961,6 +2010,487 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     return words.slice(0, sentimentMaxWords);
   };
 
+  // Title Analysis Functions
+  // ======================
+
+  // Pattern Library - comprehensive set with diverse structures
+  const titlePatterns = [
+    {
+      id: 'time_boxed',
+      name: 'Time-boxed',
+      patterns: [
+        { regex: /(\d+)\s+(hours?|days?|weeks?|months?)\s+(in|at|with|of)\s+([^,]+)/i, template: '{N} {time} in {place}', slots: ['number', 'timeunit', 'preposition', 'location'] },
+        { regex: /(i|we)\s+(did|tried|spent)\s+([^,]+)\s+for\s+(\d+)\s+(hours?|days?|weeks?|months?)/i, template: 'I did {activity} for {N} {time}', slots: ['person', 'action', 'activity', 'number', 'timeunit'] },
+        { regex: /(\d+)\s+(minute|hour|day)\s+(challenge|experiment|test)/i, template: '{N} {time} challenge', slots: ['number', 'timeunit', 'type'] }
+      ]
+    },
+    {
+      id: 'confessional',
+      name: 'Confessional/Personal',
+      patterns: [
+        { regex: /why\s+i\s+(stopped|quit|left|gave\s+up)\s+([^,]+)/i, template: 'Why I {action} {thing}', slots: ['action', 'object'] },
+        { regex: /i\s+(regret|wish|hate)\s+([^,]+)/i, template: 'I {emotion} {thing}', slots: ['emotion', 'object'] },
+        { regex: /my\s+(biggest|worst|best)\s+(mistake|regret|decision)/i, template: 'My {superlative} {thing}', slots: ['superlative', 'thing'] }
+      ]
+    },
+    {
+      id: 'challenge',
+      name: 'Challenge/Versus',
+      patterns: [
+        { regex: /([^,]+)\s+vs\s+([^,]+)/i, template: '{X} vs {Y}', slots: ['item1', 'item2'] },
+        { regex: /beating\s+([^,]+)\s+with\s+([^,]+)/i, template: 'Beating {target} with {method}', slots: ['target', 'method'] },
+        { regex: /(trying|attempting)\s+to\s+([^,]+)/i, template: 'Trying to {goal}', slots: ['action', 'goal'] }
+      ]
+    },
+    {
+      id: 'list_guide',
+      name: 'Lists/Numbers',
+      patterns: [
+        { regex: /(top\s+)?(\d+)\s+([^,]+)/i, template: 'Top {N} {things}', slots: ['prefix', 'number', 'items'] },
+        { regex: /(\d+)\s+things?\s+(i\s+wish\s+i\s+knew|you\s+should\s+know)/i, template: '{N} things {knowledge}', slots: ['number', 'knowledge'] },
+        { regex: /(\d+)\s+(ways|tips|tricks|secrets)\s+to\s+([^,]+)/i, template: '{N} {type} to {goal}', slots: ['number', 'type', 'goal'] }
+      ]
+    },
+    {
+      id: 'question',
+      name: 'Questions',
+      patterns: [
+        { regex: /what\s+happens?\s+if\s+([^?]+)/i, template: 'What happens if {scenario}?', slots: ['scenario'] },
+        { regex: /can\s+you\s+([^?]+)/i, template: 'Can you {action}?', slots: ['action'] },
+        { regex: /(why|how)\s+do\s+([^?]+)/i, template: '{Question} do {thing}?', slots: ['question', 'thing'] }
+      ]
+    },
+    {
+      id: 'reveal',
+      name: 'Reveals/Secrets',
+      patterns: [
+        { regex: /i\s+bought\s+([^,]+)\s+so\s+you\s+(don\'?t\s+have\s+to|won\'?t)/i, template: 'I bought {thing} so you don\'t have to', slots: ['item'] },
+        { regex: /we\s+let\s+(ai|artificial\s+intelligence)\s+([^,]+)/i, template: 'We let AI {action}', slots: ['ai', 'action'] },
+        { regex: /(secret|hidden|truth)\s+(behind|about)\s+([^,]+)/i, template: 'The {type} {preposition} {thing}', slots: ['type', 'preposition', 'thing'] }
+      ]
+    },
+    {
+      id: 'authority',
+      name: 'Authority/Expert',
+      patterns: [
+        { regex: /the\s+truth\s+about\s+([^,]+)/i, template: 'The Truth about {topic}', slots: ['topic'] },
+        { regex: /everything\s+wrong\s+with\s+([^,]+)/i, template: 'Everything wrong with {thing}', slots: ['thing'] },
+        { regex: /(expert|professional)\s+(explains|reveals|teaches)\s+([^,]+)/i, template: '{Expert} {action} {topic}', slots: ['expert', 'action', 'topic'] }
+      ]
+    },
+    {
+      id: 'location',
+      name: 'Location/Event',
+      patterns: [
+        { regex: /inside\s+([^,]+)/i, template: 'Inside {place}', slots: ['location'] },
+        { regex: /(\d+)\s+minutes?\s+at\s+([^,]+)/i, template: '{N} minutes at {event}', slots: ['number', 'event'] },
+        { regex: /(visiting|exploring|touring)\s+([^,]+)/i, template: '{Action} {place}', slots: ['action', 'place'] }
+      ]
+    },
+    {
+      id: 'tutorial',
+      name: 'How-to/Tutorial',
+      patterns: [
+        { regex: /how\s+to\s+([^,]+)/i, template: 'How to {skill}', slots: ['skill'] },
+        { regex: /learn\s+([^,]+)\s+in\s+(\d+)\s+(minutes?|hours?|days?)/i, template: 'Learn {skill} in {N} {time}', slots: ['skill', 'number', 'timeunit'] },
+        { regex: /(beginner\'?s|complete)\s+guide\s+to\s+([^,]+)/i, template: '{Type} guide to {topic}', slots: ['type', 'topic'] }
+      ]
+    },
+    {
+      id: 'reaction',
+      name: 'Reactions/Reviews',
+      patterns: [
+        { regex: /(reacting|react)\s+to\s+([^,]+)/i, template: 'Reacting to {content}', slots: ['content'] },
+        { regex: /(honest|brutal)\s+(review|opinion)\s+(of|about)\s+([^,]+)/i, template: '{Type} {review} {preposition} {thing}', slots: ['type', 'review', 'preposition', 'thing'] },
+        { regex: /watching\s+([^,]+)\s+for\s+the\s+first\s+time/i, template: 'Watching {content} for the first time', slots: ['content'] }
+      ]
+    },
+    {
+      id: 'comparison',
+      name: 'Comparisons/Rankings',
+      patterns: [
+        { regex: /([^,]+)\s+(better|worse)\s+than\s+([^,]+)/i, template: '{X} {comparison} than {Y}', slots: ['item1', 'comparison', 'item2'] },
+        { regex: /ranking\s+([^,]+)\s+(from|by)\s+([^,]+)/i, template: 'Ranking {items} {preposition} {criteria}', slots: ['items', 'preposition', 'criteria'] },
+        { regex: /(cheapest|most\s+expensive|best\s+value)\s+([^,]+)/i, template: '{Superlative} {thing}', slots: ['superlative', 'thing'] }
+      ]
+    },
+    {
+      id: 'story_narrative',
+      name: 'Stories/Narratives',
+      patterns: [
+        { regex: /the\s+(story|tale|journey)\s+(of|behind)\s+([^,]+)/i, template: 'The {type} {preposition} {subject}', slots: ['type', 'preposition', 'subject'] },
+        { regex: /how\s+(i|we)\s+(met|found|discovered|became)\s+([^,]+)/i, template: 'How {person} {action} {thing}', slots: ['person', 'action', 'thing'] },
+        { regex: /what\s+happened\s+(when|after)\s+([^,]+)/i, template: 'What happened {time} {event}', slots: ['time', 'event'] }
+      ]
+    },
+    {
+      id: 'achievement',
+      name: 'Achievements/Milestones',
+      patterns: [
+        { regex: /(first|last)\s+time\s+(i|we)\s+([^,]+)/i, template: '{Ordinal} time {person} {action}', slots: ['ordinal', 'person', 'action'] },
+        { regex: /(finally|after\s+\d+\s+years?)\s+([^,]+)/i, template: '{Time} {achievement}', slots: ['time', 'achievement'] },
+        { regex: /breaking\s+(my|our|the)\s+(record|limit|goal)/i, template: 'Breaking {possessive} {target}', slots: ['possessive', 'target'] }
+      ]
+    },
+    {
+      id: 'urgency_trend',
+      name: 'Urgency/Trending',
+      patterns: [
+        { regex: /(breaking|urgent|important)\s+([^,]+)/i, template: '{Urgency} {news}', slots: ['urgency', 'news'] },
+        { regex: /everyone\s+(is|needs\s+to)\s+([^,]+)/i, template: 'Everyone {verb} {action}', slots: ['verb', 'action'] },
+        { regex: /(right\s+now|currently|this\s+week)\s+([^,]+)/i, template: '{Time} {happening}', slots: ['time', 'happening'] }
+      ]
+    },
+    {
+      id: 'emotional',
+      name: 'Emotional Hooks',
+      patterns: [
+        { regex: /(shocking|amazing|incredible|unbelievable)\s+([^,]+)/i, template: '{Emotion} {thing}', slots: ['emotion', 'thing'] },
+        { regex: /this\s+(will|made\s+me)\s+(cry|laugh|angry|shocked)/i, template: 'This {verb} {emotion}', slots: ['verb', 'emotion'] },
+        { regex: /(heartbreaking|inspiring|touching)\s+(story|moment)/i, template: '{Emotion} {type}', slots: ['emotion', 'type'] }
+      ]
+    },
+    {
+      id: 'mistake_failure',
+      name: 'Mistakes/Failures',
+      patterns: [
+        { regex: /(biggest|worst|dumbest)\s+(mistake|fail|error)\s+(i|we)\s+(made|ever)/i, template: '{Superlative} {type} {person} {verb}', slots: ['superlative', 'type', 'person', 'verb'] },
+        { regex: /why\s+([^,]+)\s+(failed|doesn\'?t\s+work|is\s+broken)/i, template: 'Why {thing} {problem}', slots: ['thing', 'problem'] },
+        { regex: /don\'?t\s+(buy|use|try)\s+([^,]+)/i, template: 'Don\'t {action} {thing}', slots: ['action', 'thing'] }
+      ]
+    }
+  ];
+
+  // Enhanced stopwords list for titles
+  const titleStopwordsSet = new Set([
+    // Common words
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their',
+    // Generic video words
+    'video', 'videos', 'episode', 'part', 'series', 'season', 'watch', 'watching', 'see', 'seeing', 'new', 'latest', 'best', 'top', 'first', 'last', 'next', 'previous',
+    // Dates and numbers (will be handled separately)
+    '2023', '2024', '2025', 'today', 'yesterday', 'tomorrow'
+  ]);
+
+  // Get titles from filtered data
+  const getTitleData = () => {
+    console.log('🔍 getTitleData called');
+    console.log('🔍 originalData:', originalData);
+    console.log('🔍 filteredData:', filteredData);
+    
+    // Use visualization data (not the dashboard summary data)
+    const sourceData = filteredData || originalData;
+    if (!sourceData || !sourceData.engagement) {
+      console.log('❌ No engagement data available');
+      return [];
+    }
+    
+    // Filter data based on current filters
+    let channelsData = filterChannelsByGenre(sourceData.engagement, activeFilters);
+    
+    // Debug: Log filtered data structure
+    console.log('📝 Title Analysis - Filtered channels:', channelsData?.length, 'channels');
+    if (channelsData?.length > 0) {
+      console.log('📝 First channel:', channelsData[0]);
+      console.log('📝 First channel videoDetails:', channelsData[0].videoDetails?.length, 'videos');
+      if (channelsData[0].videoDetails?.[0]) {
+        console.log('📝 First video:', channelsData[0].videoDetails[0]);
+      }
+    }
+    
+    // Extract titles from videos
+    const titleData = [];
+    channelsData.forEach(channel => {
+      if (channel.videoDetails && Array.isArray(channel.videoDetails)) {
+        const channelSubs = channel.subscribers || 1000000; // Fallback to 1M if not available
+        
+        channel.videoDetails.forEach(video => {
+          if (video.title) {
+            let metricValue;
+            
+            // Calculate metric based on selection
+            if (titleMetric === 'views') {
+              // Use view ratio (views per subscriber) instead of raw views
+              metricValue = (video.views || 0) / channelSubs;
+            } else if (titleMetric === 'rqs') {
+              metricValue = video.rqs || 0;
+            } else { // like_ratio
+              metricValue = video.like_ratio || 0;
+            }
+            
+            titleData.push({
+              title: video.title,
+              channel: channel.name,
+              genre: getChannelGenre(channel.name),
+              metric: metricValue,
+              views: video.views || 0,
+              viewRatio: (video.views || 0) / channelSubs, // Always calculate for reference
+              subscribers: channelSubs,
+              likes: video.likes || 0,
+              rqs: video.rqs || 0,
+              like_ratio: video.like_ratio || 0,
+              published_at: video.published_at,
+              video_id: video.video_id
+            });
+          }
+        });
+      }
+    });
+
+    console.log('📝 Title data extracted:', titleData.length, 'titles');
+    return titleData;
+  };
+
+  // Extract and analyze title words
+  const analyzeTitleWords = () => {
+    const titleData = getTitleData();
+    if (!titleData.length) return { unigrams: [], bigrams: [], combined: [] };
+    
+    const unigrams = new Map();
+    const bigrams = new Map();
+    
+    titleData.forEach(item => {
+      const title = item.title.toLowerCase();
+      const words = title.replace(/[^\w\s]/g, ' ').split(/\s+/).filter(word => 
+        word.length > 2 && 
+        (!titleStopwords || !titleStopwordsSet.has(word)) &&
+        !/^\d+$/.test(word)
+      );
+      
+      // Process unigrams
+      if (titleWordMode === 'unigrams' || titleWordMode === 'both') {
+        words.forEach(word => {
+          if (!unigrams.has(word)) {
+            unigrams.set(word, { word, count: 0, totalMetric: 0, examples: [] });
+          }
+          const data = unigrams.get(word);
+          data.count += 1;
+          data.totalMetric += item.metric;
+          if (data.examples.length < 3) {
+            data.examples.push({ title: item.title, channel: item.channel, metric: item.metric });
+          }
+        });
+      }
+      
+      // Process bigrams
+      if (titleWordMode === 'bigrams' || titleWordMode === 'both') {
+        for (let i = 0; i < words.length - 1; i++) {
+          const bigram = `${words[i]} ${words[i + 1]}`;
+          if (!bigrams.has(bigram)) {
+            bigrams.set(bigram, { word: bigram, count: 0, totalMetric: 0, examples: [] });
+          }
+          const data = bigrams.get(bigram);
+          data.count += 1;
+          data.totalMetric += item.metric;
+          if (data.examples.length < 3) {
+            data.examples.push({ title: item.title, channel: item.channel, metric: item.metric });
+          }
+        }
+      }
+    });
+    
+    // Calculate baseline performance
+    const baseline = titleData.reduce((sum, item) => sum + item.metric, 0) / titleData.length;
+    
+    // Process results
+    const processWords = (wordMap) => {
+      return Array.from(wordMap.values())
+        .filter(item => item.count >= titleMinN)
+        .map(item => ({
+          ...item,
+          avgMetric: item.totalMetric / item.count,
+          lift: (item.totalMetric / item.count) - baseline,
+          liftPercent: ((item.totalMetric / item.count) - baseline) / baseline * 100
+        }))
+        .sort((a, b) => b.lift - a.lift);
+    };
+    
+    const unigramResults = processWords(unigrams);
+    const bigramResults = processWords(bigrams);
+    
+    return {
+      unigrams: unigramResults,
+      bigrams: bigramResults,
+      combined: [...unigramResults, ...bigramResults].sort((a, b) => b.lift - a.lift),
+      baseline
+    };
+  };
+
+  // Analyze title patterns/structures
+  const analyzeTitlePatterns = () => {
+    const titleData = getTitleData();
+    if (!titleData.length) return [];
+    
+    const patternResults = [];
+    const baseline = titleData.reduce((sum, item) => sum + item.metric, 0) / titleData.length;
+    
+    titlePatterns.forEach(patternFamily => {
+      patternFamily.patterns.forEach(pattern => {
+        const matches = [];
+        
+        titleData.forEach(item => {
+          const match = item.title.match(pattern.regex);
+          if (match) {
+            matches.push({
+              ...item,
+              matchedGroups: match.slice(1),
+              matchedText: match[0]
+            });
+          }
+        });
+        
+        if (matches.length >= titleMinN) {
+          const avgMetric = matches.reduce((sum, item) => sum + item.metric, 0) / matches.length;
+          const lift = avgMetric - baseline;
+          const liftPercent = (lift / baseline) * 100;
+          
+          // Analyze slot distributions
+          const slotDistributions = {};
+          if (pattern.slots) {
+            pattern.slots.forEach((slot, index) => {
+              slotDistributions[slot] = {};
+              matches.forEach(match => {
+                const value = match.matchedGroups[index]?.toLowerCase().trim();
+                if (value) {
+                  if (!slotDistributions[slot][value]) {
+                    slotDistributions[slot][value] = { count: 0, totalMetric: 0 };
+                  }
+                  slotDistributions[slot][value].count += 1;
+                  slotDistributions[slot][value].totalMetric += match.metric;
+                }
+              });
+            });
+          }
+          
+          patternResults.push({
+            id: `${patternFamily.id}_${pattern.template.replace(/[^a-zA-Z0-9]/g, '_')}`,
+            family: patternFamily.name,
+            template: pattern.template,
+            regex: pattern.regex,
+            count: matches.length,
+            avgMetric,
+            lift,
+            liftPercent,
+            examples: matches.slice(0, 3).map(m => ({
+              title: m.title,
+              channel: m.channel,
+              metric: m.metric
+            })),
+            slotDistributions,
+            topSlotValues: Object.keys(slotDistributions).reduce((acc, slot) => {
+              acc[slot] = Object.entries(slotDistributions[slot])
+                .map(([value, data]) => ({
+                  value,
+                  count: data.count,
+                  avgMetric: data.totalMetric / data.count
+                }))
+                .sort((a, b) => b.avgMetric - a.avgMetric)
+                .slice(0, 5);
+              return acc;
+            }, {})
+          });
+        }
+      });
+    });
+    
+    return patternResults.sort((a, b) => b.lift - a.lift);
+  };
+
+  // Generate title leaderboard
+  const generateTitleLeaderboard = () => {
+    const titleData = getTitleData();
+    if (!titleData.length) return [];
+    
+    return titleData
+      .sort((a, b) => b.metric - a.metric)
+      .slice(0, 50)
+      .map(item => {
+        // Detect style badges
+        const badges = [];
+        const title = item.title;
+        
+        if (title.includes('?')) badges.push('Question');
+        if (/\d+/.test(title)) badges.push('Numbers');
+        if (/\([^)]+\)/.test(title)) badges.push('Parentheses');
+        if (/\[[^\]]+\]/.test(title)) badges.push('Brackets');
+        if (title === title.toUpperCase() && title.length > 5) badges.push('All Caps');
+        if (/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]/u.test(title)) badges.push('Emojis');
+        if (/^(why|how|what|when|where|who)/i.test(title)) badges.push('W-Question');
+        if (/\b(i|we|my|our)\b/i.test(title)) badges.push('First Person');
+        if (/\b(vs|versus|against)\b/i.test(title)) badges.push('Versus');
+        if (/^(top|best|worst)/i.test(title)) badges.push('Superlative');
+        
+        return {
+          ...item,
+          badges,
+          length: title.length,
+          wordCount: title.split(/\s+/).length
+        };
+      });
+  };
+
+  // Calculate title length sweet spot
+  const calculateTitleLengthAnalysis = () => {
+    const titleData = getTitleData();
+    if (!titleData.length) return null;
+    
+    // Group by character length bins
+    const lengthBins = {};
+    titleData.forEach(item => {
+      const length = item.title.length;
+      const bin = Math.floor(length / 10) * 10; // 10-character bins
+      if (!lengthBins[bin]) {
+        lengthBins[bin] = { count: 0, totalMetric: 0, titles: [] };
+      }
+      lengthBins[bin].count += 1;
+      lengthBins[bin].totalMetric += item.metric;
+      if (lengthBins[bin].titles.length < 3) {
+        lengthBins[bin].titles.push(item);
+      }
+    });
+    
+    // Calculate averages and find sweet spot
+    const binData = Object.entries(lengthBins)
+      .filter(([, data]) => data.count >= 5) // minimum sample size
+      .map(([bin, data]) => ({
+        range: `${bin}-${parseInt(bin) + 9}`,
+        minLength: parseInt(bin),
+        maxLength: parseInt(bin) + 9,
+        count: data.count,
+        avgMetric: data.totalMetric / data.count,
+        examples: data.titles
+      }))
+      .sort((a, b) => b.avgMetric - a.avgMetric);
+    
+    const sweetSpot = binData[0];
+    const overall = {
+      avgLength: titleData.reduce((sum, item) => sum + item.title.length, 0) / titleData.length,
+      medianLength: titleData.map(item => item.title.length).sort((a, b) => a - b)[Math.floor(titleData.length / 2)],
+      avgWordCount: titleData.reduce((sum, item) => sum + item.title.split(/\s+/).length, 0) / titleData.length
+    };
+    
+    return {
+      binData,
+      sweetSpot,
+      overall
+    };
+  };
+
+  // Generate KPI strip data
+  const generateTitleKPIs = () => {
+    const words = analyzeTitleWords();
+    const patterns = analyzeTitlePatterns();
+    const leaderboard = generateTitleLeaderboard();
+    const lengthAnalysis = calculateTitleLengthAnalysis();
+    
+    return {
+      topWord: words.combined[0] || null,
+      topPattern: patterns[0] || null,
+      topTitle: leaderboard[0] || null,
+      sweetSpot: lengthAnalysis?.sweetSpot || null,
+      totalTitles: getTitleData().length
+    };
+  };
+
   // Mock visualization data - replace with real data processing
   const mockChartData = {
     engagement: [
@@ -2002,7 +2532,10 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         {charts.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
-            onClick={() => setActiveChart(id)}
+            onClick={() => {
+              console.log('🔄 Tab clicked:', id);
+              setActiveChart(id);
+            }}
             className={`flex items-center space-x-2 px-4 py-3 rounded-lg font-medium transition-all duration-200 border ${
               activeChart === id
                 ? 'bg-blue-600 text-white border-blue-600 shadow-lg transform scale-105'
@@ -2053,6 +2586,7 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     { id: 'sentiment', label: 'Sentiment Analysis', icon: Activity },
     { id: 'correlation', label: 'Correlation Analysis', icon: TrendingUp },
     { id: 'thumbnails', label: 'Thumbnail Analysis', icon: Filter },
+    { id: 'titles', label: 'Title Analysis', icon: Type },
   ];
 
   // Helper function to determine channel genre based on exact channel configuration
@@ -2470,11 +3004,14 @@ const DataVisualization = ({ data, loading, darkMode }) => {
   };
 
   const renderChart = () => {
+    console.log('🔍 renderChart called with activeChart:', activeChart);
+    
     const chartProps = {
       width: '100%',
       height: 500,
     };
 
+    console.log('🔍 About to enter switch statement with activeChart:', activeChart);
     switch (activeChart) {
       case 'engagement':
         const engagementData = getChartData('engagement') || mockChartData.engagement;
@@ -7154,6 +7691,642 @@ const DataVisualization = ({ data, loading, darkMode }) => {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        );
+
+      case 'titles':
+        const titleKPIs = generateTitleKPIs();
+        const titleWords = analyzeTitleWords();
+        const titlePatterns = analyzeTitlePatterns();
+        const titleLeaderboard = generateTitleLeaderboard();
+        const titleLengthAnalysis = calculateTitleLengthAnalysis();
+        
+        return (
+          <div 
+            className={`chart-section w-full overflow-y-auto overflow-x-hidden transition-all duration-300 ${
+              darkMode ? 'bg-gray-900' : 'bg-gray-50'
+            } ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}
+            style={{ height: isFullscreen ? '100vh' : '500px', maxHeight: isFullscreen ? '100vh' : '500px' }}
+          >
+            <div className="w-full space-y-6 p-6 pb-96">
+              <div className={`sticky top-0 py-4 z-10 ${
+                darkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'
+              } border-b`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className={`text-2xl font-bold mb-2 ${
+                      darkMode ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      📝 Title Analysis
+                    </h3>
+                    <p className={`text-sm ${
+                      darkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Analyzing title patterns, word performance, and optimization opportunities
+                    </p>
+                  </div>
+                  
+                  {/* Fullscreen Toggle Button */}
+                  <button
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      darkMode
+                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300 border border-gray-600'
+                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300'
+                    }`}
+                  >
+                    {isFullscreen ? (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21l4-4 4 4" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 3l-4 4-4-4" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
+                {/* Controls */}
+                <div className="flex flex-wrap gap-4 mt-4">
+                  {/* View Toggle */}
+                  <div className={`inline-flex rounded-lg p-1 ${
+                    darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                  }`}>
+                    <button
+                      onClick={() => setTitleView('wordcloud')}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        titleView === 'wordcloud'
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : darkMode
+                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                      }`}
+                    >
+                      ☁️ Word Cloud
+                    </button>
+                    <button
+                      onClick={() => setTitleView('structures')}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        titleView === 'structures'
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : darkMode
+                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                      }`}
+                    >
+                      🏗️ Winning Structures
+                    </button>
+                    <button
+                      onClick={() => setTitleView('leaderboard')}
+                      className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                        titleView === 'leaderboard'
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : darkMode
+                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                      }`}
+                    >
+                      🏆 Title Leaderboard
+                    </button>
+                  </div>
+
+                  {/* Metric Toggle */}
+                  <div className={`inline-flex rounded-lg p-1 ${
+                    darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                  }`}>
+                    <button
+                      onClick={() => setTitleMetric('rqs')}
+                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        titleMetric === 'rqs'
+                          ? 'bg-green-600 text-white shadow-sm'
+                          : darkMode
+                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                      }`}
+                    >
+                      ⭐ RQS
+                    </button>
+                    <button
+                      onClick={() => setTitleMetric('views')}
+                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        titleMetric === 'views'
+                          ? 'bg-green-600 text-white shadow-sm'
+                          : darkMode
+                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                      }`}
+                    >
+                      👁️ Views
+                    </button>
+                    <button
+                      onClick={() => setTitleMetric('like_ratio')}
+                      className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                        titleMetric === 'like_ratio'
+                          ? 'bg-green-600 text-white shadow-sm'
+                          : darkMode
+                            ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                      }`}
+                    >
+                      👍 Like Ratio
+                    </button>
+                  </div>
+
+                  {/* Word Mode (for word cloud) */}
+                  {titleView === 'wordcloud' && (
+                    <div className={`inline-flex rounded-lg p-1 ${
+                      darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+                    }`}>
+                      <button
+                        onClick={() => setTitleWordMode('unigrams')}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                          titleWordMode === 'unigrams'
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Single Words
+                      </button>
+                      <button
+                        onClick={() => setTitleWordMode('bigrams')}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                          titleWordMode === 'bigrams'
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Word Pairs
+                      </button>
+                      <button
+                        onClick={() => setTitleWordMode('both')}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                          titleWordMode === 'both'
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : darkMode
+                              ? 'text-gray-300 hover:text-white hover:bg-gray-700'
+                              : 'text-gray-500 hover:text-gray-700 hover:bg-white'
+                        }`}
+                      >
+                        Both
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Min-N Slider */}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Min samples: {titleMinN}
+                    </span>
+                    <input
+                      type="range"
+                      min="5"
+                      max="50"
+                      value={titleMinN}
+                      onChange={(e) => setTitleMinN(parseInt(e.target.value))}
+                      className="w-24"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* KPI Strip */}
+              {titleKPIs && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className={`${darkMode ? 'card-dark' : 'card'} p-4`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Top Word Driver</p>
+                        <p className="text-xl font-bold">{titleKPIs.topWord?.word || 'N/A'}</p>
+                        <p className={`text-sm ${titleKPIs.topWord?.lift > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {titleKPIs.topWord?.liftPercent > 0 ? '+' : ''}{titleKPIs.topWord?.liftPercent?.toFixed(1) || 0}% boost
+                        </p>
+                      </div>
+                      <div className="text-2xl">📈</div>
+                    </div>
+                  </div>
+
+                  <div className={`${darkMode ? 'card-dark' : 'card'} p-4`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Top Structure</p>
+                        <p className="text-lg font-bold truncate">{titleKPIs.topPattern?.template || 'N/A'}</p>
+                        <p className={`text-sm ${titleKPIs.topPattern?.lift > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {titleKPIs.topPattern?.liftPercent > 0 ? '+' : ''}{titleKPIs.topPattern?.liftPercent?.toFixed(1) || 0}% advantage
+                        </p>
+                      </div>
+                      <div className="text-2xl">🏗️</div>
+                    </div>
+                  </div>
+
+                  <div className={`${darkMode ? 'card-dark' : 'card'} p-4`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Sweet Spot</p>
+                        <p className="text-xl font-bold">{titleKPIs.sweetSpot?.range || 'N/A'} chars</p>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          {titleKPIs.sweetSpot?.count || 0} titles
+                        </p>
+                      </div>
+                      <div className="text-2xl">🎯</div>
+                    </div>
+                  </div>
+
+                  <div className={`${darkMode ? 'card-dark' : 'card'} p-4`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Total Titles</p>
+                        <p className="text-xl font-bold">{titleKPIs.totalTitles?.toLocaleString() || 0}</p>
+                        <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                          Analyzed
+                        </p>
+                      </div>
+                      <div className="text-2xl">📝</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Title Length Sweet Spot Chart */}
+              {titleLengthAnalysis && (
+                <div className={`${darkMode ? 'card-dark' : 'card'} p-6`}>
+                  <h4 className="text-lg font-semibold mb-4">📏 Title Length vs Performance</h4>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={titleLengthAnalysis.binData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#374151' : '#E5E7EB'} />
+                        <XAxis 
+                          dataKey="range" 
+                          stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                          fontSize={12}
+                        />
+                        <YAxis 
+                          stroke={darkMode ? '#9CA3AF' : '#6B7280'}
+                          fontSize={12}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: darkMode ? '#1F2937' : '#FFFFFF',
+                            border: `1px solid ${darkMode ? '#374151' : '#E5E7EB'}`,
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar 
+                          dataKey="avgMetric" 
+                          fill="#3B82F6"
+                          name={`Avg ${titleMetric.toUpperCase()}`}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="mt-4 text-sm text-gray-500">
+                    Sweet spot: <strong>{titleLengthAnalysis.sweetSpot?.range} characters</strong> with{' '}
+                    <strong>{titleLengthAnalysis.sweetSpot?.avgMetric?.toFixed(titleMetric === 'views' ? 3 : 2)}</strong> avg {titleMetric === 'views' ? 'view ratio' : titleMetric.toUpperCase()}
+                  </div>
+                </div>
+              )}
+
+              {/* Main Content Area */}
+              {titleView === 'wordcloud' && titleWords && (
+                <div className={`${darkMode ? 'card-dark' : 'card'} p-6`}>
+                  <h4 className="text-lg font-semibold mb-4">☁️ Title Word Cloud</h4>
+                  
+                  {/* Word Cloud Container */}
+                  <div className="mb-6">
+                    {titleWords[titleWordMode === 'both' ? 'combined' : titleWordMode]?.length > 0 ? (
+                      <div className="flex flex-wrap justify-center gap-2 p-6 min-h-[300px] items-center">
+                        {titleWords[titleWordMode === 'both' ? 'combined' : titleWordMode]
+                          .slice(0, 50)
+                          .map((word, index) => {
+                            // Calculate font size based on frequency and performance with strict limits
+                            const maxCount = titleWords[titleWordMode === 'both' ? 'combined' : titleWordMode][0]?.count || 1;
+                            const minCount = titleWords[titleWordMode === 'both' ? 'combined' : titleWordMode][titleWords[titleWordMode === 'both' ? 'combined' : titleWordMode].length - 1]?.count || 1;
+                            
+                            // Much tighter size range (0.8rem to 1.4rem max) for better control
+                            const countRatio = (word.count - minCount) / (maxCount - minCount || 1);
+                            const baseFontSize = 0.8 + (countRatio * 0.6); // 0.8rem to 1.4rem range
+                            const cappedFontSize = Math.min(Math.max(baseFontSize, 0.8), 1.4); // Strict bounds
+                            
+                            // Performance boost affects opacity and color intensity
+                            const performanceBoost = word.liftPercent || 0;
+                            const isPositive = performanceBoost > 0;
+                            const intensity = Math.min(Math.abs(performanceBoost) / 50, 1); // Cap at 50% for full intensity
+                            
+                            // Color based on performance
+                            let colorClass = '';
+                            let bgColorClass = '';
+                            if (performanceBoost > 20) {
+                              colorClass = 'text-emerald-600 font-bold';
+                              bgColorClass = darkMode ? 'bg-emerald-900 border-emerald-700' : 'bg-emerald-50 border-emerald-300';
+                            } else if (performanceBoost > 5) {
+                              colorClass = 'text-green-600 font-semibold';
+                              bgColorClass = darkMode ? 'bg-green-900 border-green-700' : 'bg-green-50 border-green-300';
+                            } else if (performanceBoost > -5) {
+                              colorClass = darkMode ? 'text-gray-300' : 'text-gray-700';
+                              bgColorClass = darkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-gray-300';
+                            } else if (performanceBoost > -20) {
+                              colorClass = 'text-orange-600';
+                              bgColorClass = darkMode ? 'bg-orange-900 border-orange-700' : 'bg-orange-50 border-orange-300';
+                            } else {
+                              colorClass = 'text-red-600';
+                              bgColorClass = darkMode ? 'bg-red-900 border-red-700' : 'bg-red-50 border-red-300';
+                            }
+                            
+                            return (
+                              <div
+                                key={`${word.word || word.bigram}-${index}`}
+                                className={`
+                                  inline-block px-3 py-2 m-1 rounded-lg border transition-all duration-200 
+                                  hover:scale-110 hover:shadow-md cursor-pointer
+                                  ${bgColorClass}
+                                `}
+                                style={{
+                                  fontSize: `${cappedFontSize}rem`,
+                                  lineHeight: '1.2'
+                                }}
+                                title={`"${word.word || word.bigram}" - Used ${word.count} times, ${performanceBoost > 0 ? '+' : ''}${performanceBoost.toFixed(1)}% boost vs avg ${titleMetric === 'views' ? 'view ratio' : titleMetric}`}
+                              >
+                                <div className={`${colorClass} text-center`}>
+                                  <div className="font-medium">
+                                    {word.word || word.bigram}
+                                  </div>
+                                  <div className="text-xs opacity-75 mt-1">
+                                    {word.count}x {performanceBoost > 0 ? '+' : ''}{performanceBoost.toFixed(1)}%
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                          No words found for current filters
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Word Cloud Legend */}
+                  <div className={`mt-6 p-4 rounded-lg border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+                    <h5 className="text-sm font-medium mb-3">Legend</h5>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded border ${darkMode ? 'bg-emerald-900 border-emerald-700' : 'bg-emerald-50 border-emerald-300'}`}></div>
+                        <span>Excellent (+20%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded border ${darkMode ? 'bg-green-900 border-green-700' : 'bg-green-50 border-green-300'}`}></div>
+                        <span>Good (+5%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded border ${darkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-100 border-gray-300'}`}></div>
+                        <span>Average (±5%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded border ${darkMode ? 'bg-orange-900 border-orange-700' : 'bg-orange-50 border-orange-300'}`}></div>
+                        <span>Below (-5%)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded border ${darkMode ? 'bg-red-900 border-red-700' : 'bg-red-50 border-red-300'}`}></div>
+                        <span>Poor (-20%)</span>
+                      </div>
+                    </div>
+                    <p className="text-xs mt-3 opacity-75">
+                      💡 Word size = frequency, color = performance boost vs average. Hover for details.
+                    </p>
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div className="mt-4 text-sm text-center">
+                    <p className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                      Found <strong>{titleWords[titleWordMode === 'both' ? 'combined' : titleWordMode]?.length || 0}</strong> words/phrases
+                      {titleWordMode === 'both' && (
+                        <span> ({titleWords.unigrams?.length || 0} single words, {titleWords.bigrams?.length || 0} word pairs)</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {titleView === 'structures' && titlePatterns && (
+                <div className={`${darkMode ? 'card-dark' : 'card'} p-6`}>
+                  <h4 className="text-lg font-semibold mb-4">🏗️ Winning Title Structures</h4>
+                  <div className="space-y-4">
+                    {titlePatterns.slice(0, 10).map((pattern, index) => (
+                      <div 
+                        key={pattern.id}
+                        className={`p-4 rounded-lg border ${
+                          darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'
+                        } hover:shadow-md transition-all cursor-pointer`}
+                        onClick={() => setSelectedTitlePattern(pattern)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-lg font-bold text-blue-500">#{index + 1}</span>
+                              <h5 className="font-semibold text-lg">{pattern.template}</h5>
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                darkMode ? 'bg-purple-900 text-purple-200' : 'bg-purple-100 text-purple-800'
+                              }`}>
+                                {pattern.family}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm">
+                              <span className={`flex items-center gap-1 ${
+                                pattern.liftPercent > 0 ? 'text-green-500' : 'text-red-500'
+                              }`}>
+                                <span>📈</span>
+                                {pattern.liftPercent > 0 ? '+' : ''}{pattern.liftPercent.toFixed(1)}% boost
+                              </span>
+                              <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                📊 {pattern.count} samples
+                              </span>
+                              <span className={darkMode ? 'text-gray-400' : 'text-gray-600'}>
+                                ⭐ {pattern.avgMetric.toFixed(2)} avg {titleMetric}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-gray-400">→</div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {pattern.examples.slice(0, 2).map((example, i) => (
+                            <span 
+                              key={i}
+                              className={`px-2 py-1 text-xs rounded-full ${
+                                darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                              }`}
+                            >
+                              {example.title.length > 45 ? example.title.substring(0, 42) + '...' : example.title}
+                            </span>
+                          ))}
+                          {pattern.examples.length > 2 && (
+                            <span className={`px-2 py-1 text-xs rounded-full italic ${
+                              darkMode ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'
+                            }`}>
+                              +{pattern.examples.length - 2} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {titleView === 'leaderboard' && titleLeaderboard && (
+                <div className={`${darkMode ? 'card-dark' : 'card'} p-6`}>
+                  <h4 className="text-lg font-semibold mb-4">🏆 Title Leaderboard</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className={`border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                          <th className="text-left py-3 px-2">#</th>
+                          <th className="text-left py-3 px-2">Title</th>
+                          <th className="text-left py-3 px-2">Channel</th>
+                          <th className="text-left py-3 px-2">{titleMetric === 'views' ? 'VIEW RATIO' : titleMetric.toUpperCase()}</th>
+                          <th className="text-left py-3 px-2">Length</th>
+                          <th className="text-left py-3 px-2">Style</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {titleLeaderboard.slice(0, 20).map((item, index) => (
+                          <tr 
+                            key={item.video_id || index}
+                            className={`border-b ${
+                              darkMode ? 'border-gray-800 hover:bg-gray-800' : 'border-gray-100 hover:bg-gray-50'
+                            } transition-colors`}
+                          >
+                            <td className="py-3 px-2 text-center">
+                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                                index === 0 ? 'bg-yellow-500 text-white' :
+                                index === 1 ? 'bg-gray-400 text-white' :
+                                index === 2 ? 'bg-amber-600 text-white' :
+                                darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'
+                              }`}>
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2">
+                              <div className="max-w-xs">
+                                <p className="font-medium truncate" title={item.title}>
+                                  {item.title}
+                                </p>
+                                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                  {item.wordCount} words
+                                </p>
+                              </div>
+                            </td>
+                            <td className="py-3 px-2">
+                              <span className={`px-2 py-1 text-xs rounded-full ${
+                                darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {item.channel}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2 font-bold">
+                              {typeof item.metric === 'number' 
+                                ? titleMetric === 'views' 
+                                  ? item.metric.toFixed(3) // View ratio shown with 3 decimal places
+                                  : item.metric.toLocaleString() 
+                                : 'N/A'}
+                            </td>
+                            <td className="py-3 px-2 text-sm">
+                              {item.length} chars
+                            </td>
+                            <td className="py-3 px-2">
+                              <div className="flex flex-wrap gap-1">
+                                {item.badges.slice(0, 3).map((badge, i) => (
+                                  <span 
+                                    key={i}
+                                    className={`px-1 py-0.5 text-xs rounded ${
+                                      darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+                                    }`}
+                                  >
+                                    {badge}
+                                  </span>
+                                ))}
+                                {item.badges.length > 3 && (
+                                  <span className={`px-1 py-0.5 text-xs rounded ${
+                                    darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-500'
+                                  }`}>
+                                    +{item.badges.length - 3}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+
+      case 'titles':
+        console.log('🎯 TITLES CASE HIT!');
+        console.log('📝 Title Analysis case triggered!');
+        
+        const titleData = getTitleData();
+        console.log('📝 Title data retrieved:', titleData?.length || 0, 'titles');
+        
+        const wordAnalysis = analyzeTitleWords(titleData);
+        console.log('📝 Word analysis complete:', wordAnalysis?.topWords?.length || 0, 'words');
+        
+        return (
+          <div className="space-y-6">
+            {/* Simple debug info */}
+            <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <div className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                Debug: Found {titleData?.length || 0} titles, analyzed {wordAnalysis?.topWords?.length || 0} words
+              </div>
+            </div>
+
+            {/* Word Cloud */}
+            <div className={`p-6 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow`}>
+              <h3 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Title Word Cloud
+              </h3>
+              
+              {wordAnalysis?.topWords?.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {wordAnalysis.topWords.slice(0, 20).map((word, index) => (
+                    <div
+                      key={word.word}
+                      className={`p-3 rounded-lg text-center ${
+                        darkMode ? 'bg-gray-700' : 'bg-gray-100'
+                      }`}
+                      style={{
+                        fontSize: `${Math.max(0.8, Math.min(1.5, word.count / 10))}rem`
+                      }}
+                    >
+                      <div className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                        {word.word}
+                      </div>
+                      <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {word.count} uses
+                      </div>
+                      <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {word.avgMetric?.toFixed(1) || 'N/A'} avg {titleMetric}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`text-center py-8 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  No word data available. Check console for debugging info.
+                </div>
+              )}
             </div>
           </div>
         );

@@ -1,9 +1,0 @@
-
-- Data visualization frontend - WANT TO PRESENT THE DATA ADJUSTABLE AND FILTERABLE BY THE GENRE, CHANNEL TIER, GENRE TIER - WANT TO VISUALIZE THE DATA, 
-- DASHBOARD WANT IT ADJUSTABLE AND FILTERABLE BY GENRE, CHANNEL TIER, GENRE TIER, WANT IT TO INCLUDE THE ABILITY TO CLICK ON EACH OF THE CARDS AND SHOW THE VIDEOS METRICS THAT CAN BE FILTERED AND ORGANIZED WITH THE DEFAULT BEING ORGANIZED BY RQS
-- WANT TO BE ABLE TO COMPARE ALL 5 GENRES, CHANNEL TIER, GENRE TIER SEPARATELY 
-- visualization of the color mappings for the thumbnails using the data from the analysis
-- thumbnail heatmap visualization using the data from the analysis
-- visualization of the title names using a word cloud or similar representation
-- visualization of the thumbnail text using a word cloud or similar representation
-- word cloud visualization for sentimental analysis for comments
