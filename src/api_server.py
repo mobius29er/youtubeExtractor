@@ -156,8 +156,6 @@ class DataLoader:
                     self.processed_data['average_rgb'] = '[128, 128, 128]'
                     self.processed_data['face_area_percentage'] = 0.0
                     self.processed_data['comment_texts'] = '[]'
-                    self.processed_data['average_rgb'] = '[128, 128, 128]'
-                    self.processed_data['face_area_percentage'] = 0.0
         except Exception as e:
             print(f"❌ Error loading RQS/sentiment/color data: {e}")
             # Add default columns on error
