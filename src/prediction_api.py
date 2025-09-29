@@ -358,7 +358,7 @@ app = FastAPI(title="YouTube Performance Predictor", version="1.0.0")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # In production, specify your dashboard domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
