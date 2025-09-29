@@ -30,11 +30,17 @@ RUN npm run build && echo "✅ Frontend build successful" || (echo "❌ Frontend
 WORKDIR /app
 COPY src/ ./src/
 
+# Copy data files
+COPY extracted_data/ ./extracted_data/
+
 # Create dist directory and copy built frontend
 RUN mkdir -p dist && cp -r frontend/dist/* dist/
 
 # Verify frontend was built successfully
 RUN ls -la dist/ && echo "Frontend files:" && ls -la dist/assets/ || echo "No assets directory found"
+
+# Verify data files are copied
+RUN echo "📊 Data files:" && ls -la extracted_data/ && echo "✅ Data files copied successfully" || echo "❌ No data files found"
 
 # Expose port
 EXPOSE 8000
