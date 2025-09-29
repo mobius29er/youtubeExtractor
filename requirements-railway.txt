@@ -1,0 +1,19 @@
+# Optimized requirements.txt for Railway deployment
+# Core web framework only - removed heavy ML dependencies
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.20
+python-dotenv==1.0.1
+requests==2.31.0
+
+# Essential data handling (lightweight versions)
+pandas==2.2.2
+numpy==1.26.4
+
+# Logging
+rich==13.7.1
+
+# Optional: Add back ML libraries only if needed
+# scikit-learn==1.4.2
+# matplotlib==3.8.4
+# opencv-python==4.9.0.80
