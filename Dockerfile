@@ -3,16 +3,13 @@ FROM node:18-slim as frontend-builder
 
 WORKDIR /app
 
-# Copy package files and lock file
-COPY frontend/package.json frontend/package-lock.json ./
+# Copy frontend package files
+COPY frontend/package*.json ./frontend/
+WORKDIR /app/frontend
+RUN npm install
 
-# Install dependencies
-RUN npm install --omit=dev
-
-# Copy frontend source
+# Copy frontend source and build
 COPY frontend/ .
-
-# Build frontend
 RUN npm run build && echo "✅ Frontend build successful" || (echo "❌ Frontend build failed" && exit 1)
 
 # Python stage for dashboard API
