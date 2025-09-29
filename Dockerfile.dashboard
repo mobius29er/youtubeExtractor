@@ -1,5 +1,5 @@
 # Multi-stage build for Dashboard Service
-FROM node:18-slim as frontend-builder
+FROM node:20-slim as frontend-builder
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ COPY frontend/ .
 RUN npm run build && echo "✅ Frontend build successful" || (echo "❌ Frontend build failed" && exit 1)
 
 # Python stage for dashboard API
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
