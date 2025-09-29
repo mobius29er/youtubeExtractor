@@ -628,8 +628,31 @@ async def refresh_data():
         raise HTTPException(status_code=500, detail=f"Error refreshing data: {str(e)}")
 
 # Serve frontend static files in production
-if os.path.exists("../frontend/dist"):
-    app.mount("/", StaticFiles(directory="../frontend/dist", html=True), name="static")
+frontend_paths = ["../dist", "../frontend/dist", "./dist", "dist"]
+frontend_dir = None
+
+for path in frontend_paths:
+    if os.path.exists(path) and os.path.isdir(path):
+        frontend_dir = path
+        print(f"✅ Found frontend files at: {frontend_dir}")
+        break
+
+if frontend_dir:
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
+    print(f"🌐 Serving frontend from: {frontend_dir}")
+else:
+    print("⚠️  No frontend build found. API-only mode.")
+    
+    @app.get("/")
+    async def frontend_fallback():
+        return {
+            "message": "YouTube Extractor API",
+            "version": "1.0.0", 
+            "status": "healthy",
+            "frontend_status": "not_built",
+            "api_docs": "/docs",
+            "timestamp": datetime.now().isoformat()
+        }
 
 if __name__ == "__main__":
     import uvicorn
