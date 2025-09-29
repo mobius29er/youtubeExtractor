@@ -426,6 +426,17 @@ async def test_endpoint():
     """Simple test endpoint"""
     return {"message": "Prediction API is working!", "timestamp": datetime.now().isoformat()}
 
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for Railway monitoring"""
+    return {
+        "service": "YouTube ML Prediction API",
+        "status": "healthy",
+        "models_loaded": len(predictor.models),
+        "version": "1.0.0",
+        "timestamp": datetime.now().isoformat()
+    }
+
 @app.get("/api/models/status")
 async def get_models_status():
     """Get status of loaded ML models"""

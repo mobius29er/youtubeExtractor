@@ -62,9 +62,10 @@ const VideoPerformancePredictor = ({ darkMode }) => {
       }
       
       // Use environment-aware URL for predictions
-      const predictionUrl = process.env.NODE_ENV === 'production' 
-        ? '/api/predict'  // Railway will handle routing between services
-        : '/api/predict'; // Vite proxy handles local development
+      const predictionBaseUrl = import.meta.env.VITE_PREDICTION_API_URL || '';
+      const predictionUrl = predictionBaseUrl 
+        ? `${predictionBaseUrl}/api/predict`
+        : '/api/predict'; // Fallback to same domain
       
       const response = await fetch(predictionUrl, {
         method: 'POST',
