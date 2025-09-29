@@ -3,11 +3,11 @@ FROM node:18-slim as frontend-builder
 
 WORKDIR /app
 
-# Copy package files
-COPY frontend/package*.json ./
+# Copy package files and lock file
+COPY frontend/package.json frontend/package-lock.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 # Copy frontend source
 COPY frontend/ .
