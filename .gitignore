@@ -38,7 +38,14 @@ pip-delete-this-directory.txt
 
 # Working Folders
 archive/
-extracted_data/
+
+# Extracted Data - exclude most files but include essentials for Railway
+extracted_data/*
+!extracted_data/api_only_complete_data.json
+!extracted_data/videos_with_features.csv
+!extracted_data/metadata_only.json
+!extracted_data/thumbnails/
+!extracted_data/models/
 
 # Node.js / Frontend Dependencies
 frontend/node_modules/

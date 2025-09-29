@@ -296,16 +296,6 @@ class DataLoader:
 # Initialize data loader
 data_loader = DataLoader()
 
-@app.get("/")
-async def root():
-    """Health check endpoint"""
-    return {
-        "message": "YouTube Extractor API", 
-        "version": "1.0.0",
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat()
-    }
-
 @app.get("/api/dashboard")
 async def get_dashboard_data():
     """Get dashboard summary data"""
@@ -627,6 +617,17 @@ async def refresh_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error refreshing data: {str(e)}")
 
+# API Health check endpoint
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "message": "YouTube Extractor API", 
+        "version": "1.0.0",
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat()
+    }
+
 # Serve frontend static files in production
 frontend_paths = ["../dist", "../frontend/dist", "./dist", "dist"]
 frontend_dir = None
@@ -638,6 +639,7 @@ for path in frontend_paths:
         break
 
 if frontend_dir:
+    # Mount static files at root - this will serve index.html for all non-API routes
     app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
     print(f"🌐 Serving frontend from: {frontend_dir}")
 else:
