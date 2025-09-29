@@ -24,7 +24,7 @@ RUN npm install
 
 # Copy frontend source and build
 COPY frontend/ .
-RUN npm run build
+RUN npm run build && echo "✅ Frontend build successful" || (echo "❌ Frontend build failed" && exit 1)
 
 # Go back to app directory and copy backend
 WORKDIR /app
@@ -33,8 +33,8 @@ COPY src/ ./src/
 # Create dist directory and copy built frontend
 RUN mkdir -p dist && cp -r frontend/dist/* dist/
 
-# Create minimal fallback if frontend build fails
-RUN echo '<!DOCTYPE html><html><head><title>YouTube Extractor</title></head><body><h1>YouTube Extractor API</h1><p>Backend running successfully!</p><a href="/docs">View API Documentation</a></body></html>' > dist/index.html || true
+# Verify frontend was built successfully
+RUN ls -la dist/ && echo "Frontend files:" && ls -la dist/assets/ || echo "No assets directory found"
 
 # Expose port
 EXPOSE 8000
