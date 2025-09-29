@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Prediction API</title>
+</head>
+<body>
+    <h1>Test Prediction API Connection</h1>
+    <button onclick="testAPI()">Test API Connection</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Test the health endpoint first
+                console.log('Testing health endpoint...');
+                const healthResponse = await fetch('https://virtuous-insight-production.up.railway.app/api/health');
+                console.log('Health response status:', healthResponse.status);
+                
+                if (healthResponse.ok) {
+                    const healthData = await healthResponse.json();
+                    resultDiv.innerHTML = `<p style="color: green;">✅ Health check successful: ${JSON.stringify(healthData)}</p>`;
+                    
+                    // Now test the predict endpoint
+                    console.log('Testing predict endpoint...');
+                    const formData = new FormData();
+                    formData.append('title', '24 hours in adoration');
+                    formData.append('genre', 'challenge_stunts');
+                    formData.append('subscriber_count', '10000');
+                    
+                    const predictResponse = await fetch('https://virtuous-insight-production.up.railway.app/api/predict', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    console.log('Predict response status:', predictResponse.status);
+                    
+                    if (predictResponse.ok) {
+                        const predictData = await predictResponse.json();
+                        resultDiv.innerHTML += `<p style="color: green;">✅ Prediction successful: ${JSON.stringify(predictData, null, 2)}</p>`;
+                    } else {
+                        const errorText = await predictResponse.text();
+                        resultDiv.innerHTML += `<p style="color: red;">❌ Prediction failed: ${predictResponse.status} - ${errorText}</p>`;
+                    }
+                } else {
+                    const errorText = await healthResponse.text();
+                    resultDiv.innerHTML = `<p style="color: red;">❌ Health check failed: ${healthResponse.status} - ${errorText}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p style="color: red;">❌ Network error: ${error.message}</p>`;
+                console.error('Full error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

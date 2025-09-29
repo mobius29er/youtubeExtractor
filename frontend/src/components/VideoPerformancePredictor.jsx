@@ -62,7 +62,7 @@ const VideoPerformancePredictor = ({ darkMode }) => {
       }
       
       // Use environment-aware URL for predictions
-      const predictionBaseUrl = import.meta.env.VITE_PREDICTION_API_URL || '';
+      const predictionBaseUrl = import.meta.env.VITE_PREDICTION_API_URL || 'https://virtuous-insight-production-cc49.up.railway.app';
       const predictionUrl = predictionBaseUrl 
         ? `${predictionBaseUrl}/api/predict`
         : '/api/predict'; // Fallback to same domain
