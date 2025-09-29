@@ -617,6 +617,72 @@ async def refresh_data():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error refreshing data: {str(e)}")
 
+@app.get("/api/services/status")
+async def get_services_status():
+    """Get status of all services (dashboard + prediction API)"""
+    import requests
+    
+    services_status = {
+        "dashboard": {
+            "name": "YouTube Analytics Dashboard",
+            "status": "healthy",
+            "url": "/api/health",
+            "description": "Main dashboard API serving data visualization and analytics",
+            "docs": "/docs",
+            "endpoints": ["/api/dashboard", "/api/channels", "/api/visualization"]
+        },
+        "prediction": {
+            "name": "Video Performance Predictor", 
+            "status": "unknown",
+            "url": None,
+            "description": "ML-powered video performance prediction service",
+            "docs": None,
+            "endpoints": ["/api/predict", "/api/models/status"]
+        }
+    }
+    
+    # Try to check prediction service status
+    prediction_urls = [
+        "https://youtubeextractor-prediction.up.railway.app",  # If deployed separately
+        "http://localhost:8002",  # Local development
+    ]
+    
+    for base_url in prediction_urls:
+        try:
+            response = requests.get(f"{base_url}/api/test", timeout=3)
+            if response.status_code == 200:
+                services_status["prediction"]["status"] = "healthy"
+                services_status["prediction"]["url"] = base_url
+                services_status["prediction"]["docs"] = f"{base_url}/docs"
+                break
+        except requests.exceptions.RequestException:
+            continue
+    
+    # Check if prediction is integrated locally
+    if services_status["prediction"]["status"] == "unknown":
+        try:
+            # Try to make a test prediction call to see if endpoint exists
+            test_data = {
+                'title': 'Test Video',
+                'genre': 'other', 
+                'subscriber_count': 10000
+            }
+            response = requests.post("http://localhost:8000/api/predict", data=test_data, timeout=3)
+            if response.status_code in [200, 400, 422]:  # Any response means endpoint exists
+                services_status["prediction"]["status"] = "integrated"
+                services_status["prediction"]["url"] = "http://localhost:8000"
+                services_status["prediction"]["docs"] = "/docs"
+        except requests.exceptions.RequestException:
+            services_status["prediction"]["status"] = "not_found"
+    
+    return {
+        "services": services_status,
+        "total_services": len(services_status),
+        "healthy_services": len([s for s in services_status.values() if s["status"] in ["healthy", "integrated"]]),
+        "architecture": "microservices" if any(s["status"] == "healthy" for s in services_status.values() if s["name"] != "YouTube Analytics Dashboard") else "monolithic",
+        "timestamp": datetime.now().isoformat()
+    }
+
 # API Health check endpoint
 @app.get("/api/health")
 async def health_check():

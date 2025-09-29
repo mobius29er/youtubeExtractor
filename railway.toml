@@ -1,22 +1,6 @@
-# Railway Configuration for Multi-Service Deployment
-version = "2"
-
 [build]
 builder = "dockerfile"
 
-[services.dashboard]
-name = "dashboard"
-dockerfile = "Dockerfile.dashboard"
-port = 8000
-healthcheck = "/api/health"
-restartPolicy = "always"
-
-[services.prediction]
-name = "prediction"  
-dockerfile = "Dockerfile.prediction"
-port = 8002
-healthcheck = "/api/test"
-restartPolicy = "always"
-
-[environments.production]
-variables = {}
+[deploy]
+healthcheckPath = "/api/health"
+restartPolicyType = "ON_FAILURE"
