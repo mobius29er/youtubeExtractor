@@ -120,10 +120,80 @@ class YouTubePredictionSystem:
                         print(f"✅ {genre} RQS model loaded")
                 
                 print(f"🎯 Total models loaded: {len(self.models)}")
+                
+                # Validate feature counts against actual model requirements
+                self._validate_feature_counts()
             
         except Exception as e:
             print(f"❌ Error loading models: {e}")
             raise
+    
+    def _validate_feature_counts(self):
+        """Validate hard-coded feature counts against actual model requirements"""
+        print("🔍 Validating feature counts against model requirements...")
+        
+        validation_errors = []
+        updated_constants = {}
+        
+        # Validate view count model
+        if 'view_count' in self.scalers:
+            actual_features = self.scalers['view_count'].n_features_in_
+            if actual_features != self.VIEW_COUNT_FEATURES:
+                validation_errors.append(f"View count model expects {actual_features} features, but VIEW_COUNT_FEATURES is {self.VIEW_COUNT_FEATURES}")
+                updated_constants['VIEW_COUNT_FEATURES'] = actual_features
+            else:
+                print(f"✅ View count features validated: {actual_features}")
+        
+        # Validate RQS model
+        if 'rqs' in self.scalers:
+            actual_features = self.scalers['rqs'].n_features_in_
+            if actual_features != self.RQS_FEATURES:
+                validation_errors.append(f"RQS model expects {actual_features} features, but RQS_FEATURES is {self.RQS_FEATURES}")
+                updated_constants['RQS_FEATURES'] = actual_features
+            else:
+                print(f"✅ RQS features validated: {actual_features}")
+        
+        # Validate CTR model
+        if 'ctr' in self.scalers:
+            actual_features = self.scalers['ctr'].n_features_in_
+            if actual_features != self.CTR_FEATURES:
+                validation_errors.append(f"CTR model expects {actual_features} features, but CTR_FEATURES is {self.CTR_FEATURES}")
+                updated_constants['CTR_FEATURES'] = actual_features
+            else:
+                print(f"✅ CTR features validated: {actual_features}")
+        
+        # Validate embedding dimensions
+        if self.embedding_model:
+            actual_embedding_dim = self.embedding_model.get_sentence_embedding_dimension()
+            if actual_embedding_dim != self.EMBEDDING_DIM:
+                validation_errors.append(f"Embedding model produces {actual_embedding_dim} dimensions, but EMBEDDING_DIM is {self.EMBEDDING_DIM}")
+                updated_constants['EMBEDDING_DIM'] = actual_embedding_dim
+            else:
+                print(f"✅ Embedding dimensions validated: {actual_embedding_dim}")
+        
+        if validation_errors:
+            # Auto-correct the constants for this instance
+            for const_name, correct_value in updated_constants.items():
+                setattr(self, const_name, correct_value)
+                print(f"🔧 Auto-corrected {const_name} to {correct_value}")
+            
+            print("⚠️ Feature count mismatches detected and auto-corrected for this session.")
+            print("💡 Consider updating the hard-coded constants in the source code:")
+            for const_name, correct_value in updated_constants.items():
+                print(f"   {const_name} = {correct_value}")
+        else:
+            print("✅ All feature counts validated successfully")
+    
+    def _add_color_features(self, feature_list: list, colors: list) -> None:
+        """
+        Helper method to efficiently add color features to the feature list.
+        Optimizes repeated color processing logic.
+        """
+        for color in colors:
+            if isinstance(color, list) and len(color) >= 3:
+                feature_list.extend([float(color[0]), float(color[1]), float(color[2])])
+            else:
+                feature_list.extend([0.0, 0.0, 0.0])
     
     def load_embedding_model(self):
         """Load the sentence transformer model for text embeddings"""
@@ -199,28 +269,18 @@ class YouTubePredictionSystem:
             float(thumbnail_features.get('face_area_percentage', 0)),
         ])
         
+        # Process color features efficiently using helper method
         # Dominant colors (3 colors x 3 RGB values = 9 features)
         dominant_colors = thumbnail_features.get('dominant_colors', [[0,0,0], [0,0,0], [0,0,0]])
-        for color in dominant_colors:
-            if isinstance(color, list) and len(color) >= 3:
-                basic_features.extend([float(color[0]), float(color[1]), float(color[2])])
-            else:
-                basic_features.extend([0.0, 0.0, 0.0])
+        self._add_color_features(basic_features, dominant_colors)
         
         # Color palette (5 colors x 3 RGB values = 15 features)
         color_palette = thumbnail_features.get('color_palette', [[0,0,0]] * 5)
-        for color in color_palette[:5]:  # Ensure we only take first 5
-            if isinstance(color, list) and len(color) >= 3:
-                basic_features.extend([float(color[0]), float(color[1]), float(color[2])])
-            else:
-                basic_features.extend([0.0, 0.0, 0.0])
+        self._add_color_features(basic_features, color_palette[:5])  # Ensure we only take first 5
         
         # Average RGB (3 features)
         avg_rgb = thumbnail_features.get('average_rgb', [0, 0, 0])
-        if isinstance(avg_rgb, list) and len(avg_rgb) >= 3:
-            basic_features.extend([float(avg_rgb[0]), float(avg_rgb[1]), float(avg_rgb[2])])
-        else:
-            basic_features.extend([0.0, 0.0, 0.0])
+        self._add_color_features(basic_features, [avg_rgb])
         
         # Additional thumbnail features
         basic_features.extend([
@@ -446,14 +506,17 @@ class YouTubePredictionSystem:
             view_features[f'padding_feature_{len(view_features)}'] = 0.0
         feature_sets['view_count'] = pd.DataFrame([view_features])
         
+        # Sort base features once for consistent ordering across all models
+        sorted_base_features = sorted(base_features.items())
+        
         # RQS model features (1,181 features - 5 fewer than view count)
-        rqs_features = {k: v for i, (k, v) in enumerate(base_features.items()) if i < self.RQS_FEATURES}
+        rqs_features = {k: v for i, (k, v) in enumerate(sorted_base_features) if i < self.RQS_FEATURES}
         while len(rqs_features) < self.RQS_FEATURES:
             rqs_features[f'padding_feature_{len(rqs_features)}'] = 0.0
         feature_sets['rqs'] = pd.DataFrame([rqs_features])
         
         # CTR model features (796 features - much smaller set)
-        ctr_features = {k: v for i, (k, v) in enumerate(base_features.items()) if i < self.CTR_FEATURES}
+        ctr_features = {k: v for i, (k, v) in enumerate(sorted_base_features) if i < self.CTR_FEATURES}
         while len(ctr_features) < self.CTR_FEATURES:
             ctr_features[f'padding_feature_{len(ctr_features)}'] = 0.0
         feature_sets['ctr'] = pd.DataFrame([ctr_features])
