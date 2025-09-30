@@ -157,7 +157,7 @@ class YouTubePredictionSystem:
     
     def get_list_text_embedding(self, text_list) -> np.ndarray:
         """Generate embedding for a list of texts (like tags)"""
-        if not text_list or (isinstance(text_list, (int, float, str)) and pd.isna(text_list)):
+        if not text_list or (isinstance(text_list, str) and pd.isna(text_list)):
             return np.zeros(self.EMBEDDING_DIM)
         
         # Handle string representation of list
