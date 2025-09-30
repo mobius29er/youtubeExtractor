@@ -184,6 +184,17 @@ class YouTubePredictionSystem:
         else:
             print("✅ All feature counts validated successfully")
     
+    def _add_color_features(self, feature_list: list, colors: list) -> None:
+        """
+        Helper method to efficiently add color features to the feature list.
+        Optimizes repeated color processing logic.
+        """
+        for color in colors:
+            if isinstance(color, list) and len(color) >= 3:
+                feature_list.extend([float(color[0]), float(color[1]), float(color[2])])
+            else:
+                feature_list.extend([0.0, 0.0, 0.0])
+    
     def load_embedding_model(self):
         """Load the sentence transformer model for text embeddings"""
         try:
@@ -258,28 +269,18 @@ class YouTubePredictionSystem:
             float(thumbnail_features.get('face_area_percentage', 0)),
         ])
         
+        # Process color features efficiently using helper method
         # Dominant colors (3 colors x 3 RGB values = 9 features)
         dominant_colors = thumbnail_features.get('dominant_colors', [[0,0,0], [0,0,0], [0,0,0]])
-        for color in dominant_colors:
-            if isinstance(color, list) and len(color) >= 3:
-                basic_features.extend([float(color[0]), float(color[1]), float(color[2])])
-            else:
-                basic_features.extend([0.0, 0.0, 0.0])
+        self._add_color_features(basic_features, dominant_colors)
         
         # Color palette (5 colors x 3 RGB values = 15 features)
         color_palette = thumbnail_features.get('color_palette', [[0,0,0]] * 5)
-        for color in color_palette[:5]:  # Ensure we only take first 5
-            if isinstance(color, list) and len(color) >= 3:
-                basic_features.extend([float(color[0]), float(color[1]), float(color[2])])
-            else:
-                basic_features.extend([0.0, 0.0, 0.0])
+        self._add_color_features(basic_features, color_palette[:5])  # Ensure we only take first 5
         
         # Average RGB (3 features)
         avg_rgb = thumbnail_features.get('average_rgb', [0, 0, 0])
-        if isinstance(avg_rgb, list) and len(avg_rgb) >= 3:
-            basic_features.extend([float(avg_rgb[0]), float(avg_rgb[1]), float(avg_rgb[2])])
-        else:
-            basic_features.extend([0.0, 0.0, 0.0])
+        self._add_color_features(basic_features, [avg_rgb])
         
         # Additional thumbnail features
         basic_features.extend([
