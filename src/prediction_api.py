@@ -120,10 +120,69 @@ class YouTubePredictionSystem:
                         print(f"✅ {genre} RQS model loaded")
                 
                 print(f"🎯 Total models loaded: {len(self.models)}")
+                
+                # Validate feature counts against actual model requirements
+                self._validate_feature_counts()
             
         except Exception as e:
             print(f"❌ Error loading models: {e}")
             raise
+    
+    def _validate_feature_counts(self):
+        """Validate hard-coded feature counts against actual model requirements"""
+        print("🔍 Validating feature counts against model requirements...")
+        
+        validation_errors = []
+        updated_constants = {}
+        
+        # Validate view count model
+        if 'view_count' in self.scalers:
+            actual_features = self.scalers['view_count'].n_features_in_
+            if actual_features != self.VIEW_COUNT_FEATURES:
+                validation_errors.append(f"View count model expects {actual_features} features, but VIEW_COUNT_FEATURES is {self.VIEW_COUNT_FEATURES}")
+                updated_constants['VIEW_COUNT_FEATURES'] = actual_features
+            else:
+                print(f"✅ View count features validated: {actual_features}")
+        
+        # Validate RQS model
+        if 'rqs' in self.scalers:
+            actual_features = self.scalers['rqs'].n_features_in_
+            if actual_features != self.RQS_FEATURES:
+                validation_errors.append(f"RQS model expects {actual_features} features, but RQS_FEATURES is {self.RQS_FEATURES}")
+                updated_constants['RQS_FEATURES'] = actual_features
+            else:
+                print(f"✅ RQS features validated: {actual_features}")
+        
+        # Validate CTR model
+        if 'ctr' in self.scalers:
+            actual_features = self.scalers['ctr'].n_features_in_
+            if actual_features != self.CTR_FEATURES:
+                validation_errors.append(f"CTR model expects {actual_features} features, but CTR_FEATURES is {self.CTR_FEATURES}")
+                updated_constants['CTR_FEATURES'] = actual_features
+            else:
+                print(f"✅ CTR features validated: {actual_features}")
+        
+        # Validate embedding dimensions
+        if self.embedding_model:
+            actual_embedding_dim = self.embedding_model.get_sentence_embedding_dimension()
+            if actual_embedding_dim != self.EMBEDDING_DIM:
+                validation_errors.append(f"Embedding model produces {actual_embedding_dim} dimensions, but EMBEDDING_DIM is {self.EMBEDDING_DIM}")
+                updated_constants['EMBEDDING_DIM'] = actual_embedding_dim
+            else:
+                print(f"✅ Embedding dimensions validated: {actual_embedding_dim}")
+        
+        if validation_errors:
+            # Auto-correct the constants for this instance
+            for const_name, correct_value in updated_constants.items():
+                setattr(self, const_name, correct_value)
+                print(f"🔧 Auto-corrected {const_name} to {correct_value}")
+            
+            print("⚠️ Feature count mismatches detected and auto-corrected for this session.")
+            print("💡 Consider updating the hard-coded constants in the source code:")
+            for const_name, correct_value in updated_constants.items():
+                print(f"   {const_name} = {correct_value}")
+        else:
+            print("✅ All feature counts validated successfully")
     
     def load_embedding_model(self):
         """Load the sentence transformer model for text embeddings"""
@@ -447,13 +506,13 @@ class YouTubePredictionSystem:
         feature_sets['view_count'] = pd.DataFrame([view_features])
         
         # RQS model features (1,181 features - 5 fewer than view count)
-        rqs_features = {k: v for i, (k, v) in enumerate(base_features.items()) if i < self.RQS_FEATURES}
+        rqs_features = {k: v for i, (k, v) in enumerate(sorted(base_features.items())) if i < self.RQS_FEATURES}
         while len(rqs_features) < self.RQS_FEATURES:
             rqs_features[f'padding_feature_{len(rqs_features)}'] = 0.0
         feature_sets['rqs'] = pd.DataFrame([rqs_features])
         
         # CTR model features (796 features - much smaller set)
-        ctr_features = {k: v for i, (k, v) in enumerate(base_features.items()) if i < self.CTR_FEATURES}
+        ctr_features = {k: v for i, (k, v) in enumerate(sorted(base_features.items())) if i < self.CTR_FEATURES}
         while len(ctr_features) < self.CTR_FEATURES:
             ctr_features[f'padding_feature_{len(ctr_features)}'] = 0.0
         feature_sets['ctr'] = pd.DataFrame([ctr_features])
