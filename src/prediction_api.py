@@ -21,6 +21,10 @@ import cv2
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 import uvicorn
 
@@ -841,9 +845,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def root():
-    return {"message": "YouTube Performance Prediction API", "status": "active"}
+# Serve static files from frontend dist directory
+frontend_dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+if os.path.exists(frontend_dist_path):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_path, "assets")), name="assets")
+    print(f"✅ Serving static assets from: {frontend_dist_path}")
+else:
+    print(f"⚠️ Frontend dist directory not found: {frontend_dist_path}")
 
 @app.post("/api/predict")
 async def predict_video_performance(
@@ -936,14 +944,21 @@ async def predict_video_performance(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
-async def root():
-    """Root endpoint for testing API connectivity"""
-    return {
-        "service": "YouTube ML Prediction API",
-        "status": "active",
-        "models_loaded": len(predictor.models),
-        "version": "1.0.0"
-    }
+async def serve_frontend():
+    """Serve the frontend index.html for the root route"""
+    frontend_dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+    index_path = os.path.join(frontend_dist_path, 'index.html')
+    
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        return {
+            "service": "YouTube ML Prediction API",
+            "status": "active",
+            "models_loaded": len(predictor.models),
+            "version": "1.0.0",
+            "note": "Frontend not found - API mode only"
+        }
 
 @app.get("/api/test")
 async def test_endpoint():
@@ -970,6 +985,26 @@ async def get_models_status():
         "total_models": len(predictor.models),
         "status": "ready"
     }
+
+# Catch-all route for client-side routing (SPA)
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    """
+    Catch-all route to serve the frontend for client-side routing.
+    This ensures that refreshing on any frontend route returns the SPA.
+    """
+    # Skip API routes - let them return 404 if not found
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    
+    # Serve frontend for all other routes
+    frontend_dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+    index_path = os.path.join(frontend_dist_path, 'index.html')
+    
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not found")
 
 if __name__ == "__main__":
     print("🚀 Starting YouTube Performance Prediction API...")
