@@ -34,27 +34,6 @@ warnings.filterwarnings('ignore', message='.*sklearn.*')
 class YouTubePredictionSystem:
     """ML-powered prediction system for YouTube video performance"""
     
-    # Feature count constants for different model types
-    VIEW_COUNT_FEATURES = 1186
-    RQS_FEATURES = 1181
-    CTR_FEATURES = 796
-    GENRE_FEATURES = 2
-    EMBEDDING_DIM = 384
-    TEXT_FIELDS = 3  # title, thumbnail_text, tags
-    
-    # Default engagement ratios
-    DEFAULT_LIKE_ENGAGEMENT_RATE = 0.02  # 2% of subscribers typically like
-    DEFAULT_COMMENT_RATE = 0.001  # 0.1% of subscribers typically comment
-    DEFAULT_LIKE_RATIO = 0.05  # 5% like-to-view ratio
-    DEFAULT_COMMENT_RATIO = 0.001  # 0.1% comment-to-view ratio
-    DEFAULT_VIEWS_PER_SUB = 0.1  # 10% of subscribers view new videos
-    DEFAULT_RQS = 0.5  # Default retention quality score
-    DEFAULT_COMMENT_LENGTH = 25.0  # Average comment length in characters
-    
-    # Video format defaults
-    DEFAULT_ASPECT_RATIO = 1.78  # Standard 16:9 aspect ratio
-    DEFAULT_EDGE_DENSITY = 0.1  # Default thumbnail edge density
-    
     def __init__(self):
         self.models = {}
         self.scalers = {}
@@ -139,10 +118,10 @@ class YouTubePredictionSystem:
         """Generate text embedding using sentence transformer"""
         if self.embedding_model is None:
             # Return zero embedding if model not available
-            return np.zeros(self.EMBEDDING_DIM)
+            return np.zeros(384)
         
         if not text or pd.isna(text):
-            return np.zeros(self.EMBEDDING_DIM)
+            return np.zeros(384)
         
         # Truncate text if too long
         if len(text) > max_length:
@@ -153,12 +132,12 @@ class YouTubePredictionSystem:
             return embedding
         except Exception as e:
             print(f"Error generating embedding for text: {e}")
-            return np.zeros(self.EMBEDDING_DIM)
+            return np.zeros(384)
     
     def get_list_text_embedding(self, text_list) -> np.ndarray:
         """Generate embedding for a list of texts (like tags)"""
-        if not text_list or (isinstance(text_list, (int, float, str)) and pd.isna(text_list)):
-            return np.zeros(self.EMBEDDING_DIM)
+        if not text_list or pd.isna(text_list):
+            return np.zeros(384)
         
         # Handle string representation of list
         if isinstance(text_list, str):
@@ -190,7 +169,7 @@ class YouTubePredictionSystem:
             float(video_data.get('channel_subscriber_count', 0)),  # channel_subs in training
             float(video_data.get('average_comment_length', 0)),
             float(video_data.get('sentiment_score', 0)),
-            float(video_data.get('rqs', self.DEFAULT_RQS)),  # Default RQS if not provided
+            float(video_data.get('rqs', 0.5)),  # Default RQS if not provided
         ])
         
         # Thumbnail features
@@ -239,13 +218,13 @@ class YouTubePredictionSystem:
             1.0 if video_data.get('has_captions', False) else 0.0,
         ])
         
-        # Generate text embeddings (EMBEDDING_DIM features each)
+        # Generate text embeddings (384 features each)
         title_embedding = self.get_text_embedding(video_data.get('title', ''))
         thumbnail_text_embedding = self.get_text_embedding(video_data.get('thumbnail_text', ''))
         tags_embedding = self.get_list_text_embedding(video_data.get('tags', []))
         
         # Combine all features
-        # Basic features + title_embed + thumbnail_text_embed + tags_embed = total features
+        # Basic features + title_embed (384) + thumbnail_text_embed (384) + tags_embed (384) = total features
         all_features = np.concatenate([
             np.array(basic_features),
             title_embedding,
@@ -260,7 +239,7 @@ class YouTubePredictionSystem:
         print(f"   Tags embedding: {len(tags_embedding)}")
         
         # Ensure we have exactly 1,186 features by padding or truncating
-        target_features = self.VIEW_COUNT_FEATURES
+        target_features = 1186
         if len(all_features) < target_features:
             # Pad with zeros
             padding = np.zeros(target_features - len(all_features))
@@ -321,10 +300,10 @@ class YouTubePredictionSystem:
         return {
             'width': 1280,
             'height': 720,
-            'aspect_ratio': self.DEFAULT_ASPECT_RATIO,
+            'aspect_ratio': 1.78,
             'brightness': 128,
             'contrast': 50,
-            'edge_density': self.DEFAULT_EDGE_DENSITY,
+            'edge_density': 0.1,
             'red_mean': 128,
             'green_mean': 128,
             'blue_mean': 128,
@@ -365,113 +344,9 @@ class YouTubePredictionSystem:
             'number_count': number_count
         }
     
-    def create_training_compatible_features(self, title: str, genre: str, subscriber_count: int,
-                                          thumbnail_features: Optional[Dict] = None,
-                                          estimated_features: Optional[Dict] = None) -> Dict[str, pd.DataFrame]:
-        """
-        Create feature vectors compatible with each trained model.
-        Returns different feature sets for view_count, rqs, ctr, and genre models.
-        """
-        print(f"🔧 Creating training-compatible features for: '{title[:30]}...'")
-        
-        # Generate text embeddings (EMBEDDING_DIM features each)
-        title_embedding = self.get_text_embedding(title)
-        
-        # Create reasonable defaults for missing text
-        thumbnail_text = estimated_features.get('thumbnail_text', '') if estimated_features else ''
-        tags = estimated_features.get('tags', f'{genre} video youtube') if estimated_features else f'{genre} video youtube'
-        
-        thumbnail_text_embedding = self.get_text_embedding(thumbnail_text)
-        tags_embedding = self.get_text_embedding(tags)
-        
-        # Start with base features
-        base_features = {}
-        
-        # Add text embeddings (384 * 3 = 1,152 features)
-        for i in range(self.EMBEDDING_DIM):
-            base_features[f'title_embed_{i}'] = title_embedding[i]
-            base_features[f'thumbnail_text_embed_{i}'] = thumbnail_text_embedding[i]
-            base_features[f'tags_embed_{i}'] = tags_embedding[i]
-        
-        # Add core numerical features (~34 more to reach 1,186)
-        title_features = self.extract_title_features(title)
-        
-        base_features.update({
-            # Core video metrics
-            'view_count': 50000,  # Will be predicted
-            'like_count': int(subscriber_count * self.DEFAULT_LIKE_ENGAGEMENT_RATE),  # Estimated 2% engagement
-            'comment_count': int(subscriber_count * self.DEFAULT_COMMENT_RATE),  # Estimated 0.1% comment rate
-            'channel_subs': subscriber_count,
-            'like_ratio': self.DEFAULT_LIKE_RATIO,
-            'comment_ratio': self.DEFAULT_COMMENT_RATIO,
-            'views_per_subs': self.DEFAULT_VIEWS_PER_SUB,
-            'average_comment_length': self.DEFAULT_COMMENT_LENGTH,
-            'sentiment_score': 0.6,
-            'rqs': 0.3,  # Will be predicted
-            
-            # Title/content features
-            'title_length': len(title),
-            'description_length': estimated_features.get('description_length', 200) if estimated_features else 200,
-            'tags_count': len(tags.split()) if tags else 3,
-            'duration': estimated_features.get('duration', 600) if estimated_features else 600,
-            
-            # Thumbnail features
-            'thumbnail_brightness': thumbnail_features.get('brightness', 128.0) if thumbnail_features else 128.0,
-            'thumbnail_contrast': thumbnail_features.get('contrast', 50.0) if thumbnail_features else 50.0,
-            'thumbnail_edge_density': thumbnail_features.get('edge_density', self.DEFAULT_EDGE_DENSITY) if thumbnail_features else self.DEFAULT_EDGE_DENSITY,
-            'thumbnail_aspect_ratio': thumbnail_features.get('aspect_ratio', self.DEFAULT_ASPECT_RATIO) if thumbnail_features else self.DEFAULT_ASPECT_RATIO,
-            'thumbnail_red_mean': thumbnail_features.get('red_mean', 128.0) if thumbnail_features else 128.0,
-            'thumbnail_green_mean': thumbnail_features.get('green_mean', 128.0) if thumbnail_features else 128.0,
-            'thumbnail_blue_mean': thumbnail_features.get('blue_mean', 128.0) if thumbnail_features else 128.0,
-            
-            # Caption features
-            'has_captions': 1,
-            'has_english_captions': 1,
-            'has_auto_captions': 1,
-            'has_manual_captions': 0,
-        })
-        
-        # Genre one-hot encoding
-        genres = ['kids_family', 'challenge_stunts', 'gaming', 'education_science', 'catholic']
-        for g in genres:
-            base_features[f'genre_{g}'] = 1 if genre == g else 0
-        
-        # Create different feature sets for different models
-        feature_sets = {}
-        
-        # View count model features (1,186 features)
-        view_features = base_features.copy()
-        # Add remaining features to reach exactly 1,186
-        while len(view_features) < self.VIEW_COUNT_FEATURES:
-            view_features[f'padding_feature_{len(view_features)}'] = 0.0
-        feature_sets['view_count'] = pd.DataFrame([view_features])
-        
-        # RQS model features (1,181 features - 5 fewer than view count)
-        rqs_features = {k: v for i, (k, v) in enumerate(base_features.items()) if i < self.RQS_FEATURES}
-        while len(rqs_features) < self.RQS_FEATURES:
-            rqs_features[f'padding_feature_{len(rqs_features)}'] = 0.0
-        feature_sets['rqs'] = pd.DataFrame([rqs_features])
-        
-        # CTR model features (796 features - much smaller set)
-        ctr_features = {k: v for i, (k, v) in enumerate(base_features.items()) if i < self.CTR_FEATURES}
-        while len(ctr_features) < self.CTR_FEATURES:
-            ctr_features[f'padding_feature_{len(ctr_features)}'] = 0.0
-        feature_sets['ctr'] = pd.DataFrame([ctr_features])
-        
-        # Genre-specific models (only 2 features)
-        genre_features = {
-            'feature_0': subscriber_count / 1000000,  # Normalized subscriber count
-            'feature_1': len(title) / 100  # Normalized title length
-        }
-        feature_sets['genre'] = pd.DataFrame([genre_features])
-        
-        print(f"✅ Created feature sets: view_count({len(view_features)}), rqs({len(rqs_features)}), ctr({len(ctr_features)}), genre({len(genre_features)})")
-        
-        return feature_sets
-
     def create_feature_vector(self, title: str, genre: str, subscriber_count: int, 
                             thumbnail_features: Dict, estimated_features: Dict = None) -> pd.DataFrame:
-        """Create properly formatted feature vector for ML models (legacy method)"""
+        """Create properly formatted feature vector for ML models"""
         
         # Extract title features
         title_features = self.extract_title_features(title)
@@ -565,30 +440,6 @@ class YouTubePredictionSystem:
         
         return recommended_tags[:10]  # Return top 10 tags
     
-    def _predict_with_scaler(self, model_key: str, features: np.ndarray) -> float:
-        """
-        Helper method to predict using a model with optional scaler compatibility checking.
-        Eliminates duplicate scaler logic across different model types.
-        
-        Args:
-            model_key: The model/scaler key (e.g., 'view_count', 'rqs', 'ctr')
-            features: Feature array to predict on
-            
-        Returns:
-            Prediction value as float
-        """
-        if model_key not in self.models:
-            raise ValueError(f"Model '{model_key}' not found")
-            
-        # Try with scaling first if scaler available and compatible
-        if (model_key in self.scalers and 
-            features.shape[0] == self.scalers[model_key].n_features_in_):
-            scaled_features = self.scalers[model_key].transform([features])
-            return self.models[model_key].predict(scaled_features)[0]
-        else:
-            # Direct prediction without scaling
-            return self.models[model_key].predict([features])[0]
-    
     def predict_performance(self, 
                           title: str,
                           genre: str,
@@ -631,34 +482,23 @@ class YouTubePredictionSystem:
                 thumbnail_features = self.get_default_thumbnail_features()
                 print(f"🖼️ Using default thumbnail features")
             
-            # Create training-compatible feature vectors for each model type
-            print("🔧 Creating training-compatible feature vectors...")
-            feature_sets = self.create_training_compatible_features(
-                title=title,
-                genre=genre, 
-                subscriber_count=subscriber_count,
-                thumbnail_features=thumbnail_features,
-                estimated_features=video_data
-            )
+            video_data['thumbnail_features'] = thumbnail_features
+            
+            # Create the full 1,186-feature vector
+            print("🔧 Creating feature vector...")
+            feature_vector = self.create_full_feature_vector(video_data)
             
             predictions = {}
             
-            # View Count Prediction with proper feature vector
+            # View Count Prediction
             try:
-                if 'view_count' in self.models:
-                    view_features = feature_sets['view_count'].values.flatten()
-                    try:
-                        pred_views = self._predict_with_scaler('view_count', view_features)
-                        predictions['predicted_views'] = max(int(pred_views), 10)
-                        print(f"📊 Views predicted by YOUR trained model: {predictions['predicted_views']:,}")
-                    except Exception as model_error:
-                        print(f"⚠️ Model error with {len(view_features)} features: {model_error}")
-                        # Enhanced fallback prediction
-                        base_engagement = 0.05
-                        genre_mult = {'kids_family': 1.2, 'challenge_stunts': 1.1, 'gaming': 0.9, 
-                                     'education_science': 0.8, 'catholic': 0.7}.get(genre, 1.0)
-                        thumbnail_mult = 1.0 + (thumbnail_features.get('brightness', 128) - 128) / 500
-                        predictions['predicted_views'] = max(int(subscriber_count * base_engagement * genre_mult * thumbnail_mult), 10)
+                if 'view_count' in self.models and 'view_count' in self.scalers:
+                    # Scale features
+                    scaled_features = self.scalers['view_count'].transform([feature_vector])
+                    # Predict
+                    pred_views = self.models['view_count'].predict(scaled_features)[0]
+                    predictions['predicted_views'] = max(int(pred_views), 10)
+                    print(f"📊 Views predicted by ML model: {predictions['predicted_views']}")
                 else:
                     raise Exception("View count model not available")
             except Exception as e:
@@ -670,43 +510,20 @@ class YouTubePredictionSystem:
                 thumbnail_mult = 1.0 + (thumbnail_features.get('brightness', 128) - 128) / 500
                 predictions['predicted_views'] = max(int(subscriber_count * base_engagement * genre_mult * thumbnail_mult), 10)
             
-            # RQS Prediction with proper feature vector
+            # RQS Prediction
             try:
                 # Try genre-specific model first
                 genre_model_key = f'rqs_{genre}'
                 if genre_model_key in self.models:
-                    genre_features = feature_sets['genre'].values.flatten()
-                    try:
-                        pred_rqs = self.models[genre_model_key].predict([genre_features])[0]
-                        predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
-                        print(f"📈 RQS predicted by YOUR {genre} model: {predictions['predicted_rqs']:.1f}")
-                    except Exception as model_error:
-                        print(f"⚠️ Genre model error with {len(genre_features)} features: {model_error}")
-                        # Fallback to main RQS model
-                        if 'rqs' in self.models:
-                            rqs_features = feature_sets['rqs'].values.flatten()
-                            try:
-                                pred_rqs = self._predict_with_scaler('rqs', rqs_features)
-                                predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
-                                print(f"📈 RQS predicted by main model: {predictions['predicted_rqs']:.1f}")
-                            except Exception:
-                                predictions['predicted_rqs'] = 30.0
-                        else:
-                            predictions['predicted_rqs'] = 30.0
-                elif 'rqs' in self.models:
-                    rqs_features = feature_sets['rqs'].values.flatten()
-                    try:
-                        if 'rqs' in self.scalers and rqs_features.shape[0] == self.scalers['rqs'].n_features_in_:
-                            scaled_features = self.scalers['rqs'].transform([rqs_features])
-                            pred_rqs = self.models['rqs'].predict(scaled_features)[0]
-                        else:
-                            pred_rqs = self.models['rqs'].predict([rqs_features])[0]
-                            
-                        predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
-                        print(f"📈 RQS predicted by YOUR general model: {predictions['predicted_rqs']:.1f}")
-                    except Exception as model_error:
-                        print(f"⚠️ Model error with {len(rqs_features)} features: {model_error}")
-                        predictions['predicted_rqs'] = 30.0
+                    scaled_features = self.scalers['rqs'].transform([feature_vector])
+                    pred_rqs = self.models[genre_model_key].predict(scaled_features)[0]
+                    predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
+                    print(f"📈 RQS predicted by genre-specific ML model ({genre}): {predictions['predicted_rqs']:.1f}")
+                elif 'rqs' in self.models and 'rqs' in self.scalers:
+                    scaled_features = self.scalers['rqs'].transform([feature_vector])
+                    pred_rqs = self.models['rqs'].predict(scaled_features)[0]
+                    predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
+                    print(f"📈 RQS predicted by general ML model: {predictions['predicted_rqs']:.1f}")
                 else:
                     raise Exception("RQS model not available")
             except Exception as e:
@@ -716,20 +533,13 @@ class YouTubePredictionSystem:
                 thumbnail_bonus = (thumbnail_features.get('edge_density', 0.1) * 100)
                 predictions['predicted_rqs'] = max(min(base_rqs + thumbnail_bonus, 100.0), 0.0)
             
-            # CTR Prediction with proper feature vector
+            # CTR Prediction
             try:
-                if 'ctr' in self.models:
-                    ctr_features = feature_sets['ctr'].values.flatten()
-                    try:
-                        pred_ctr = self._predict_with_scaler('ctr', ctr_features)
-                        predictions['predicted_ctr'] = max(min(float(pred_ctr), 1.0), 0.0)
-                        print(f"👆 CTR predicted by YOUR model: {predictions['predicted_ctr']:.4f}")
-                    except Exception as model_error:
-                        print(f"⚠️ CTR model error with {len(ctr_features)} features: {model_error}")
-                        # Thumbnail-aware fallback
-                        base_ctr = 0.05
-                        thumbnail_mult = 1.0 + (thumbnail_features.get('brightness', 128) - 128) / 1000
-                        predictions['predicted_ctr'] = max(min(base_ctr * thumbnail_mult, 1.0), 0.0)
+                if 'ctr' in self.models and 'ctr' in self.scalers:
+                    scaled_features = self.scalers['ctr'].transform([feature_vector])
+                    pred_ctr = self.models['ctr'].predict(scaled_features)[0]
+                    predictions['predicted_ctr'] = max(min(float(pred_ctr), 1.0), 0.0)
+                    print(f"👆 CTR predicted by ML model: {predictions['predicted_ctr']:.4f}")
                 else:
                     raise Exception("CTR model not available")
             except Exception as e:
@@ -740,12 +550,10 @@ class YouTubePredictionSystem:
                 predictions['predicted_ctr'] = max(min(base_ctr + contrast_boost, 1.0), 0.0)
             
             # Add confidence scores and metadata
-            total_features = sum(len(fs.columns) for fs in feature_sets.values())
             predictions.update({
                 'confidence_score': 0.85,  # High confidence with ML models
                 'model_version': '2.0',
-                'features_used': total_features,
-                'feature_breakdown': {name: len(fs.columns) for name, fs in feature_sets.items()},
+                'features_used': len(feature_vector),
                 'thumbnail_analyzed': thumbnail_data is not None,
                 'genre_specific_model': f'rqs_{genre}' in self.models
             })
@@ -761,6 +569,91 @@ class YouTubePredictionSystem:
                 'predicted_ctr': 0.03,
                 'confidence_score': 0.3,
                 'error': str(e)
+            }
+
+# Initialize prediction system
+                    
+                    if 120 <= brightness <= 160 and contrast > 35:
+                        thumbnail_factor = 20  # Excellent thumbnail
+                    elif 100 <= brightness <= 180 and contrast > 25:
+                        thumbnail_factor = 15  # Good thumbnail
+                    else:
+                        thumbnail_factor = 10  # Decent thumbnail
+                    
+                    print(f"🖼️ Thumbnail RQS bonus: +{thumbnail_factor} points")
+                else:
+                    thumbnail_factor = 5  # Default thumbnail penalty
+                
+                predicted_rqs = base_rqs + channel_factor + title_factor + thumbnail_factor
+                predictions['predicted_rqs'] = round(min(max(predicted_rqs, 10), 95), 1)
+                print(f"📈 RQS predicted (enhanced): {predictions['predicted_rqs']}% (base={base_rqs} + channel={channel_factor} + title={title_factor} + thumb={thumbnail_factor})")
+                
+            except Exception as e:
+                print(f"⚠️ RQS prediction error: {e}")
+                predictions['predicted_rqs'] = 50.0
+            
+            # Enhanced CTR prediction with thumbnail analysis
+            try:
+                base_ctr = 2.0  # YouTube average
+                
+                # Genre-specific CTR patterns
+                genre_ctr_modifiers = {
+                    'kids_family': 1.2,      # Kids content has higher CTR
+                    'challenge_stunts': 1.3,  # Thumbnails very important for challenges
+                    'gaming': 1.0,           # Standard CTR
+                    'education_science': 0.9, # Lower but more targeted CTR
+                    'catholic': 0.8          # Niche but engaged audience
+                }
+                
+                genre_ctr_mult = genre_ctr_modifiers.get(genre, 1.0)
+                
+                # Thumbnail impact on CTR (this is where thumbnails REALLY matter!)
+                thumbnail_ctr_bonus = 0
+                if thumbnail_data:
+                    brightness = thumbnail_features.get('brightness', 128)
+                    contrast = thumbnail_features.get('contrast', 50)
+                    edge_density = thumbnail_features.get('edge_density', 0.1)
+                    
+                    # High-CTR thumbnails: bright, high contrast, visually interesting
+                    if brightness > 140 and contrast > 50 and edge_density > 0.08:
+                        thumbnail_ctr_bonus = 1.5  # Eye-catching thumbnail
+                    elif brightness > 120 and contrast > 35:
+                        thumbnail_ctr_bonus = 0.8  # Good thumbnail
+                    else:
+                        thumbnail_ctr_bonus = 0.3  # Decent thumbnail
+                    
+                    print(f"🖼️ Thumbnail CTR impact: +{thumbnail_ctr_bonus:.1f}%")
+                else:
+                    thumbnail_ctr_bonus = -0.5  # No custom thumbnail penalty
+                
+                predicted_ctr = base_ctr * genre_ctr_mult + thumbnail_ctr_bonus
+                predictions['predicted_ctr'] = round(max(min(predicted_ctr, 15), 0.5), 2)
+                print(f"👆 CTR predicted (enhanced): {predictions['predicted_ctr']}% (base={base_ctr} x {genre_ctr_mult} + thumb={thumbnail_ctr_bonus})")
+                
+            except Exception as e:
+                print(f"⚠️ CTR prediction error: {e}")
+                predictions['predicted_ctr'] = 2.0
+            
+            # Generate recommended tags
+            predictions['recommended_tags'] = self.generate_recommended_tags(
+                title, genre, subscriber_count
+            )
+            
+            print(f"✅ Prediction completed successfully")
+            return predictions
+            
+        except Exception as e:
+            print(f"❌ Prediction error: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            return {
+                'error': str(e),
+                'predicted_views': int(subscriber_count * 0.05),
+                'predicted_rqs': 50.0,
+                'predicted_ctr': 2.0 if genre != 'kids_family' else None,
+                'recommended_tags': ['entertainment', 'video', 'content'],
+                'confidence': {'views': 'Low', 'rqs': 'Low', 'ctr': 'Low'}
             }
 
 # Initialize prediction system
