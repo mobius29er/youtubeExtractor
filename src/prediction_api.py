@@ -505,14 +505,17 @@ class YouTubePredictionSystem:
             view_features[f'padding_feature_{len(view_features)}'] = 0.0
         feature_sets['view_count'] = pd.DataFrame([view_features])
         
+        # Sort base features once for consistent ordering across all models
+        sorted_base_features = sorted(base_features.items())
+        
         # RQS model features (1,181 features - 5 fewer than view count)
-        rqs_features = {k: v for i, (k, v) in enumerate(sorted(base_features.items())) if i < self.RQS_FEATURES}
+        rqs_features = {k: v for i, (k, v) in enumerate(sorted_base_features) if i < self.RQS_FEATURES}
         while len(rqs_features) < self.RQS_FEATURES:
             rqs_features[f'padding_feature_{len(rqs_features)}'] = 0.0
         feature_sets['rqs'] = pd.DataFrame([rqs_features])
         
         # CTR model features (796 features - much smaller set)
-        ctr_features = {k: v for i, (k, v) in enumerate(sorted(base_features.items())) if i < self.CTR_FEATURES}
+        ctr_features = {k: v for i, (k, v) in enumerate(sorted_base_features) if i < self.CTR_FEATURES}
         while len(ctr_features) < self.CTR_FEATURES:
             ctr_features[f'padding_feature_{len(ctr_features)}'] = 0.0
         feature_sets['ctr'] = pd.DataFrame([ctr_features])
