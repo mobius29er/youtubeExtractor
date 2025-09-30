@@ -582,7 +582,7 @@ class YouTubePredictionSystem:
             
         # Try with scaling first if scaler available and compatible
         if (model_key in self.scalers and 
-            features.shape[0] == self.scalers[model_key].n_features_in_):
+            len(features) == self.scalers[model_key].n_features_in_):
             scaled_features = self.scalers[model_key].transform([features])
             return self.models[model_key].predict(scaled_features)[0]
         else:
@@ -696,7 +696,7 @@ class YouTubePredictionSystem:
                 elif 'rqs' in self.models:
                     rqs_features = feature_sets['rqs'].values.flatten()
                     try:
-                        if 'rqs' in self.scalers and rqs_features.shape[0] == self.scalers['rqs'].n_features_in_:
+                        if 'rqs' in self.scalers and len(rqs_features) == self.scalers['rqs'].n_features_in_:
                             scaled_features = self.scalers['rqs'].transform([rqs_features])
                             pred_rqs = self.models['rqs'].predict(scaled_features)[0]
                         else:
