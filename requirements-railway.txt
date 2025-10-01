@@ -1,5 +1,5 @@
-# Requirements for Dashboard API Service
-# Core web framework only - lightweight for dashboard
+# Requirements for Dashboard API Service with ML Prediction
+# Core web framework
 fastapi==0.104.1
 uvicorn==0.24.0
 python-multipart==0.0.20
@@ -7,9 +7,18 @@ python-dotenv==1.0.1
 requests==2.31.0
 aiohttp==3.9.5
 
-# Essential data handling (lightweight)
+# Essential data handling
 pandas==2.2.2
 numpy==1.26.4
+
+# ML dependencies for prediction system
+joblib==1.3.2
+scikit-learn==1.3.2
+sentence-transformers==2.2.2
+
+# Image processing for thumbnails
+Pillow==10.2.0
+opencv-python-headless==4.9.0.80
 
 # Logging
 rich==13.7.1
