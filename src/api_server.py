@@ -17,7 +17,8 @@ try:
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
     import pandas as pd
-    # Import ML prediction system
+    # Import ML prediction system with proper path handling
+    sys.path.append(str(Path(__file__).parent))
     from prediction_api import YouTubePredictionSystem
 except ImportError:
     print("Missing dependencies! Install with: pip install fastapi uvicorn pandas")
@@ -36,6 +37,7 @@ try:
     print(f"✅ ML prediction system ready with {len(predictor.models)} models")
 except Exception as e:
     print(f"⚠️ ML prediction system failed to initialize: {e}")
+    print("🔧 Continuing in dashboard-only mode (predictions disabled)")
     predictor = None
 
 # Enable CORS for frontend - configurable for different environments
@@ -844,14 +846,18 @@ async def catch_all(full_path: str):
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Get port from Railway environment or default to 8000
+    port = int(os.environ.get("PORT", 8000))
+    
     print("🚀 Starting YouTube Extractor API server...")
-    print("📊 Dashboard will be available at: http://localhost:8000")
-    print("🔧 API docs available at: http://localhost:8000/docs")
+    print(f"📊 Dashboard will be available at: http://0.0.0.0:{port}")
+    print(f"🔧 API docs available at: http://0.0.0.0:{port}/docs")
     
     uvicorn.run(
-        "api_server:app",
+        app,  # Direct app reference instead of string
         host="0.0.0.0",
-        port=8000,
-        reload=True,
+        port=port,
+        reload=False,  # Disable reload in production
         log_level="info"
     )
