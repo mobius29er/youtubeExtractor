@@ -744,7 +744,7 @@ async def predict_video_performance(
             try:
                 import ast
                 video_data['tags'] = ast.literal_eval(tags) if tags.startswith('[') else tags.split(',')
-            except:
+            except (ValueError, SyntaxError):
                 video_data['tags'] = tags.split(',')
         
         # Add other features if provided
@@ -778,7 +778,7 @@ async def predict_video_performance(
         print(f"❌ Prediction error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error during prediction.")
 
 # API Health check endpoint
 @app.get("/api/health")
