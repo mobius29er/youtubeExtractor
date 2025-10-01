@@ -776,7 +776,7 @@ async def predict_video_performance(
         print(f"❌ Prediction error: {e}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error during prediction.")
 
 # API Health check endpoint
 @app.get("/api/health")
