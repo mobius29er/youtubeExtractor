@@ -17,9 +17,8 @@ try:
     from fastapi.staticfiles import StaticFiles
     from fastapi.responses import FileResponse
     import pandas as pd
-    # Import ML prediction system with proper path handling
-    sys.path.append(str(Path(__file__).parent))
-    from prediction_api import YouTubePredictionSystem
+    # Import ML prediction system with relative import
+    from .prediction_api import YouTubePredictionSystem
 except ImportError:
     print("Missing dependencies! Install with: pip install fastapi uvicorn pandas")
     sys.exit(1)
@@ -855,7 +854,7 @@ if __name__ == "__main__":
     print(f"🔧 API docs available at: http://0.0.0.0:{port}/docs")
     
     uvicorn.run(
-        app,  # Direct app reference instead of string
+        "api_server:app",  # String module path for proper uvicorn functionality
         host="0.0.0.0",
         port=port,
         reload=False,  # Disable reload in production
