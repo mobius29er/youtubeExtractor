@@ -35,9 +35,9 @@ RUN echo "Copied extracted_data directory for dashboard"
 RUN ls -la extracted_data/ | head -10
 
 # Copy built frontend from frontend-builder stage
-COPY --from=frontend-builder /app/frontend/dist ./dist
-RUN echo "✅ Frontend copied to dist/"
-RUN ls -la dist/ | head -5
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+RUN echo "✅ Frontend copied to frontend/dist/"
+RUN ls -la frontend/dist/ | head -5
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \

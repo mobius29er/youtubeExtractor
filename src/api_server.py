@@ -12,10 +12,13 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 try:
-    from fastapi import FastAPI, HTTPException
+    from fastapi import FastAPI, HTTPException, UploadFile, File, Form
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse
     import pandas as pd
+    # Import ML prediction system
+    from prediction_api import YouTubePredictionSystem
 except ImportError:
     print("Missing dependencies! Install with: pip install fastapi uvicorn pandas")
     sys.exit(1)
@@ -25,6 +28,15 @@ app = FastAPI(
     description="Backend API for YouTube data extraction dashboard",
     version="1.0.0"
 )
+
+# Initialize ML prediction system
+print("🤖 Initializing ML prediction system...")
+try:
+    predictor = YouTubePredictionSystem()
+    print(f"✅ ML prediction system ready with {len(predictor.models)} models")
+except Exception as e:
+    print(f"⚠️ ML prediction system failed to initialize: {e}")
+    predictor = None
 
 # Enable CORS for frontend - configurable for different environments
 ALLOWED_ORIGINS = os.environ.get(
@@ -39,6 +51,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static files from frontend dist directory
+frontend_dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+if os.path.exists(frontend_dist_path):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_path, "assets")), name="assets")
+    print(f"✅ Serving static assets from: {frontend_dist_path}")
+else:
+    print(f"⚠️ Frontend dist directory not found: {frontend_dist_path}")
 
 # Data paths - configurable via environment variable or default location
 script_dir = Path(__file__).parent
@@ -683,6 +703,81 @@ async def get_services_status():
         "timestamp": datetime.now().isoformat()
     }
 
+# ML Prediction endpoint
+@app.post("/api/predict")
+async def predict_video_performance(
+    title: str = Form(...),
+    genre: str = Form(...),
+    subscriber_count: int = Form(...),
+    thumbnail: Optional[UploadFile] = File(None),
+    # Optional additional features for better predictions
+    tags: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    duration_seconds: Optional[int] = Form(None),
+    like_count: Optional[int] = Form(None),
+    comment_count: Optional[int] = Form(None),
+    has_captions: Optional[bool] = Form(True)
+):
+    """Predict video performance using trained ML models with comprehensive features"""
+    
+    if predictor is None:
+        raise HTTPException(status_code=503, detail="ML prediction system not available")
+    
+    try:
+        # Validate genre
+        valid_genres = ['gaming', 'education_science', 'challenge_stunts', 'catholic', 'other', 'kids_family']
+        if genre not in valid_genres:
+            raise HTTPException(status_code=400, detail=f"Invalid genre. Must be one of: {valid_genres}")
+        
+        # Process thumbnail if provided
+        thumbnail_data = None
+        if thumbnail:
+            thumbnail_data = await thumbnail.read()
+        
+        # Prepare additional video data for feature engineering
+        video_data = {}
+        
+        # Parse tags if provided
+        if tags:
+            try:
+                import ast
+                video_data['tags'] = ast.literal_eval(tags) if tags.startswith('[') else tags.split(',')
+            except (ValueError, SyntaxError):
+                video_data['tags'] = tags.split(',')
+        
+        # Add other features if provided
+        if description:
+            video_data['description'] = description
+            video_data['description_length'] = len(description)
+        
+        if duration_seconds:
+            video_data['duration_seconds'] = duration_seconds
+            
+        if like_count is not None:
+            video_data['like_count'] = like_count
+            
+        if comment_count is not None:
+            video_data['comment_count'] = comment_count
+            
+        video_data['has_captions'] = has_captions
+        
+        # Make prediction using the ML system
+        result = predictor.predict_performance(
+            title=title,
+            genre=genre,
+            subscriber_count=subscriber_count,
+            thumbnail_data=thumbnail_data,
+            video_data=video_data
+        )
+        
+        return result
+        
+    except Exception as e:
+        print(f"❌ Prediction error: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error during prediction.")
+
 # API Health check endpoint
 @app.get("/api/health")
 async def health_check():
@@ -691,28 +786,33 @@ async def health_check():
         "message": "YouTube Extractor API", 
         "version": "1.0.0",
         "status": "healthy",
+        "ml_models_loaded": len(predictor.models) if predictor else 0,
         "timestamp": datetime.now().isoformat()
     }
 
-# Serve frontend static files in production
-frontend_paths = ["../dist", "../frontend/dist", "./dist", "dist"]
-frontend_dir = None
-
-for path in frontend_paths:
-    if os.path.exists(path) and os.path.isdir(path):
-        frontend_dir = path
-        print(f"✅ Found frontend files at: {frontend_dir}")
-        break
-
-if frontend_dir:
-    # Mount static files at root - this will serve index.html for all non-API routes
-    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="static")
-    print(f"🌐 Serving frontend from: {frontend_dir}")
-else:
-    print("⚠️  No frontend build found. API-only mode.")
+@app.get("/api/models/status")
+async def get_models_status():
+    """Get status of loaded ML models"""
+    if predictor is None:
+        return {"status": "unavailable", "models_loaded": 0}
     
-    @app.get("/")
-    async def frontend_fallback():
+    return {
+        "models_loaded": list(predictor.models.keys()),
+        "scalers_loaded": list(predictor.scalers.keys()),
+        "total_models": len(predictor.models),
+        "status": "ready"
+    }
+
+# Frontend serving for SPA routing
+@app.get("/")
+async def serve_frontend():
+    """Serve the frontend index.html for the root route"""
+    frontend_dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+    index_path = os.path.join(frontend_dist_path, 'index.html')
+    
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
         return {
             "message": "YouTube Extractor API",
             "version": "1.0.0", 
@@ -721,6 +821,26 @@ else:
             "api_docs": "/docs",
             "timestamp": datetime.now().isoformat()
         }
+
+# Catch-all route for client-side routing (SPA)
+@app.get("/{full_path:path}")
+async def catch_all(full_path: str):
+    """
+    Catch-all route to serve the frontend for client-side routing.
+    This ensures that refreshing on any frontend route returns the SPA.
+    """
+    # Skip API routes - let them return 404 if not found
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    
+    # Serve frontend for all other routes
+    frontend_dist_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+    index_path = os.path.join(frontend_dist_path, 'index.html')
+    
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    else:
+        raise HTTPException(status_code=404, detail="Frontend not found")
 
 if __name__ == "__main__":
     import uvicorn

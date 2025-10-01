@@ -21,6 +21,8 @@ import cv2
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 import uvicorn
 
@@ -840,10 +842,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-@app.get("/")
-async def root():
-    return {"message": "YouTube Performance Prediction API", "status": "active"}
 
 @app.post("/api/predict")
 async def predict_video_performance(
