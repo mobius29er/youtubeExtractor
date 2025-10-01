@@ -742,7 +742,7 @@ async def predict_video_performance(
             try:
                 import ast
                 video_data['tags'] = ast.literal_eval(tags) if tags.startswith('[') else tags.split(',')
-            except:
+            except (ValueError, SyntaxError):
                 video_data['tags'] = tags.split(',')
         
         # Add other features if provided
