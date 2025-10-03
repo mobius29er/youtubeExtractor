@@ -5,7 +5,6 @@ import Dashboard from './components/Dashboard';
 import DataVisualization from './components/DataVisualization';
 import ExtractionStatus from './components/ExtractionStatus';
 import VideoPerformancePredictor from './components/VideoPerformancePredictor';
-import ComparisonAnalytics from './components/ComparisonAnalytics';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -131,13 +130,6 @@ function App() {
                 loading={loading}
                 darkMode={darkMode}
                 onRefresh={loadData}
-              />
-            } />
-            <Route path="/comparison" element={
-              <ComparisonAnalytics 
-                data={extractionData} 
-                loading={loading}
-                darkMode={darkMode}
               />
             } />
           </Routes>
