@@ -585,6 +585,46 @@ class YouTubePredictionSystem:
             print(f"Views prediction error: {e}")
             return max(int(subs * ctr_pred), 10)
     
+    def generate_recommended_tags(self, title: str, genre: str) -> List[str]:
+        """Generate recommended tags based on title and genre"""
+        tags = []
+        
+        # Add genre-specific tags
+        genre_tag_map = {
+            'gaming': ['gaming', 'gameplay', 'gamer', 'video games', 'game review'],
+            'education_science': ['education', 'learning', 'science', 'tutorial', 'explained'],
+            'challenge_stunts': ['challenge', 'stunts', 'extreme', 'daredevil', 'amazing'],
+            'catholic': ['christian', 'faith', 'spiritual', 'religion', 'bible'],
+            'kids_family': ['kids', 'family', 'children', 'fun', 'entertainment'],
+            'other': ['youtube', 'content', 'creator', 'viral', 'trending']
+        }
+        
+        # Add genre-specific tags
+        if genre in genre_tag_map:
+            tags.extend(genre_tag_map[genre])
+        else:
+            tags.extend(genre_tag_map['other'])
+        
+        # Extract keywords from title for additional tags
+        title_lower = title.lower()
+        
+        # Common YouTube keywords that boost discoverability
+        if any(word in title_lower for word in ['how to', 'tutorial', 'guide']):
+            tags.extend(['how to', 'tutorial', 'guide'])
+        
+        if any(word in title_lower for word in ['review', 'reaction']):
+            tags.extend(['review', 'reaction'])
+            
+        if any(word in title_lower for word in ['tips', 'tricks', 'hacks']):
+            tags.extend(['tips', 'life hacks', 'pro tips'])
+            
+        if any(word in title_lower for word in ['2024', '2025']):
+            tags.append('2025')
+            
+        # Remove duplicates and limit to 8 tags
+        unique_tags = list(dict.fromkeys(tags))  # Preserves order while removing duplicates
+        return unique_tags[:8]
+    
     def predict_performance(self, title: str, genre: str, subscriber_count: int,
                           thumbnail_data: Optional[bytes] = None,
                           video_data: Optional[Dict] = None) -> Dict:
@@ -625,6 +665,9 @@ class YouTubePredictionSystem:
         rqs_pred = self.predict_rqs(video_data, thumbnail_features)
         views_pred = self.predict_views(ctr_pred, rqs_pred, video_data)
         
+        # Debug logging for CTR investigation
+        print(f"Debug - CTR: {ctr_pred:.6f}, Duration: {video_data.get('duration_seconds', 'N/A')}s, Title: '{video_data.get('title', 'N/A')[:30]}...', Embeddings: {bool(self.tfidf)}")
+        
         # Calculate performance score
         ctr_percentage = ctr_pred * 100
         ctr_score = min(ctr_pred / 0.2 * 100, 100)
@@ -633,10 +676,10 @@ class YouTubePredictionSystem:
         
         result = {
             'predicted_views': views_pred,
-            'predicted_rqs': rqs_pred,
-            'predicted_ctr': ctr_pred,
-            'predicted_ctr_percentage': ctr_percentage,
-            'performance_score': performance_score,
+            'predicted_rqs': round(rqs_pred, 2),
+            'predicted_ctr': round(ctr_pred, 4),  # Keep more precision for very small values
+            'predicted_ctr_percentage': round(ctr_percentage, 2),
+            'performance_score': round(performance_score, 1),
             'thumbnail_analysis': {
                 'brightness': thumbnail_features.get('brightness', 128),
                 'has_faces': thumbnail_features.get('face_area_percentage', 0) > 0,
@@ -711,6 +754,9 @@ async def predict_video_performance(
             'genre': genre,
             'subscriber_count': subscriber_count,
             'duration_seconds': duration_seconds or 480,  # 8 minutes - more typical for YouTube
+            'description': f"Learn about {title.lower()}" if title else "",  # Generate basic description
+            'tags': predictor.generate_recommended_tags(title, genre),  # Smart tag recommendations
+            'age_days': 0,  # New video
         }
         
         thumbnail_data = None
@@ -730,6 +776,8 @@ async def predict_video_performance(
             'title': title,
             'genre': genre,
             'subscriber_count': subscriber_count,
+            'duration_minutes': (duration_seconds or 480) / 60,
+            'recommended_tags': video_data['tags'],
             'has_thumbnail': thumbnail is not None,
             'prediction_date': datetime.now().isoformat()
         }
