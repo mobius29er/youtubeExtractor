@@ -28,7 +28,7 @@ RUN echo "Copied models directory and extracted_data for predictions"
 RUN ls -la models/ 2>/dev/null || echo "Models directory not found, will use fallback predictions"
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl --fail http://localhost:8002/api/health || exit 1
 
 # Expose port

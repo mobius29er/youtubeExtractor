@@ -29,6 +29,9 @@ RUN pip install --no-cache-dir -r requirements-railway.txt
 # Copy backend source
 COPY src/ ./src/
 
+# Copy ML models for predictions
+COPY models/ ./models/
+
 # Copy data files
 COPY extracted_data/ ./extracted_data/
 RUN echo "Copied extracted_data directory for dashboard"
@@ -39,8 +42,8 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 RUN echo "✅ Frontend copied to frontend/dist/"
 RUN ls -la frontend/dist/ | head -5
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check - give more time for startup
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl --fail http://localhost:8000/api/health || exit 1
 
 # Expose port
