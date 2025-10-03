@@ -537,92 +537,75 @@ def calculate_basic_rqs(video):
 
 @app.get("/api/comments")
 async def get_comment_data():
-    """Get comment data for sentiment analysis"""
+    """Get comment data for sentiment analysis from loaded JSON data"""
     try:
-        if data_loader.processed_data is None or data_loader.processed_data.empty:
+        if data_loader.data is None:
             data_loader.load_data()
             
-        if data_loader.processed_data is None or data_loader.processed_data.empty:
+        if data_loader.data is None or len(data_loader.data) == 0:
             return {
                 "comments": [],
                 "message": "No data available",
                 "total": 0
             }
         
-        df = data_loader.processed_data
         comment_data = []
+        total_comments = 0
         
-        for _, video in df.iterrows():
-            video_id = video.get('video_id', '')
-            channel_name = video.get('channel_name', '')
-            title = video.get('title', '')
-            sentiment_score = video.get('sentiment_score', 0.5)
-            comment_texts = video.get('comment_texts', '[]')
+        # Process each channel's data
+        for channel_name, channel_info in data_loader.data.items():
+            videos = channel_info.get('videos', [])
             
-            # Parse comment_texts if it's a string
-            comments_list = []
-            if isinstance(comment_texts, str) and comment_texts and comment_texts != '[]' and comment_texts.strip():
-                try:
-                    import json
-                    import ast
-                    # Remove any potential pandas NaN representation
-                    if comment_texts not in ['[]', 'nan', 'NaN', 'null', '']:
-                        # Try JSON first (double quotes)
-                        try:
-                            parsed_comments = json.loads(comment_texts)
-                        except json.JSONDecodeError as json_err:
-                            # If JSON fails, skip this video with detailed error info
-                            print(
-                                f"Failed to parse comments for {video_id}: skipping\n"
-                                f"  JSON error: {json_err}\n"
-                                f"  Problematic data: {comment_texts[:200]!r}"
-                            )
-                            continue
-                        
-                        if isinstance(parsed_comments, list) and len(parsed_comments) > 0:
-                            # Extract just the text from each comment object for sentiment analysis
-                            comments_list = []
-                            for comment_obj in parsed_comments:
-                                if isinstance(comment_obj, dict) and 'text' in comment_obj:
-                                    comments_list.append({
-                                        "text": comment_obj.get('text', ''),
-                                        "author": comment_obj.get('author', ''),
-                                        "like_count": comment_obj.get('like_count', 0),
-                                        "published_at": comment_obj.get('published_at', '')
-                                    })
-                                elif isinstance(comment_obj, str):
-                                    # Fallback if comments are stored as strings
-                                    comments_list.append({
-                                        "text": comment_obj,
-                                        "author": "Unknown",
-                                        "like_count": 0,
-                                        "published_at": ""
-                                    })
-                except Exception as e:
-                    print(f"Error parsing comments for {video_id}: {e}")
-                    comments_list = []
-            elif isinstance(comment_texts, list):
-                comments_list = comment_texts
-            
-            # Only include videos that have comments
-            if comments_list and len(comments_list) > 0:
-                comment_data.append({
-                    "video_id": video_id,
-                    "channel_name": channel_name,
-                    "title": title,
-                    "sentiment_score": float(sentiment_score),
-                    "comments": comments_list,
-                    "comment_count": len(comments_list)
-                })
+            for video in videos:
+                video_id = video.get('video_id', '')
+                title = video.get('title', '')
+                comments = video.get('comments', [])
+                
+                if comments and len(comments) > 0:
+                    # Calculate a basic sentiment score (we could enhance this later)
+                    sentiment_score = 0.5  # Default neutral
+                    
+                    comment_data.append({
+                        "video_id": video_id,
+                        "channel_name": channel_name,
+                        "title": title,
+                        "sentiment_score": sentiment_score,
+                        "comments": comments,
+                        "comment_count": len(comments)
+                    })
+                    total_comments += len(comments)
+        
+        print(f"✅ Loaded comment data: {len(comment_data)} videos, {total_comments} comments from {len(data_loader.data)} channels")
         
         return {
             "comments": comment_data,
-            "total": len(comment_data),
-            "message": f"Successfully loaded {len(comment_data)} videos with comments"
+            "total": total_comments,
+            "message": f"Successfully loaded {len(comment_data)} videos with comments from {len(data_loader.data)} channels"
         }
         
     except Exception as e:
         print(f"❌ Error loading comment data: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "comments": [],
+            "message": f"Error loading comment data: {str(e)}",
+            "total": 0
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in get_comment_data: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "comments": [],
+            "message": f"Error loading comment data: {str(e)}",
+        }
+        
+    except Exception as e:
+        print(f"❌ Error in get_comment_data: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "comments": [],
             "message": f"Error loading comment data: {str(e)}",
