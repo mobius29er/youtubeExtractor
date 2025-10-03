@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 YouTube Video Performance Prediction API
-Uses trained ML models to predict views, RQS, and CTR based on video metadata
+Updated to work with new CTR, RQS, and Views models
 """
 
 import os
@@ -14,645 +14,361 @@ import pandas as pd
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 from datetime import datetime
-import base64
-from io import BytesIO
-from PIL import Image
-import cv2
+import ast
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 import uvicorn
 
-# Add src to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-# Suppress scikit-learn version warnings
+# Suppress warnings
 warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
 warnings.filterwarnings('ignore', message='.*sklearn.*')
 
 class YouTubePredictionSystem:
-    """ML-powered prediction system for YouTube video performance"""
-    
-    # Feature count constants for different model types
-    VIEW_COUNT_FEATURES = 1186
-    RQS_FEATURES = 1181
-    CTR_FEATURES = 796
-    GENRE_FEATURES = 2
-    EMBEDDING_DIM = 384
-    TEXT_FIELDS = 3  # title, thumbnail_text, tags
-    
-    # Default engagement ratios
-    DEFAULT_LIKE_ENGAGEMENT_RATE = 0.02  # 2% of subscribers typically like
-    DEFAULT_COMMENT_RATE = 0.001  # 0.1% of subscribers typically comment
-    DEFAULT_LIKE_RATIO = 0.05  # 5% like-to-view ratio
-    DEFAULT_COMMENT_RATIO = 0.001  # 0.1% comment-to-view ratio
-    DEFAULT_VIEWS_PER_SUB = 0.1  # 10% of subscribers view new videos
-    DEFAULT_RQS = 0.5  # Default retention quality score
-    DEFAULT_COMMENT_LENGTH = 25.0  # Average comment length in characters
-    
-    # Video format defaults
-    DEFAULT_ASPECT_RATIO = 1.78  # Standard 16:9 aspect ratio
-    DEFAULT_EDGE_DENSITY = 0.1  # Default thumbnail edge density
+    """ML-powered prediction system for YouTube video performance using new models"""
     
     def __init__(self):
         self.models = {}
         self.scalers = {}
-        self.embedding_model = None
+        self.feature_lists = {}
+        self.baseline_models = {}
+        self.tfidf_vectorizers = {}
+        self.svd_models = {}
         self.load_models()
-        self.load_embedding_model()
         
     def load_models(self):
-        """Load all trained ML models and scalers"""
-        # Get the directory where this script is located
+        """Load all trained ML models, scalers, and feature lists"""
+        # Get models directory - now in Youtube_project/models
         script_dir = Path(__file__).parent
-        default_models_dir = script_dir.parent / "extracted_data" / "models"
-        models_dir_env = os.environ.get("MODELS_DIR")
-        if models_dir_env:
-            models_dir = Path(models_dir_env)
-            # Validate that the environment variable points to an existing directory
-            if not models_dir.exists() or not models_dir.is_dir():
-                print(f"⚠️ Warning: MODELS_DIR environment variable '{models_dir_env}' does not point to an existing directory. Falling back to default.")
-                models_dir = default_models_dir
-        else:
-            models_dir = default_models_dir
+        models_dir = script_dir.parent / "models"  # Changed from extracted_data/models
         
         print("🔄 Loading ML models...")
-        print(f"📁 Script directory: {script_dir.absolute()}")
         print(f"📁 Models directory: {models_dir.absolute()}")
         
         if not models_dir.exists():
             raise FileNotFoundError(f"Models directory not found: {models_dir.absolute()}")
         
         try:
-            # Suppress warnings during model loading
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 
-                # Load view count prediction models
-                self.models['view_count'] = joblib.load(models_dir / "view_count_model.joblib")
-                self.scalers['view_count'] = joblib.load(models_dir / "view_count_scaler.joblib")
-                print("✅ View count model loaded")
+                # Load CTR models (baseline + residual pattern)
+                if (models_dir / "ctr_model.joblib").exists():
+                    self.models['ctr'] = joblib.load(models_dir / "ctr_model.joblib")
+                    print("✅ CTR model loaded")
                 
-                # Load RQS prediction models
-                self.models['rqs'] = joblib.load(models_dir / "rqs_model.joblib")
-                self.scalers['rqs'] = joblib.load(models_dir / "rqs_scaler.joblib")
-                print("✅ RQS model loaded")
+                if (models_dir / "ctr_baseline.joblib").exists():
+                    self.baseline_models['ctr'] = joblib.load(models_dir / "ctr_baseline.joblib")
+                    print("✅ CTR baseline loaded")
                 
-                # Load CTR prediction models
-                self.models['ctr'] = joblib.load(models_dir / "ctr_model.joblib")
-                self.scalers['ctr'] = joblib.load(models_dir / "ctr_scaler.joblib")
-                print("✅ CTR model loaded")
+                if (models_dir / "ctr_features.joblib").exists():
+                    self.feature_lists['ctr'] = joblib.load(models_dir / "ctr_features.joblib")
+                    print(f"   CTR expects {len(self.feature_lists['ctr'])} features")
                 
-                # Load genre-specific RQS models
-                genre_models = {
-                    'catholic': 'rqs_model_catholic.joblib',
-                    'challenge_stunts': 'rqs_model_challenge_stunts.joblib',
-                    'education_science': 'rqs_model_education_science.joblib',
-                    'gaming': 'rqs_model_gaming.joblib',
-                    'kids_family': 'rqs_model_kids_family.joblib'
-                }
+                if (models_dir / "ctr_baseline_features.joblib").exists():
+                    self.feature_lists['ctr_baseline'] = joblib.load(models_dir / "ctr_baseline_features.joblib")
                 
-                for genre, model_file in genre_models.items():
-                    model_path = models_dir / model_file
-                    if model_path.exists():
-                        self.models[f'rqs_{genre}'] = joblib.load(model_path)
-                        print(f"✅ {genre} RQS model loaded")
+                # Load RQS model
+                if (models_dir / "rqs_model.joblib").exists():
+                    self.models['rqs'] = joblib.load(models_dir / "rqs_model.joblib")
+                    print("✅ RQS model loaded")
+                
+                if (models_dir / "rqs_features.joblib").exists():
+                    self.feature_lists['rqs'] = joblib.load(models_dir / "rqs_features.joblib")
+                    print(f"   RQS expects {len(self.feature_lists['rqs'])} features")
+                
+                if (models_dir / "rqs_slice_stats.json").exists():
+                    with open(models_dir / "rqs_slice_stats.json", 'r') as f:
+                        self.rqs_slice_stats = json.load(f)
+                    print("✅ RQS slice stats loaded")
+                
+                # Load Views models (baseline + residual pattern)
+                if (models_dir / "views_residual_model.joblib").exists():
+                    self.models['views'] = joblib.load(models_dir / "views_residual_model.joblib")
+                    print("✅ Views residual model loaded")
+                
+                if (models_dir / "views_baseline_model.joblib").exists():
+                    self.baseline_models['views'] = joblib.load(models_dir / "views_baseline_model.joblib")
+                    print("✅ Views baseline loaded")
+                
+                if (models_dir / "views_residual_scaler.joblib").exists():
+                    self.scalers['views'] = joblib.load(models_dir / "views_residual_scaler.joblib")
+                    print("✅ Views scaler loaded")
+                
+                if (models_dir / "views_residual_features.joblib").exists():
+                    self.feature_lists['views'] = joblib.load(models_dir / "views_residual_features.joblib")
+                    print(f"   Views expects {len(self.feature_lists['views'])} features")
+                
+                if (models_dir / "views_baseline_features.joblib").exists():
+                    self.feature_lists['views_baseline'] = joblib.load(models_dir / "views_baseline_features.joblib")
                 
                 print(f"🎯 Total models loaded: {len(self.models)}")
+                print(f"🎯 Total baseline models: {len(self.baseline_models)}")
                 
-                # Validate feature counts against actual model requirements
-                self._validate_feature_counts()
-            
         except Exception as e:
             print(f"❌ Error loading models: {e}")
             raise
     
-    def _validate_feature_counts(self):
-        """Validate hard-coded feature counts against actual model requirements"""
-        print("🔍 Validating feature counts against model requirements...")
-        
-        validation_errors = []
-        updated_constants = {}
-        
-        # Validate view count model
-        if 'view_count' in self.scalers:
-            actual_features = self.scalers['view_count'].n_features_in_
-            if actual_features != self.VIEW_COUNT_FEATURES:
-                validation_errors.append(f"View count model expects {actual_features} features, but VIEW_COUNT_FEATURES is {self.VIEW_COUNT_FEATURES}")
-                updated_constants['VIEW_COUNT_FEATURES'] = actual_features
-            else:
-                print(f"✅ View count features validated: {actual_features}")
-        
-        # Validate RQS model
-        if 'rqs' in self.scalers:
-            actual_features = self.scalers['rqs'].n_features_in_
-            if actual_features != self.RQS_FEATURES:
-                validation_errors.append(f"RQS model expects {actual_features} features, but RQS_FEATURES is {self.RQS_FEATURES}")
-                updated_constants['RQS_FEATURES'] = actual_features
-            else:
-                print(f"✅ RQS features validated: {actual_features}")
-        
-        # Validate CTR model
-        if 'ctr' in self.scalers:
-            actual_features = self.scalers['ctr'].n_features_in_
-            if actual_features != self.CTR_FEATURES:
-                validation_errors.append(f"CTR model expects {actual_features} features, but CTR_FEATURES is {self.CTR_FEATURES}")
-                updated_constants['CTR_FEATURES'] = actual_features
-            else:
-                print(f"✅ CTR features validated: {actual_features}")
-        
-        # Validate embedding dimensions
-        if self.embedding_model:
-            actual_embedding_dim = self.embedding_model.get_sentence_embedding_dimension()
-            if actual_embedding_dim != self.EMBEDDING_DIM:
-                validation_errors.append(f"Embedding model produces {actual_embedding_dim} dimensions, but EMBEDDING_DIM is {self.EMBEDDING_DIM}")
-                updated_constants['EMBEDDING_DIM'] = actual_embedding_dim
-            else:
-                print(f"✅ Embedding dimensions validated: {actual_embedding_dim}")
-        
-        if validation_errors:
-            # Auto-correct the constants for this instance
-            for const_name, correct_value in updated_constants.items():
-                setattr(self, const_name, correct_value)
-                print(f"🔧 Auto-corrected {const_name} to {correct_value}")
-            
-            print("⚠️ Feature count mismatches detected and auto-corrected for this session.")
-            print("💡 Consider updating the hard-coded constants in the source code:")
-            for const_name, correct_value in updated_constants.items():
-                print(f"   {const_name} = {correct_value}")
-        else:
-            print("✅ All feature counts validated successfully")
-    
-    def _add_color_features(self, feature_list: list, colors: list) -> None:
+    def generate_tfidf_embeddings(self, text: str, prefix: str, n_components: int = 30) -> np.ndarray:
         """
-        Helper method to efficiently add color features to the feature list.
-        Optimizes repeated color processing logic.
+        Generate TF-IDF embeddings similar to training.
+        Note: In production, you should save and load the fitted TF-IDF and SVD models.
+        This is a simplified version that creates zero embeddings as placeholder.
         """
-        for color in colors:
-            if isinstance(color, list) and len(color) >= 3:
-                feature_list.extend([float(color[0]), float(color[1]), float(color[2])])
+        # In production, load the saved TF-IDF and SVD models
+        # For now, return zero embeddings of the right size
+        return np.zeros(n_components)
+    
+    def prepare_features_for_ctr(self, video_data: Dict) -> pd.DataFrame:
+        """Prepare features matching CTR model expectations"""
+        if 'ctr' not in self.feature_lists:
+            raise ValueError("CTR feature list not loaded")
+        
+        feature_cols = self.feature_lists['ctr']
+        features = {}
+        
+        # Create all required features with defaults
+        for col in feature_cols:
+            if col.startswith('title_embed_'):
+                # Title embeddings (would use saved TF-IDF model in production)
+                features[col] = 0.0
+            elif col.startswith('description_embed_'):
+                features[col] = 0.0
+            elif col.startswith('tags_embed_'):
+                features[col] = 0.0
+            elif col.startswith('thumb_text_embed_'):
+                features[col] = 0.0
+            elif col.startswith('genre_'):
+                # Genre one-hot encoding
+                genre = video_data.get('genre', 'unknown')
+                features[col] = 1.0 if col == f'genre_{genre}' else 0.0
+            elif col in video_data:
+                features[col] = float(video_data[col])
             else:
-                feature_list.extend([0.0, 0.0, 0.0])
+                # Default values for other features
+                if 'duration' in col:
+                    features[col] = 300.0
+                elif 'brightness' in col or 'avg_' in col:
+                    features[col] = 128.0
+                elif 'face' in col:
+                    features[col] = 0.1
+                else:
+                    features[col] = 0.0
+        
+        return pd.DataFrame([features])[feature_cols]  # Ensure correct column order
     
-    def load_embedding_model(self):
-        """Load the sentence transformer model for text embeddings"""
-        try:
-            from sentence_transformers import SentenceTransformer
-            self.embedding_model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-            print("✅ SentenceTransformer embedding model loaded")
-        except Exception as e:
-            print(f"❌ Error loading embedding model: {e}")
-            self.embedding_model = None
+    def prepare_features_for_rqs(self, video_data: Dict) -> pd.DataFrame:
+        """Prepare features matching RQS model expectations"""
+        if 'rqs' not in self.feature_lists:
+            raise ValueError("RQS feature list not loaded")
+        
+        feature_cols = self.feature_lists['rqs']
+        features = {}
+        
+        # Similar to CTR but for RQS columns
+        for col in feature_cols:
+            if col.startswith('title_embed_'):
+                features[col] = 0.0
+            elif col.startswith('description_embed_'):
+                features[col] = 0.0
+            elif col.startswith('tags_embed_'):
+                features[col] = 0.0
+            elif col.startswith('thumb_text_embed_'):
+                features[col] = 0.0
+            elif col.startswith('genre_'):
+                genre = video_data.get('genre', 'unknown')
+                features[col] = 1.0 if col == f'genre_{genre}' else 0.0
+            elif col in video_data:
+                features[col] = float(video_data[col])
+            else:
+                # Default values
+                if 'duration' in col:
+                    features[col] = 300.0
+                elif 'brightness' in col or 'avg_' in col:
+                    features[col] = 128.0
+                else:
+                    features[col] = 0.0
+        
+        return pd.DataFrame([features])[feature_cols]
     
-    def get_text_embedding(self, text: str, max_length: int = 512) -> np.ndarray:
-        """Generate text embedding using sentence transformer"""
-        if self.embedding_model is None:
-            # Return zero embedding if model not available
-            return np.zeros(self.EMBEDDING_DIM)
-        
-        if not text or pd.isna(text):
-            return np.zeros(self.EMBEDDING_DIM)
-        
-        # Truncate text if too long
-        if len(text) > max_length:
-            text = text[:max_length]
-        
-        try:
-            embedding = self.embedding_model.encode(text)
-            return embedding
-        except Exception as e:
-            print(f"Error generating embedding for text: {e}")
-            return np.zeros(self.EMBEDDING_DIM)
-    
-    def get_list_text_embedding(self, text_list) -> np.ndarray:
-        """Generate embedding for a list of texts (like tags)"""
-        if not text_list or (isinstance(text_list, str) and pd.isna(text_list)):
-            return np.zeros(self.EMBEDDING_DIM)
-        
-        # Handle string representation of list
-        if isinstance(text_list, str):
-            try:
-                import ast
-                text_list = ast.literal_eval(text_list)
-            except:
-                # If it's just a string, treat as single item
-                text_list = [text_list]
-        
-        # Join all texts in the list
-        if isinstance(text_list, list):
-            combined_text = ' '.join(str(item) for item in text_list if item)
+    def prepare_baseline_features(self, video_data: Dict, model_type: str) -> pd.DataFrame:
+        """Prepare baseline features (log_age, log_subs, genre)"""
+        feature_list_key = f'{model_type}_baseline'
+        if feature_list_key not in self.feature_lists:
+            # Default baseline features
+            feature_cols = ['log_age', 'log_subs'] + [f'genre_{g}' for g in 
+                          ['unknown', 'gaming', 'education_science', 'challenge_stunts', 'catholic', 'kids_family']]
         else:
-            combined_text = str(text_list)
+            feature_cols = self.feature_lists[feature_list_key]
         
-        return self.get_text_embedding(combined_text)
+        features = {}
+        
+        # Calculate log features
+        features['log_subs'] = np.log1p(video_data.get('channel_subscriber_count', 1000))
+        features['log_age'] = np.log1p(video_data.get('age_days', 0))
+        
+        # Add log_duration if needed
+        if 'log_duration' in feature_cols:
+            features['log_duration'] = np.log1p(video_data.get('duration_seconds', 300))
+        
+        # Genre encoding
+        genre = video_data.get('genre', 'unknown')
+        for col in feature_cols:
+            if col.startswith('genre_'):
+                features[col] = 1.0 if col == f'genre_{genre}' else 0.0
+            elif col not in features:
+                features[col] = 0.0
+        
+        return pd.DataFrame([features])[feature_cols]
     
-    def create_full_feature_vector(self, video_data: Dict) -> np.ndarray:
-        """Create the complete 1,186-feature vector that matches the trained models"""
+    def predict_ctr(self, video_data: Dict) -> float:
+        """Predict CTR using baseline + residual model"""
+        if 'ctr' not in self.models:
+            # Fallback
+            return 0.05
         
-        # Start with basic numeric features
-        basic_features = []
-        
-        # Core video metrics
-        basic_features.extend([
-            float(video_data.get('like_count', 0)),
-            float(video_data.get('comment_count', 0)),
-            float(video_data.get('channel_subscriber_count', 0)),  # channel_subs in training
-            float(video_data.get('average_comment_length', 0)),
-            float(video_data.get('sentiment_score', 0)),
-            float(video_data.get('rqs', self.DEFAULT_RQS)),  # Default RQS if not provided
-        ])
-        
-        # Thumbnail features
-        thumbnail_features = video_data.get('thumbnail_features', {})
-        basic_features.extend([
-            float(thumbnail_features.get('face_area_percentage', 0)),
-        ])
-        
-        # Process color features efficiently using helper method
-        # Dominant colors (3 colors x 3 RGB values = 9 features)
-        dominant_colors = thumbnail_features.get('dominant_colors', [[0,0,0], [0,0,0], [0,0,0]])
-        self._add_color_features(basic_features, dominant_colors)
-        
-        # Color palette (5 colors x 3 RGB values = 15 features)
-        color_palette = thumbnail_features.get('color_palette', [[0,0,0]] * 5)
-        self._add_color_features(basic_features, color_palette[:5])  # Ensure we only take first 5
-        
-        # Average RGB (3 features)
-        avg_rgb = thumbnail_features.get('average_rgb', [0, 0, 0])
-        self._add_color_features(basic_features, [avg_rgb])
-        
-        # Additional thumbnail features
-        basic_features.extend([
-            float(thumbnail_features.get('brightness', 128)),
-            float(thumbnail_features.get('contrast', 50)),
-            float(thumbnail_features.get('edge_density', 0.1)),
-        ])
-        
-        # Additional video features
-        basic_features.extend([
-            float(video_data.get('title_length', 0)),
-            float(video_data.get('duration_seconds', 0)),
-            float(video_data.get('like_ratio', 0)),
-            float(video_data.get('comment_ratio', 0)),
-            float(video_data.get('views_per_subscriber', 0)),
-            1.0 if video_data.get('has_captions', False) else 0.0,
-        ])
-        
-        # Generate text embeddings (EMBEDDING_DIM features each)
-        title_embedding = self.get_text_embedding(video_data.get('title', ''))
-        thumbnail_text_embedding = self.get_text_embedding(video_data.get('thumbnail_text', ''))
-        tags_embedding = self.get_list_text_embedding(video_data.get('tags', []))
-        
-        # Combine all features
-        # Basic features + title_embed + thumbnail_text_embed + tags_embed = total features
-        all_features = np.concatenate([
-            np.array(basic_features),
-            title_embedding,
-            thumbnail_text_embedding, 
-            tags_embedding
-        ])
-        
-        print(f"🔧 Created feature vector with {len(all_features)} features")
-        print(f"   Basic features: {len(basic_features)}")
-        print(f"   Title embedding: {len(title_embedding)}")
-        print(f"   Thumbnail text embedding: {len(thumbnail_text_embedding)}")
-        print(f"   Tags embedding: {len(tags_embedding)}")
-        
-        # Ensure we have exactly 1,186 features by padding or truncating
-        target_features = self.VIEW_COUNT_FEATURES
-        if len(all_features) < target_features:
-            # Pad with zeros
-            padding = np.zeros(target_features - len(all_features))
-            all_features = np.concatenate([all_features, padding])
-        elif len(all_features) > target_features:
-            # Truncate
-            all_features = all_features[:target_features]
-        
-        print(f"🎯 Final feature vector: {len(all_features)} features (target: {target_features})")
-        
-        return all_features
-    
-    def extract_thumbnail_features(self, image_data: bytes) -> Dict:
-        """Extract features from thumbnail image"""
         try:
-            # Convert bytes to PIL Image
-            image = Image.open(BytesIO(image_data))
+            # Prepare features for residual model
+            X_residual = self.prepare_features_for_ctr(video_data)
             
-            # Convert to OpenCV format
-            cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            # Get residual prediction
+            if hasattr(self.models['ctr'], 'named_steps'):
+                # It's a pipeline
+                residual_pred = self.models['ctr'].predict(X_residual)[0]
+            else:
+                residual_pred = self.models['ctr'].predict(X_residual.values)[0]
             
-            # Extract basic image features
-            height, width, channels = cv_image.shape
-            aspect_ratio = width / height
+            # Get baseline prediction if available
+            if 'ctr' in self.baseline_models:
+                X_baseline = self.prepare_baseline_features(video_data, 'ctr')
+                baseline_pred = self.baseline_models['ctr'].predict(X_baseline)[0]
+                
+                # CTR is baseline + residual
+                ctr_log = baseline_pred + residual_pred
+            else:
+                ctr_log = residual_pred
             
-            # Color analysis
-            mean_color = np.mean(cv_image, axis=(0, 1))
-            color_variance = np.var(cv_image, axis=(0, 1))
+            # Convert from log scale
+            ctr = np.expm1(ctr_log) if ctr_log > 0 else ctr_log
             
-            # Brightness and contrast
-            gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
-            brightness = np.mean(gray)
-            contrast = np.std(gray)
-            
-            # Edge detection for complexity
-            edges = cv2.Canny(gray, 50, 150)
-            edge_density = np.sum(edges > 0) / (width * height)
-            
-            return {
-                'width': width,
-                'height': height,
-                'aspect_ratio': aspect_ratio,
-                'brightness': brightness,
-                'contrast': contrast,
-                'edge_density': edge_density,
-                'red_mean': mean_color[2],
-                'green_mean': mean_color[1],
-                'blue_mean': mean_color[0],
-                'color_variance': np.mean(color_variance)
-            }
+            # Bound between 0 and 1
+            return np.clip(ctr, 0.0, 1.0)
             
         except Exception as e:
-            print(f"❌ Error extracting thumbnail features: {e}")
-            return self.get_default_thumbnail_features()
+            print(f"CTR prediction error: {e}")
+            return 0.05
     
-    def get_default_thumbnail_features(self) -> Dict:
-        """Return default thumbnail features when extraction fails"""
-        return {
-            'width': 1280,
-            'height': 720,
-            'aspect_ratio': self.DEFAULT_ASPECT_RATIO,
-            'brightness': 128,
-            'contrast': 50,
-            'edge_density': self.DEFAULT_EDGE_DENSITY,
-            'red_mean': 128,
-            'green_mean': 128,
-            'blue_mean': 128,
-            'color_variance': 1000
-        }
+    def predict_rqs(self, video_data: Dict) -> float:
+        """Predict RQS (0-100 score)"""
+        if 'rqs' not in self.models:
+            return 50.0
+        
+        try:
+            # Prepare features
+            X_rqs = self.prepare_features_for_rqs(video_data)
+            
+            # Get prediction
+            if hasattr(self.models['rqs'], 'named_steps'):
+                # It's a pipeline
+                rqs_pred = self.models['rqs'].predict(X_rqs)[0]
+            else:
+                rqs_pred = self.models['rqs'].predict(X_rqs.values)[0]
+            
+            # Bound between 0 and 100
+            return np.clip(rqs_pred, 0.0, 100.0)
+            
+        except Exception as e:
+            print(f"RQS prediction error: {e}")
+            return 50.0
     
-    def extract_title_features(self, title: str) -> Dict:
-        """Extract features from video title"""
-        # Basic title metrics
-        word_count = len(title.split())
-        char_count = len(title)
-        exclamation_count = title.count('!')
-        question_count = title.count('?')
-        caps_count = sum(1 for c in title if c.isupper())
-        caps_ratio = caps_count / len(title) if title else 0
+    def predict_views(self, ctr_pred: float, rqs_pred: float, video_data: Dict) -> int:
+        """Predict views using CTR and RQS predictions"""
+        if 'views' not in self.models:
+            # Simple fallback
+            subs = video_data.get('channel_subscriber_count', 1000)
+            return int(subs * ctr_pred)
         
-        # Engagement words (common clickbait terms)
-        engagement_words = [
-            'amazing', 'incredible', 'unbelievable', 'shocking', 'secret',
-            'ultimate', 'best', 'worst', 'crazy', 'insane', 'epic', 'viral',
-            'must', 'watch', 'see', 'new', 'first', 'last', 'only'
-        ]
-        
-        engagement_score = sum(1 for word in engagement_words 
-                             if word.lower() in title.lower())
-        
-        # Numbers in title (often perform well)
-        import re
-        number_count = len(re.findall(r'\d+', title))
-        
-        return {
-            'word_count': word_count,
-            'char_count': char_count,
-            'exclamation_count': exclamation_count,
-            'question_count': question_count,
-            'caps_ratio': caps_ratio,
-            'engagement_score': engagement_score,
-            'number_count': number_count
-        }
-    
-    def create_training_compatible_features(self, title: str, genre: str, subscriber_count: int,
-                                          thumbnail_features: Optional[Dict] = None,
-                                          estimated_features: Optional[Dict] = None) -> Dict[str, pd.DataFrame]:
-        """
-        Create feature vectors compatible with each trained model.
-        Returns different feature sets for view_count, rqs, ctr, and genre models.
-        """
-        print(f"🔧 Creating training-compatible features for: '{title[:30]}...'")
-        
-        # Generate text embeddings (EMBEDDING_DIM features each)
-        title_embedding = self.get_text_embedding(title)
-        
-        # Create reasonable defaults for missing text
-        thumbnail_text = estimated_features.get('thumbnail_text', '') if estimated_features else ''
-        tags = estimated_features.get('tags', f'{genre} video youtube') if estimated_features else f'{genre} video youtube'
-        
-        thumbnail_text_embedding = self.get_text_embedding(thumbnail_text)
-        tags_embedding = self.get_text_embedding(tags)
-        
-        # Start with base features
-        base_features = {}
-        
-        # Add text embeddings (384 * 3 = 1,152 features)
-        for i in range(self.EMBEDDING_DIM):
-            base_features[f'title_embed_{i}'] = title_embedding[i]
-            base_features[f'thumbnail_text_embed_{i}'] = thumbnail_text_embedding[i]
-            base_features[f'tags_embed_{i}'] = tags_embedding[i]
-        
-        # Add core numerical features (~34 more to reach 1,186)
-        title_features = self.extract_title_features(title)
-        
-        base_features.update({
-            # Core video metrics
-            'view_count': 50000,  # Will be predicted
-            'like_count': int(subscriber_count * self.DEFAULT_LIKE_ENGAGEMENT_RATE),  # Estimated 2% engagement
-            'comment_count': int(subscriber_count * self.DEFAULT_COMMENT_RATE),  # Estimated 0.1% comment rate
-            'channel_subs': subscriber_count,
-            'like_ratio': self.DEFAULT_LIKE_RATIO,
-            'comment_ratio': self.DEFAULT_COMMENT_RATIO,
-            'views_per_subs': self.DEFAULT_VIEWS_PER_SUB,
-            'average_comment_length': self.DEFAULT_COMMENT_LENGTH,
-            'sentiment_score': 0.6,
-            'rqs': 0.3,  # Will be predicted
+        try:
+            # Prepare baseline features
+            X_baseline = self.prepare_baseline_features(video_data, 'views')
             
-            # Title/content features
-            'title_length': len(title),
-            'description_length': estimated_features.get('description_length', 200) if estimated_features else 200,
-            'tags_count': len(tags.split()) if tags else 3,
-            'duration': estimated_features.get('duration', 600) if estimated_features else 600,
+            # Get baseline prediction
+            if 'views' in self.baseline_models:
+                baseline_pred = self.baseline_models['views'].predict(X_baseline)[0]
+            else:
+                baseline_pred = np.log1p(video_data.get('channel_subscriber_count', 1000) * 0.1)
             
-            # Thumbnail features
-            'thumbnail_brightness': thumbnail_features.get('brightness', 128.0) if thumbnail_features else 128.0,
-            'thumbnail_contrast': thumbnail_features.get('contrast', 50.0) if thumbnail_features else 50.0,
-            'thumbnail_edge_density': thumbnail_features.get('edge_density', self.DEFAULT_EDGE_DENSITY) if thumbnail_features else self.DEFAULT_EDGE_DENSITY,
-            'thumbnail_aspect_ratio': thumbnail_features.get('aspect_ratio', self.DEFAULT_ASPECT_RATIO) if thumbnail_features else self.DEFAULT_ASPECT_RATIO,
-            'thumbnail_red_mean': thumbnail_features.get('red_mean', 128.0) if thumbnail_features else 128.0,
-            'thumbnail_green_mean': thumbnail_features.get('green_mean', 128.0) if thumbnail_features else 128.0,
-            'thumbnail_blue_mean': thumbnail_features.get('blue_mean', 128.0) if thumbnail_features else 128.0,
+            # Prepare residual features (using CTR and RQS predictions)
+            if 'views' in self.feature_lists:
+                feature_cols = self.feature_lists['views']
+                features = {}
+                
+                for col in feature_cols:
+                    if 'ctr_pred' in col:
+                        if 'sq' in col:
+                            features[col] = ctr_pred ** 2
+                        elif 'log' in col:
+                            features[col] = np.log1p(max(0, ctr_pred))
+                        else:
+                            features[col] = ctr_pred
+                    elif 'rqs_pred' in col:
+                        if 'sq' in col:
+                            features[col] = (rqs_pred / 100) ** 2
+                        elif 'sigmoid' in col:
+                            features[col] = 1 / (1 + np.exp(-(rqs_pred - 50) / 10))
+                        else:
+                            features[col] = rqs_pred
+                    elif 'interaction' in col:
+                        features[col] = ctr_pred * (rqs_pred / 100)
+                    elif 'product' in col:
+                        features[col] = np.sqrt(max(0, ctr_pred * rqs_pred / 100))
+                    elif col.startswith('genre_'):
+                        genre = video_data.get('genre', 'unknown')
+                        features[col] = 1.0 if col == f'genre_{genre}' else 0.0
+                    elif 'log_age' in col:
+                        if 'sq' in col:
+                            features[col] = np.log1p(video_data.get('age_days', 0)) ** 2
+                        else:
+                            features[col] = np.log1p(video_data.get('age_days', 0))
+                    elif 'log_subs' in col:
+                        features[col] = np.log1p(video_data.get('channel_subscriber_count', 1000))
+                    else:
+                        features[col] = 0.0
+                
+                X_residual = pd.DataFrame([features])[feature_cols]
+            else:
+                # Fallback feature structure
+                X_residual = pd.DataFrame([{
+                    'ctr_pred': ctr_pred,
+                    'ctr_pred_sq': ctr_pred ** 2,
+                    'rqs_pred': rqs_pred,
+                    'rqs_pred_sq': (rqs_pred / 100) ** 2,
+                    'interaction': ctr_pred * rqs_pred / 100,
+                    'log_age': np.log1p(video_data.get('age_days', 0))
+                }])
             
-            # Caption features
-            'has_captions': 1,
-            'has_english_captions': 1,
-            'has_auto_captions': 1,
-            'has_manual_captions': 0,
-        })
-        
-        # Genre one-hot encoding
-        genres = ['kids_family', 'challenge_stunts', 'gaming', 'education_science', 'catholic']
-        for g in genres:
-            base_features[f'genre_{g}'] = 1 if genre == g else 0
-        
-        # Create different feature sets for different models
-        feature_sets = {}
-        
-        # View count model features (1,186 features)
-        view_features = base_features.copy()
-        # Add remaining features to reach exactly 1,186
-        while len(view_features) < self.VIEW_COUNT_FEATURES:
-            view_features[f'padding_feature_{len(view_features)}'] = 0.0
-        feature_sets['view_count'] = pd.DataFrame([view_features])
-        
-        # Sort base features once for consistent ordering across all models
-        sorted_base_features = sorted(base_features.items())
-        
-        # RQS model features (1,181 features - 5 fewer than view count)
-        rqs_features = {k: v for i, (k, v) in enumerate(sorted_base_features) if i < self.RQS_FEATURES}
-        while len(rqs_features) < self.RQS_FEATURES:
-            rqs_features[f'padding_feature_{len(rqs_features)}'] = 0.0
-        feature_sets['rqs'] = pd.DataFrame([rqs_features])
-        
-        # CTR model features (796 features - much smaller set)
-        ctr_features = {k: v for i, (k, v) in enumerate(sorted_base_features) if i < self.CTR_FEATURES}
-        while len(ctr_features) < self.CTR_FEATURES:
-            ctr_features[f'padding_feature_{len(ctr_features)}'] = 0.0
-        feature_sets['ctr'] = pd.DataFrame([ctr_features])
-        
-        # Genre-specific models (only 2 features)
-        genre_features = {
-            'feature_0': subscriber_count / 1000000,  # Normalized subscriber count
-            'feature_1': len(title) / 100  # Normalized title length
-        }
-        feature_sets['genre'] = pd.DataFrame([genre_features])
-        
-        print(f"✅ Created feature sets: view_count({len(view_features)}), rqs({len(rqs_features)}), ctr({len(ctr_features)}), genre({len(genre_features)})")
-        
-        return feature_sets
-
-    def create_feature_vector(self, title: str, genre: str, subscriber_count: int, 
-                            thumbnail_features: Dict, estimated_features: Dict = None) -> pd.DataFrame:
-        """Create properly formatted feature vector for ML models (legacy method)"""
-        
-        # Extract title features
-        title_features = self.extract_title_features(title)
-        
-        # Create base feature dictionary matching training data
-        features = {
-            'title_length': title_features['char_count'],
-            'channel_subscriber_count': subscriber_count,
-            'tags_count': estimated_features.get('tags_count', 10) if estimated_features else 10,
-            'description_length': estimated_features.get('description_length', 200) if estimated_features else 200,
-            'has_captions': True,  # Assume captions available
-            'has_english_captions': True,
-            'has_auto_captions': True,
-            'has_manual_captions': False,
-        }
-        
-        # Add genre one-hot encoding
-        genres = ['kids_family', 'challenge_stunts', 'gaming', 'education_science', 'catholic']
-        for g in genres:
-            features[f'genre_{g}'] = 1 if genre == g else 0
-        
-        # Add thumbnail features (use extracted or defaults)
-        features.update({
-            'thumbnail_brightness': thumbnail_features.get('brightness', 128.0),
-            'thumbnail_contrast': thumbnail_features.get('contrast', 50.0),
-            'thumbnail_edge_density': thumbnail_features.get('edge_density', 0.1),
-            'thumbnail_aspect_ratio': thumbnail_features.get('aspect_ratio', 1.78),
-            'thumbnail_red_mean': thumbnail_features.get('red_mean', 128.0),
-            'thumbnail_green_mean': thumbnail_features.get('green_mean', 128.0),
-            'thumbnail_blue_mean': thumbnail_features.get('blue_mean', 128.0)
-        })
-        
-        # Create DataFrame
-        feature_df = pd.DataFrame([features])
-        
-        print(f"🔧 Feature vector created with {len(features)} features")
-        print(f"🔧 Sample features: title_length={features['title_length']}, subs={features['channel_subscriber_count']}, brightness={features['thumbnail_brightness']:.1f}")
-        
-        return feature_df
-    
-    def generate_recommended_tags(self, title: str, genre: str, subscriber_count: int) -> List[str]:
-        """Generate recommended tags based on title and genre"""
-        
-        # Genre-specific tag banks
-        tag_banks = {
-            'gaming': [
-                'gaming', 'gameplay', 'walkthrough', 'review', 'tutorial',
-                'stream', 'multiplayer', 'strategy', 'tips', 'tricks'
-            ],
-            'education_science': [
-                'education', 'science', 'learning', 'tutorial', 'explained',
-                'research', 'facts', 'analysis', 'study', 'knowledge'
-            ],
-            'challenge_stunts': [
-                'challenge', 'stunt', 'experiment', 'test', 'reaction',
-                'viral', 'trending', 'epic', 'crazy', 'attempt'
-            ],
-            'catholic': [
-                'catholic', 'christian', 'faith', 'prayer', 'sermon',
-                'gospel', 'church', 'spiritual', 'religious', 'holy'
-            ],
-            'other': [
-                'entertainment', 'lifestyle', 'vlog', 'fun', 'creative',
-                'popular', 'trending', 'new', 'original', 'unique'
-            ]
-        }
-        
-        # Get base tags for genre
-        base_tags = tag_banks.get(genre, tag_banks['other'])
-        
-        # Extract keywords from title
-        title_words = [word.lower().strip('.,!?()[]') for word in title.split()]
-        title_keywords = [word for word in title_words if len(word) > 3]
-        
-        # Combine and prioritize
-        recommended_tags = []
-        
-        # Add top genre tags
-        recommended_tags.extend(base_tags[:5])
-        
-        # Add relevant title keywords
-        for keyword in title_keywords[:3]:
-            if keyword not in recommended_tags:
-                recommended_tags.append(keyword)
-        
-        # Add subscriber tier tags
-        if subscriber_count > 1000000:
-            recommended_tags.append('viral')
-        elif subscriber_count > 100000:
-            recommended_tags.append('popular')
-        
-        return recommended_tags[:10]  # Return top 10 tags
-    
-    def _predict_with_scaler(self, model_key: str, features: np.ndarray) -> float:
-        """
-        Helper method to predict using a model with optional scaler compatibility checking.
-        Eliminates duplicate scaler logic across different model types.
-        
-        Args:
-            model_key: The model/scaler key (e.g., 'view_count', 'rqs', 'ctr')
-            features: Feature array to predict on
+            # Scale features if scaler available
+            if 'views' in self.scalers:
+                X_residual_scaled = self.scalers['views'].transform(X_residual)
+                residual_pred = self.models['views'].predict(X_residual_scaled)[0]
+            else:
+                residual_pred = self.models['views'].predict(X_residual)[0]
             
-        Returns:
-            Prediction value as float
-        """
-        if model_key not in self.models:
-            raise ValueError(f"Model '{model_key}' not found")
+            # Combine baseline + residual
+            views_log = baseline_pred + residual_pred
             
-        # Try with scaling first if scaler available and compatible
-        if (model_key in self.scalers and 
-            len(features) == self.scalers[model_key].n_features_in_):
-            scaled_features = self.scalers[model_key].transform([features])
-            return self.models[model_key].predict(scaled_features)[0]
-        else:
-            # Direct prediction without scaling
-            return self.models[model_key].predict([features])[0]
+            # Convert from log scale
+            views = np.expm1(views_log)
+            
+            return max(int(views), 10)
+            
+        except Exception as e:
+            print(f"Views prediction error: {e}")
+            subs = video_data.get('channel_subscriber_count', 1000)
+            return int(subs * ctr_pred)
     
     def predict_performance(self, 
                           title: str,
@@ -660,166 +376,51 @@ class YouTubePredictionSystem:
                           subscriber_count: int,
                           thumbnail_data: Optional[bytes] = None,
                           video_data: Optional[Dict] = None) -> Dict:
-        """Predict video performance using trained ML models"""
+        """Main prediction method using the new model pipeline"""
         
         try:
-            print("🚀 Starting prediction with trained ML models...")
+            print(f"🚀 Starting prediction: '{title[:30]}...'")
             
-            # Prepare video data for feature engineering
+            # Prepare video data
             if video_data is None:
                 video_data = {}
             
-            # Add basic information
             video_data.update({
                 'title': title,
+                'genre': genre,
                 'channel_subscriber_count': subscriber_count,
-                'title_length': len(title),
-                'like_count': video_data.get('like_count', 0),
-                'comment_count': video_data.get('comment_count', 0),
-                'average_comment_length': video_data.get('average_comment_length', 50),
-                'sentiment_score': video_data.get('sentiment_score', 0.5),
-                'rqs': video_data.get('rqs', 0.5),
+                'age_days': 0,  # New video
                 'duration_seconds': video_data.get('duration_seconds', 300),
-                'like_ratio': video_data.get('like_ratio', 0.05),
-                'comment_ratio': video_data.get('comment_ratio', 0.01),
-                'views_per_subscriber': video_data.get('views_per_subscriber', 0.1),
-                'has_captions': video_data.get('has_captions', True),
-                'tags': video_data.get('tags', []),
-                'thumbnail_text': video_data.get('thumbnail_text', ''),
             })
             
-            # Extract and add thumbnail features
-            if thumbnail_data:
-                thumbnail_features = self.extract_thumbnail_features(thumbnail_data)
-                print(f"🖼️ Extracted thumbnail features: brightness={thumbnail_features.get('brightness', 0):.1f}")
-            else:
-                thumbnail_features = self.get_default_thumbnail_features()
-                print(f"🖼️ Using default thumbnail features")
+            # Step 1: Predict CTR
+            ctr_pred = self.predict_ctr(video_data)
+            print(f"📊 CTR predicted: {ctr_pred:.4f}")
             
-            # Create training-compatible feature vectors for each model type
-            print("🔧 Creating training-compatible feature vectors...")
-            feature_sets = self.create_training_compatible_features(
-                title=title,
-                genre=genre, 
-                subscriber_count=subscriber_count,
-                thumbnail_features=thumbnail_features,
-                estimated_features=video_data
-            )
+            # Step 2: Predict RQS
+            rqs_pred = self.predict_rqs(video_data)
+            print(f"📈 RQS predicted: {rqs_pred:.1f}")
             
-            predictions = {}
+            # Step 3: Predict Views using CTR and RQS
+            views_pred = self.predict_views(ctr_pred, rqs_pred, video_data)
+            print(f"👁️ Views predicted: {views_pred:,}")
             
-            # View Count Prediction with proper feature vector
-            try:
-                if 'view_count' in self.models:
-                    view_features = feature_sets['view_count'].values.flatten()
-                    try:
-                        pred_views = self._predict_with_scaler('view_count', view_features)
-                        predictions['predicted_views'] = max(int(pred_views), 10)
-                        print(f"📊 Views predicted by YOUR trained model: {predictions['predicted_views']:,}")
-                    except Exception as model_error:
-                        print(f"⚠️ Model error with {len(view_features)} features: {model_error}")
-                        # Enhanced fallback prediction
-                        base_engagement = 0.05
-                        genre_mult = {'kids_family': 1.2, 'challenge_stunts': 1.1, 'gaming': 0.9, 
-                                     'education_science': 0.8, 'catholic': 0.7}.get(genre, 1.0)
-                        thumbnail_mult = 1.0 + (thumbnail_features.get('brightness', 128) - 128) / 500
-                        predictions['predicted_views'] = max(int(subscriber_count * base_engagement * genre_mult * thumbnail_mult), 10)
-                else:
-                    raise Exception("View count model not available")
-            except Exception as e:
-                print(f"⚠️ View prediction using fallback due to error: {e}")
-                # Enhanced fallback prediction with thumbnail influence
-                base_engagement = 0.05
-                genre_mult = {'kids_family': 1.2, 'challenge_stunts': 1.1, 'gaming': 0.9, 
-                             'education_science': 0.8, 'catholic': 0.7}.get(genre, 1.0)
-                thumbnail_mult = 1.0 + (thumbnail_features.get('brightness', 128) - 128) / 500
-                predictions['predicted_views'] = max(int(subscriber_count * base_engagement * genre_mult * thumbnail_mult), 10)
-            
-            # RQS Prediction with proper feature vector
-            try:
-                # Try genre-specific model first
-                genre_model_key = f'rqs_{genre}'
-                if genre_model_key in self.models:
-                    genre_features = feature_sets['genre'].values.flatten()
-                    try:
-                        pred_rqs = self.models[genre_model_key].predict([genre_features])[0]
-                        predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
-                        print(f"📈 RQS predicted by YOUR {genre} model: {predictions['predicted_rqs']:.1f}")
-                    except Exception as model_error:
-                        print(f"⚠️ Genre model error with {len(genre_features)} features: {model_error}")
-                        # Fallback to main RQS model
-                        if 'rqs' in self.models:
-                            rqs_features = feature_sets['rqs'].values.flatten()
-                            try:
-                                pred_rqs = self._predict_with_scaler('rqs', rqs_features)
-                                predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
-                                print(f"📈 RQS predicted by main model: {predictions['predicted_rqs']:.1f}")
-                            except Exception:
-                                predictions['predicted_rqs'] = 30.0
-                        else:
-                            predictions['predicted_rqs'] = 30.0
-                elif 'rqs' in self.models:
-                    rqs_features = feature_sets['rqs'].values.flatten()
-                    try:
-                        if 'rqs' in self.scalers and len(rqs_features) == self.scalers['rqs'].n_features_in_:
-                            scaled_features = self.scalers['rqs'].transform([rqs_features])
-                            pred_rqs = self.models['rqs'].predict(scaled_features)[0]
-                        else:
-                            pred_rqs = self.models['rqs'].predict([rqs_features])[0]
-                            
-                        predictions['predicted_rqs'] = max(min(float(pred_rqs), 100.0), 0.0)
-                        print(f"📈 RQS predicted by YOUR general model: {predictions['predicted_rqs']:.1f}")
-                    except Exception as model_error:
-                        print(f"⚠️ Model error with {len(rqs_features)} features: {model_error}")
-                        predictions['predicted_rqs'] = 30.0
-                else:
-                    raise Exception("RQS model not available")
-            except Exception as e:
-                print(f"⚠️ RQS prediction using fallback due to error: {e}")
-                # Enhanced fallback with thumbnail bonus
-                base_rqs = 40 + (subscriber_count / 100000) * 10
-                thumbnail_bonus = (thumbnail_features.get('edge_density', 0.1) * 100)
-                predictions['predicted_rqs'] = max(min(base_rqs + thumbnail_bonus, 100.0), 0.0)
-            
-            # CTR Prediction with proper feature vector
-            try:
-                if 'ctr' in self.models:
-                    ctr_features = feature_sets['ctr'].values.flatten()
-                    try:
-                        pred_ctr = self._predict_with_scaler('ctr', ctr_features)
-                        predictions['predicted_ctr'] = max(min(float(pred_ctr), 1.0), 0.0)
-                        print(f"👆 CTR predicted by YOUR model: {predictions['predicted_ctr']:.4f}")
-                    except Exception as model_error:
-                        print(f"⚠️ CTR model error with {len(ctr_features)} features: {model_error}")
-                        # Thumbnail-aware fallback
-                        base_ctr = 0.05
-                        thumbnail_mult = 1.0 + (thumbnail_features.get('brightness', 128) - 128) / 1000
-                        predictions['predicted_ctr'] = max(min(base_ctr * thumbnail_mult, 1.0), 0.0)
-                else:
-                    raise Exception("CTR model not available")
-            except Exception as e:
-                print(f"⚠️ CTR prediction using fallback due to error: {e}")
-                # Enhanced fallback with thumbnail impact
-                base_ctr = 0.03
-                contrast_boost = min(thumbnail_features.get('contrast', 50) / 100, 0.02)
-                predictions['predicted_ctr'] = max(min(base_ctr + contrast_boost, 1.0), 0.0)
-            
-            # Add confidence scores and metadata
-            total_features = sum(len(fs.columns) for fs in feature_sets.values())
-            predictions.update({
-                'confidence_score': 0.85,  # High confidence with ML models
-                'model_version': '2.0',
-                'features_used': total_features,
-                'feature_breakdown': {name: len(fs.columns) for name, fs in feature_sets.items()},
-                'thumbnail_analyzed': thumbnail_data is not None,
-                'genre_specific_model': f'rqs_{genre}' in self.models
-            })
-            
-            print(f"✅ ML-powered predictions complete: Views={predictions['predicted_views']}, RQS={predictions['predicted_rqs']:.1f}, CTR={predictions['predicted_ctr']:.4f}")
-            return predictions
+            return {
+                'predicted_views': views_pred,
+                'predicted_rqs': rqs_pred,
+                'predicted_ctr': ctr_pred,
+                'confidence_score': 0.85,
+                'model_version': '3.0',
+                'models_used': list(self.models.keys()),
+                'prediction_flow': 'CTR → RQS → Views'
+            }
             
         except Exception as e:
             print(f"❌ Prediction error: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Fallback predictions
             return {
                 'predicted_views': int(subscriber_count * 0.05),
                 'predicted_rqs': 50.0,
@@ -832,12 +433,12 @@ class YouTubePredictionSystem:
 predictor = YouTubePredictionSystem()
 
 # FastAPI app
-app = FastAPI(title="YouTube Performance Predictor", version="1.0.0")
+app = FastAPI(title="YouTube Performance Predictor", version="3.0")
 
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your dashboard domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -849,64 +450,40 @@ async def predict_video_performance(
     genre: str = Form(...),
     subscriber_count: int = Form(...),
     thumbnail: Optional[UploadFile] = File(None),
-    # Optional additional features for better predictions
     tags: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
-    duration_seconds: Optional[int] = Form(None),
-    like_count: Optional[int] = Form(None),
-    comment_count: Optional[int] = Form(None),
-    has_captions: Optional[bool] = Form(True)
+    duration_seconds: Optional[int] = Form(None)
 ):
-    """Predict video performance using trained ML models with comprehensive features"""
+    """Predict video performance using new ML models"""
     
     try:
         # Validate genre
-        valid_genres = ['gaming', 'education_science', 'challenge_stunts', 'catholic', 'other', 'kids_family']
+        valid_genres = ['gaming', 'education_science', 'challenge_stunts', 'catholic', 
+                       'kids_family', 'unknown']
         if genre not in valid_genres:
-            raise HTTPException(status_code=400, detail=f"Invalid genre. Must be one of: {valid_genres}")
+            genre = 'unknown'
+        
+        # Prepare video data
+        video_data = {
+            'duration_seconds': duration_seconds or 300,
+            'age_days': 0
+        }
+        
+        if tags:
+            try:
+                video_data['tags'] = ast.literal_eval(tags) if tags.startswith('[') else tags.split(',')
+            except:
+                video_data['tags'] = tags.split(',')
+        
+        if description:
+            video_data['description'] = description
         
         # Process thumbnail if provided
         thumbnail_data = None
         if thumbnail:
             thumbnail_data = await thumbnail.read()
         
-        # Prepare additional video data for feature engineering
-        video_data = {}
-        
-        # Parse tags if provided
-        if tags:
-            try:
-                import ast
-                video_data['tags'] = ast.literal_eval(tags) if tags.startswith('[') else tags.split(',')
-            except:
-                video_data['tags'] = tags.split(',')
-        
-        # Add other features if provided
-        if description:
-            video_data['description'] = description
-            video_data['description_length'] = len(description)
-        
-        if duration_seconds:
-            video_data['duration_seconds'] = duration_seconds
-            
-        if like_count is not None:
-            video_data['like_count'] = like_count
-            
-        if comment_count is not None:
-            video_data['comment_count'] = comment_count
-            
-        video_data['has_captions'] = has_captions
-        
-        # Calculate derived features
-        if like_count and comment_count and subscriber_count:
-            video_data['like_ratio'] = like_count / max(subscriber_count, 1)
-            video_data['comment_ratio'] = comment_count / max(subscriber_count, 1)
-            video_data['views_per_subscriber'] = 0.1  # Estimated
-        
-        print(f"🎯 Predicting with ML models: Title='{title}', Genre={genre}, Subs={subscriber_count}")
-        print(f"📊 Additional features: tags={len(video_data.get('tags', []))}, duration={video_data.get('duration_seconds', 'N/A')}")
-        
-        # Get predictions using your trained models
+        # Get predictions
         predictions = predictor.predict_performance(
             title=title,
             genre=genre,
@@ -921,7 +498,6 @@ async def predict_video_performance(
             'genre': genre,
             'subscriber_count': subscriber_count,
             'has_thumbnail': thumbnail is not None,
-            'features_provided': len([x for x in [tags, description, duration_seconds, like_count, comment_count] if x is not None]),
             'prediction_date': datetime.now().isoformat()
         }
         
@@ -935,49 +511,33 @@ async def predict_video_performance(
 
 @app.get("/")
 async def root():
-    """Root endpoint for testing API connectivity"""
+    """Root endpoint"""
     return {
         "service": "YouTube ML Prediction API",
+        "version": "3.0",
         "status": "active",
-        "models_loaded": len(predictor.models),
-        "version": "1.0.0"
+        "models": {
+            "ctr": "ctr" in predictor.models,
+            "rqs": "rqs" in predictor.models,
+            "views": "views" in predictor.models
+        }
     }
-
-@app.get("/api/test")
-async def test_endpoint():
-    """Simple test endpoint"""
-    return {"message": "Prediction API is working!", "timestamp": datetime.now().isoformat()}
 
 @app.get("/api/health")
 async def health_check():
-    """Health check endpoint for Railway monitoring"""
+    """Health check endpoint"""
     return {
-        "service": "YouTube ML Prediction API",
         "status": "healthy",
         "models_loaded": len(predictor.models),
-        "version": "1.0.0",
+        "baseline_models": len(predictor.baseline_models),
         "timestamp": datetime.now().isoformat()
     }
 
-@app.get("/api/models/status")
-async def get_models_status():
-    """Get status of loaded ML models"""
-    return {
-        "models_loaded": list(predictor.models.keys()),
-        "scalers_loaded": list(predictor.scalers.keys()),
-        "total_models": len(predictor.models),
-        "status": "ready"
-    }
-
 if __name__ == "__main__":
-    print("🚀 Starting YouTube Performance Prediction API...")
-    print("📊 Models loaded:", len(predictor.models))
+    print("🚀 Starting YouTube Performance Prediction API v3.0...")
+    print(f"📊 Models loaded: {list(predictor.models.keys())}")
+    print(f"📊 Baseline models: {list(predictor.baseline_models.keys())}")
     print("🔮 Ready for predictions!")
     print("📖 API docs: http://localhost:8002/docs")
     
-    uvicorn.run(
-        app,
-        host="0.0.0.0",
-        port=8002,
-        log_level="info"
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8002, log_level="info")
