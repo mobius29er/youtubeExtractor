@@ -25,34 +25,14 @@ COPY src/ ./src/
 COPY models/ ./models/
 COPY extracted_data/ ./extracted_data/
 RUN echo "Copied models directory and extracted_data for predictions"
-RUN ls -la models/ 2>/dev/null || echo "Models directory not found, will use fallback predictions"
+RUN ls -la models/ | head -5
 
-# Test critical imports before starting server
-RUN echo "Testing critical imports..."
-RUN python -c "import fastapi; print('✅ FastAPI OK')" || echo "❌ FastAPI failed"
-RUN python -c "import uvicorn; print('✅ Uvicorn OK')" || echo "❌ Uvicorn failed" 
-RUN python -c "import pandas; print('✅ Pandas OK')" || echo "❌ Pandas failed"
-RUN python -c "import numpy; print('✅ Numpy OK')" || echo "❌ Numpy failed"
-RUN python -c "import sklearn; print('✅ Sklearn OK')" || echo "❌ Sklearn failed"
-RUN python -c "import cv2; print('✅ OpenCV OK')" || echo "❌ OpenCV failed"
-RUN python -c "import PIL; print('✅ PIL OK')" || echo "❌ PIL failed"
-RUN python -c "import joblib; print('✅ Joblib OK')" || echo "❌ Joblib failed"
-
-# Test if prediction_api can be imported
-RUN echo "Testing prediction_api import..."
-RUN python -c "import sys; sys.path.append('src'); import prediction_api; print('✅ prediction_api import OK')" || echo "❌ prediction_api import failed"
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Health check with much longer startup time for ML model loading
+HEALTHCHECK --interval=30s --timeout=15s --start-period=180s --retries=5 \
   CMD curl --fail http://localhost:8002/api/health || exit 1
 
 # Expose port
 EXPOSE 8002
 
-# Run prediction API server with debugging
-CMD echo "🚀 Starting prediction API server..." && \
-    echo "Current directory: $(pwd)" && \
-    echo "Python path: $PYTHONPATH" && \
-    ls -la src/ && \
-    echo "Starting server..." && \
-    exec python src/prediction_api.py || (echo "❌ Server failed to start" && sleep infinity)
+# Run prediction API server (simplified)
+CMD ["python", "src/prediction_api.py"]
