@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-YouTube Video Performance Prediction API
-Enhanced version with proper thumbnail processing and realistic predictions
+YouTube Video Performance Prediction API - Optimized Version
+Addresses performance issues and improves prediction accuracy
 """
 
 import os
@@ -12,14 +12,12 @@ import joblib
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Tuple
 from datetime import datetime
 import ast
 from io import BytesIO
 from PIL import Image
 import cv2
-from collections import Counter
-from sklearn.cluster import KMeans
 
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,40 +27,51 @@ import uvicorn
 # Suppress warnings
 warnings.filterwarnings('ignore')
 
+
 class ThumbnailProcessor:
-    """Process thumbnail images to extract features"""
+    """Optimized thumbnail processor with pre-loaded models"""
+    
+    def __init__(self):
+        """Initialize with pre-loaded face cascade"""
+        try:
+            self.face_cascade = cv2.CascadeClassifier(
+                cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            )
+            if self.face_cascade.empty():
+                print("Warning: Face cascade not loaded properly")
+                self.face_cascade = None
+        except Exception as e:
+            print(f"Warning: Could not load face cascade: {e}")
+            self.face_cascade = None
     
     def extract_features(self, image_bytes: bytes) -> Dict:
-        """Extract comprehensive features from thumbnail"""
+        """Extract features using optimized methods"""
         try:
             # Convert bytes to PIL Image
             image = Image.open(BytesIO(image_bytes))
-            # Convert to RGB if needed
             if image.mode != 'RGB':
                 image = image.convert('RGB')
             
-            # Convert to numpy array
+            # Convert to numpy array for OpenCV
             img_array = np.array(image)
-            
-            # Convert to OpenCV format (BGR)
             img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
             
             features = {}
             
-            # 1. Basic image properties
+            # Basic properties
             height, width = img_bgr.shape[:2]
             features['aspect_ratio'] = width / height
             
-            # 2. Color analysis
-            features.update(self._extract_color_features(img_bgr))
+            # Fast color extraction (no KMeans)
+            features.update(self._extract_color_features_fast(image, img_bgr))
             
-            # 3. Face detection
+            # Face detection (using pre-loaded cascade)
             features['face_area_percentage'] = self._detect_faces(img_bgr)
             
-            # 4. Text detection (simple approach)
+            # Text detection
             features['has_text'] = self._detect_text_regions(img_bgr)
             
-            # 5. Image quality metrics
+            # Quality metrics
             features.update(self._extract_quality_metrics(img_bgr))
             
             return features
@@ -71,62 +80,74 @@ class ThumbnailProcessor:
             print(f"Thumbnail processing error: {e}")
             return self._get_default_features()
     
-    def _extract_color_features(self, img_bgr) -> Dict:
-        """Extract color-based features"""
+    def _extract_color_features_fast(self, img_pil: Image.Image, img_bgr) -> Dict:
+        """Fast color extraction using PIL quantization instead of KMeans"""
         features = {}
         
-        # Convert to RGB for color analysis
-        img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
-        
-        # 1. Dominant colors (using K-means clustering)
-        pixels = img_rgb.reshape(-1, 3)
-        kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
-        kmeans.fit(pixels)
-        dominant_colors = kmeans.cluster_centers_.astype(int)
-        
-        features['dominant_colors'] = dominant_colors.tolist()
-        
-        # 2. Color palette (top 5 colors)
-        kmeans_palette = KMeans(n_clusters=5, random_state=42, n_init=10)
-        kmeans_palette.fit(pixels)
-        color_palette = kmeans_palette.cluster_centers_.astype(int)
-        features['color_palette'] = color_palette.tolist()
-        
-        # 3. Average RGB
-        avg_color = np.mean(pixels, axis=0)
-        features['average_rgb'] = avg_color.tolist()
-        features['avg_r'] = float(avg_color[0])
-        features['avg_g'] = float(avg_color[1])
-        features['avg_b'] = float(avg_color[2])
-        
-        # 4. Brightness and contrast
-        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-        features['brightness'] = float(np.mean(gray))
-        features['contrast'] = float(np.std(gray))
-        
-        # 5. Saturation
-        hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
-        features['saturation'] = float(np.mean(hsv[:, :, 1]))
-        
-        # 6. Color variance (how varied the colors are)
-        features['color_variance'] = float(np.std(pixels))
-        
-        # 7. Warm/cool tone
-        warm_cool = (avg_color[0] - avg_color[2]) / 255.0  # Red - Blue
-        features['warm_cool'] = float(warm_cool)
+        try:
+            # Use PIL's built-in quantization (much faster than KMeans)
+            # Reduce to 5 colors
+            quantized = img_pil.quantize(colors=5, method=Image.Resampling.FASTOCTREE)
+            palette = quantized.getpalette()
+            
+            # Extract dominant colors from palette
+            dominant_colors = []
+            for i in range(0, 15, 3):  # First 5 colors
+                if i + 2 < len(palette):
+                    dominant_colors.append([palette[i], palette[i+1], palette[i+2]])
+            
+            # Pad with defaults if needed
+            while len(dominant_colors) < 5:
+                dominant_colors.append([128, 128, 128])
+            
+            features['dominant_colors'] = dominant_colors[:3]
+            features['color_palette'] = dominant_colors
+            
+            # Fast average color calculation using numpy
+            img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
+            avg_color = np.mean(img_rgb.reshape(-1, 3), axis=0)
+            features['average_rgb'] = avg_color.tolist()
+            features['avg_r'] = float(avg_color[0])
+            features['avg_g'] = float(avg_color[1])
+            features['avg_b'] = float(avg_color[2])
+            
+            # Brightness and contrast
+            gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+            features['brightness'] = float(np.mean(gray))
+            features['contrast'] = float(np.std(gray))
+            
+            # Saturation (simplified calculation)
+            hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
+            features['saturation'] = float(np.mean(hsv[:, :, 1]))
+            
+            # Color variance
+            features['color_variance'] = float(np.std(img_rgb))
+            
+            # Warm/cool tone
+            warm_cool = (avg_color[0] - avg_color[2]) / 255.0
+            features['warm_cool'] = float(warm_cool)
+            
+        except Exception as e:
+            print(f"Color extraction error: {e}")
+            # Return defaults
+            features.update(self._get_default_color_features())
         
         return features
     
     def _detect_faces(self, img_bgr) -> float:
-        """Detect faces and return percentage of image area"""
+        """Detect faces using pre-loaded cascade"""
+        if self.face_cascade is None:
+            return 0.0
+        
         try:
-            # Use OpenCV's face detector
-            face_cascade = cv2.CascadeClassifier(
-                cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-            )
-            
             gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-            faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+            # Optimize detection parameters for speed
+            faces = self.face_cascade.detectMultiScale(
+                gray, 
+                scaleFactor=1.2,  # Less aggressive scaling
+                minNeighbors=3,   # Fewer neighbors required
+                minSize=(30, 30)  # Minimum face size
+            )
             
             if len(faces) == 0:
                 return 0.0
@@ -141,25 +162,21 @@ class ThumbnailProcessor:
             return 0.0
     
     def _detect_text_regions(self, img_bgr) -> float:
-        """Simple text detection using edge density in likely text areas"""
+        """Simple text detection using edge density"""
         try:
             gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-            
-            # Apply edge detection
             edges = cv2.Canny(gray, 50, 150)
             
-            # Focus on areas where text is likely (top and bottom thirds)
             height = edges.shape[0]
+            # Check top and bottom thirds where text usually appears
             top_third = edges[:height//3, :]
             bottom_third = edges[2*height//3:, :]
             
-            # Calculate edge density in text-likely areas
             text_area_edges = np.sum(top_third > 0) + np.sum(bottom_third > 0)
             text_area_pixels = top_third.size + bottom_third.size
             
             edge_density = text_area_edges / text_area_pixels if text_area_pixels > 0 else 0
             
-            # Threshold for likely text presence (calibrated value)
             return float(edge_density > 0.05)
             
         except Exception:
@@ -169,21 +186,26 @@ class ThumbnailProcessor:
         """Extract image quality metrics"""
         features = {}
         
-        # 1. Edge density (image complexity)
-        gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
-        edges = cv2.Canny(gray, 50, 150)
-        features['edge_density'] = float(np.sum(edges > 0) / edges.size)
-        
-        # 2. Blur detection (Laplacian variance)
-        laplacian = cv2.Laplacian(gray, cv2.CV_64F)
-        features['sharpness'] = float(laplacian.var())
+        try:
+            gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+            
+            # Edge density
+            edges = cv2.Canny(gray, 50, 150)
+            features['edge_density'] = float(np.sum(edges > 0) / edges.size)
+            
+            # Sharpness (Laplacian variance)
+            laplacian = cv2.Laplacian(gray, cv2.CV_64F)
+            features['sharpness'] = float(laplacian.var())
+            
+        except Exception:
+            features['edge_density'] = 0.1
+            features['sharpness'] = 100.0
         
         return features
     
-    def _get_default_features(self) -> Dict:
-        """Return default features when processing fails"""
+    def _get_default_color_features(self) -> Dict:
+        """Default color features for fallback"""
         return {
-            'aspect_ratio': 1.78,
             'dominant_colors': [[128, 128, 128]] * 3,
             'color_palette': [[128, 128, 128]] * 5,
             'average_rgb': [128, 128, 128],
@@ -194,16 +216,24 @@ class ThumbnailProcessor:
             'contrast': 50.0,
             'saturation': 128.0,
             'color_variance': 30.0,
-            'warm_cool': 0.0,
+            'warm_cool': 0.0
+        }
+    
+    def _get_default_features(self) -> Dict:
+        """Complete default features"""
+        features = {
+            'aspect_ratio': 1.78,
             'face_area_percentage': 0.0,
             'has_text': 0.0,
             'edge_density': 0.1,
             'sharpness': 100.0
         }
+        features.update(self._get_default_color_features())
+        return features
 
 
 class YouTubePredictionSystem:
-    """ML-powered prediction system with thumbnail analysis"""
+    """ML prediction system with optimized embeddings and model loading"""
     
     def __init__(self):
         self.models = {}
@@ -212,8 +242,14 @@ class YouTubePredictionSystem:
         self.baseline_models = {}
         self.guardrails = {}
         self.thumbnail_processor = ThumbnailProcessor()
-        self.load_models()
         
+        # TF-IDF and SVD for embeddings
+        self.tfidf = None
+        self.svd = None
+        
+        self.load_models()
+        self.load_embedding_models()
+    
     def load_models(self):
         """Load all trained ML models"""
         script_dir = Path(__file__).parent
@@ -239,7 +275,6 @@ class YouTubePredictionSystem:
                 self.feature_lists['rqs'] = joblib.load(models_dir / "rqs_features.joblib")
                 print(f"RQS model loaded ({len(self.feature_lists['rqs'])} features)")
                 
-                # Load slice stats for RQS
                 if (models_dir / "rqs_slice_stats.json").exists():
                     with open(models_dir / "rqs_slice_stats.json", 'r') as f:
                         self.rqs_slice_stats = json.load(f)
@@ -263,27 +298,108 @@ class YouTubePredictionSystem:
             print(f"Error loading models: {e}")
             raise
     
+    def load_embedding_models(self):
+        """Load TF-IDF and SVD models for proper embeddings"""
+        models_dir = Path(__file__).parent.parent / "models"
+        
+        # Try to load saved TF-IDF and SVD models
+        try:
+            if (models_dir / "tfidf_title.joblib").exists():
+                self.tfidf = {}
+                self.svd = {}
+                
+                # Load different models for different text types
+                for text_type in ['title', 'description', 'tags', 'thumb_text']:
+                    tfidf_path = models_dir / f"tfidf_{text_type}.joblib"
+                    svd_path = models_dir / f"svd_{text_type}.joblib"
+                    
+                    if tfidf_path.exists() and svd_path.exists():
+                        self.tfidf[text_type] = joblib.load(tfidf_path)
+                        self.svd[text_type] = joblib.load(svd_path)
+                        print(f"Loaded TF-IDF/SVD for {text_type}")
+                
+                if not self.tfidf:
+                    self.tfidf = None
+                    self.svd = None
+                    print("WARNING: No TF-IDF/SVD models found - using fallback embeddings")
+            else:
+                print("WARNING: TF-IDF/SVD models not found - predictions will be less accurate")
+                print("To fix: Save TF-IDF and SVD models during training")
+                
+        except Exception as e:
+            print(f"Error loading embedding models: {e}")
+            self.tfidf = None
+            self.svd = None
+    
+    def generate_embeddings(self, text: str, text_type: str, n_components: int = 30) -> np.ndarray:
+        """Generate proper embeddings using TF-IDF/SVD if available"""
+        # Use real embeddings if available
+        if self.tfidf and self.svd and text_type in self.tfidf:
+            try:
+                tfidf_matrix = self.tfidf[text_type].transform([text])
+                embedding = self.svd[text_type].transform(tfidf_matrix)
+                return embedding.flatten()[:n_components]
+            except Exception as e:
+                print(f"Embedding generation error for {text_type}: {e}")
+        
+        # Fallback: Create simple feature-based embeddings (better than hash)
+        # This is still not ideal but better than random hash values
+        if not text:
+            return np.zeros(n_components)
+        
+        # Create basic text features
+        features = []
+        features.append(len(text) / 100.0)  # Length feature
+        features.append(len(text.split()) / 20.0)  # Word count
+        features.append(text.count('!') / 5.0)  # Exclamations
+        features.append(text.count('?') / 5.0)  # Questions
+        features.append(sum(c.isupper() for c in text) / max(len(text), 1))  # Caps ratio
+        
+        # Pad with zeros to match expected dimensions
+        while len(features) < n_components:
+            features.append(0.0)
+        
+        return np.array(features[:n_components])
+    
     def prepare_features_with_thumbnail(self, video_data: Dict, thumbnail_features: Dict, 
                                        feature_list: List[str]) -> pd.DataFrame:
-        """Prepare features including thumbnail data"""
+        """Prepare features with proper embeddings and thumbnail data"""
         features = {}
         
         for col in feature_list:
-            # Embedding features (simplified - in production, use saved TF-IDF)
-            if 'embed_' in col:
-                # Simple hash-based pseudo-embedding for consistency
-                if 'title_embed_' in col:
-                    idx = int(col.split('_')[-1])
-                    title_hash = hash(video_data.get('title', ''))
-                    features[col] = (title_hash >> idx) % 100 / 100.0
-                else:
-                    features[col] = 0.0
+            # Handle embedding features properly
+            if 'title_embed_' in col:
+                idx = int(col.split('_')[-1])
+                title_embedding = self.generate_embeddings(
+                    video_data.get('title', ''), 'title', 30
+                )
+                features[col] = title_embedding[idx] if idx < len(title_embedding) else 0.0
+                
+            elif 'description_embed_' in col:
+                idx = int(col.split('_')[-1])
+                desc_embedding = self.generate_embeddings(
+                    video_data.get('description', ''), 'description', 30
+                )
+                features[col] = desc_embedding[idx] if idx < len(desc_embedding) else 0.0
+                
+            elif 'tags_embed_' in col:
+                idx = int(col.split('_')[-1])
+                tags_text = ' '.join(video_data.get('tags', [])) if isinstance(video_data.get('tags'), list) else ''
+                tags_embedding = self.generate_embeddings(tags_text, 'tags', 20)
+                features[col] = tags_embedding[idx] if idx < len(tags_embedding) else 0.0
+                
+            elif 'thumb_text_embed_' in col:
+                idx = int(col.split('_')[-1])
+                thumb_embedding = self.generate_embeddings(
+                    video_data.get('thumbnail_text', ''), 'thumb_text', 15
+                )
+                features[col] = thumb_embedding[idx] if idx < len(thumb_embedding) else 0.0
             
-            # Thumbnail features
+            # Thumbnail visual features
             elif col in thumbnail_features:
                 features[col] = float(thumbnail_features[col])
             
-            # RGB color features
+            # RGB features
             elif 'avg_r' in col or 'average_r' in col:
                 features[col] = thumbnail_features.get('avg_r', 128.0)
             elif 'avg_g' in col or 'average_g' in col:
@@ -291,7 +407,7 @@ class YouTubePredictionSystem:
             elif 'avg_b' in col or 'average_b' in col:
                 features[col] = thumbnail_features.get('avg_b', 128.0)
             
-            # Visual features
+            # Other visual features
             elif 'brightness' in col:
                 features[col] = thumbnail_features.get('brightness', 128.0)
             elif 'contrast' in col:
@@ -328,142 +444,6 @@ class YouTubePredictionSystem:
         
         return pd.DataFrame([features])[feature_list]
     
-    def predict_ctr(self, video_data: Dict, thumbnail_features: Dict) -> float:
-        """Predict CTR (views/subscribers ratio)"""
-        if 'ctr' not in self.models:
-            # Realistic fallback
-            return 0.05  # 5% of subscribers typically view
-        
-        try:
-            # Prepare features
-            X_residual = self.prepare_features_with_thumbnail(
-                video_data, thumbnail_features, self.feature_lists['ctr']
-            )
-            
-            # Get residual prediction
-            if hasattr(self.models['ctr'], 'predict'):
-                residual_pred = self.models['ctr'].predict(X_residual)[0]
-            else:
-                residual_pred = 0.0
-            
-            # Get baseline prediction
-            X_baseline = self.prepare_baseline_features(video_data)
-            baseline_pred = self.baseline_models['ctr'].predict(X_baseline)[0]
-            
-            # Combine and convert from log scale
-            ctr_log = baseline_pred + residual_pred
-            
-            # CTR in your model is log(1 + views/subs), so reverse it
-            ctr = np.expm1(ctr_log)  # This gives views/subs ratio
-            
-            # Bound to reasonable values
-            # Most videos get 5-20% of subscriber views initially
-            return np.clip(ctr, 0.01, 2.0)  # Allow up to 200% (viral potential)
-            
-        except Exception as e:
-            print(f"CTR prediction error: {e}")
-            return 0.05
-    
-    def predict_rqs(self, video_data: Dict, thumbnail_features: Dict) -> float:
-        """Predict RQS with thumbnail quality impact"""
-        if 'rqs' not in self.models:
-            # Thumbnail quality influences retention
-            base_rqs = 40.0
-            quality_boost = thumbnail_features.get('sharpness', 100) / 10
-            face_boost = min(thumbnail_features.get('face_area_percentage', 0) * 2, 20)
-            return np.clip(base_rqs + quality_boost + face_boost, 10, 90)
-        
-        try:
-            X_rqs = self.prepare_features_with_thumbnail(
-                video_data, thumbnail_features, self.feature_lists['rqs']
-            )
-            
-            if hasattr(self.models['rqs'], 'predict'):
-                rqs_pred = self.models['rqs'].predict(X_rqs)[0]
-            else:
-                rqs_pred = 50.0
-            
-            return np.clip(rqs_pred, 10, 90)
-            
-        except Exception as e:
-            print(f"RQS prediction error: {e}")
-            return 50.0
-    
-    def predict_views(self, ctr_pred: float, rqs_pred: float, video_data: Dict) -> int:
-        """Predict views using CTR and RQS predictions"""
-        subs = video_data.get('channel_subscriber_count', 1000)
-        genre = video_data.get('genre', 'unknown')
-        
-        if 'views' not in self.models:
-            # Simple fallback: CTR * subscribers
-            base_views = subs * ctr_pred
-            return max(int(base_views), 10)
-        
-        try:
-            # Baseline prediction
-            X_baseline = self.prepare_baseline_features(video_data)
-            baseline_pred = self.baseline_models['views'].predict(X_baseline)[0]
-            
-            # Residual features
-            features = {
-                'ctr_pred': ctr_pred,
-                'ctr_pred_sq': ctr_pred ** 2,
-                'ctr_pred_log': np.log1p(max(0, ctr_pred)),
-                'rqs_pred': rqs_pred,
-                'rqs_pred_sq': (rqs_pred / 100) ** 2,
-                'rqs_pred_sigmoid': 1 / (1 + np.exp(-(rqs_pred - 50) / 10)),
-                'ctr_rqs_interaction': ctr_pred * (rqs_pred / 100),
-                'ctr_rqs_product': np.sqrt(max(0, ctr_pred * rqs_pred / 100)),
-                'log_age': np.log1p(video_data.get('age_days', 0)),
-                'log_age_sq': np.log1p(video_data.get('age_days', 0)) ** 2,
-                'log_subs': np.log1p(subs),
-                'ctr_subs_interaction': ctr_pred * np.log1p(subs)
-            }
-            
-            # Add genre features
-            for col in self.feature_lists.get('views', []):
-                if col.startswith('genre_'):
-                    features[col] = 1.0 if col == f'genre_{genre}' else 0.0
-            
-            X_residual = pd.DataFrame([features])[self.feature_lists['views']]
-            
-            # Scale and predict
-            X_scaled = self.scalers['views'].transform(X_residual)
-            residual_pred = self.models['views'].predict(X_scaled)[0]
-            
-            # Combine predictions
-            views_log = baseline_pred + residual_pred
-            views = np.expm1(views_log)
-            
-            # Apply guardrails if available
-            if self.guardrails:
-                # Determine subscriber bucket (similar to training)
-                log_subs = np.log1p(subs)
-                if log_subs < 6.9:  # ~1K subs
-                    subs_bucket = 0
-                elif log_subs < 9.2:  # ~10K subs
-                    subs_bucket = 1
-                elif log_subs < 11.5:  # ~100K subs
-                    subs_bucket = 2
-                elif log_subs < 13.8:  # ~1M subs
-                    subs_bucket = 3
-                else:
-                    subs_bucket = 4
-                
-                # Look up guardrail
-                guardrail_key = f"{genre}|{subs_bucket}"
-                if guardrail_key in self.guardrails:
-                    max_views = self.guardrails[guardrail_key]
-                    views = min(views, max_views)
-                    print(f"Applied guardrail for {guardrail_key}: max={max_views:,.0f}")
-            
-            return max(int(views), 10)
-            
-        except Exception as e:
-            print(f"Views prediction error: {e}")
-            # Fallback: use CTR * subscribers
-            return max(int(subs * ctr_pred), 10)
-    
     def prepare_baseline_features(self, video_data: Dict) -> pd.DataFrame:
         """Prepare baseline features"""
         features = {
@@ -488,10 +468,132 @@ class YouTubePredictionSystem:
         
         return pd.DataFrame([features])[feature_cols]
     
+    def predict_ctr(self, video_data: Dict, thumbnail_features: Dict) -> float:
+        """Predict CTR (views/subscribers ratio)"""
+        if 'ctr' not in self.models:
+            return 0.05  # 5% default
+        
+        try:
+            X_residual = self.prepare_features_with_thumbnail(
+                video_data, thumbnail_features, self.feature_lists['ctr']
+            )
+            
+            if hasattr(self.models['ctr'], 'predict'):
+                residual_pred = self.models['ctr'].predict(X_residual)[0]
+            else:
+                residual_pred = 0.0
+            
+            X_baseline = self.prepare_baseline_features(video_data)
+            baseline_pred = self.baseline_models['ctr'].predict(X_baseline)[0]
+            
+            ctr_log = baseline_pred + residual_pred
+            ctr = np.expm1(ctr_log)
+            
+            return np.clip(ctr, 0.01, 2.0)
+            
+        except Exception as e:
+            print(f"CTR prediction error: {e}")
+            return 0.05
+    
+    def predict_rqs(self, video_data: Dict, thumbnail_features: Dict) -> float:
+        """Predict RQS (0-100 score)"""
+        if 'rqs' not in self.models:
+            return 50.0
+        
+        try:
+            X_rqs = self.prepare_features_with_thumbnail(
+                video_data, thumbnail_features, self.feature_lists['rqs']
+            )
+            
+            if hasattr(self.models['rqs'], 'predict'):
+                rqs_pred = self.models['rqs'].predict(X_rqs)[0]
+            else:
+                rqs_pred = 50.0
+            
+            return np.clip(rqs_pred, 10, 90)
+            
+        except Exception as e:
+            print(f"RQS prediction error: {e}")
+            return 50.0
+    
+    def predict_views(self, ctr_pred: float, rqs_pred: float, video_data: Dict) -> int:
+        """Predict views with guardrails"""
+        subs = video_data.get('channel_subscriber_count', 1000)
+        genre = video_data.get('genre', 'unknown')
+        
+        if 'views' not in self.models:
+            return max(int(subs * ctr_pred), 10)
+        
+        try:
+            X_baseline = self.prepare_baseline_features(video_data)
+            baseline_pred = self.baseline_models['views'].predict(X_baseline)[0]
+            
+            # Prepare residual features
+            features = {
+                'ctr_pred': ctr_pred,
+                'ctr_pred_sq': ctr_pred ** 2,
+                'ctr_pred_log': np.log1p(max(0, ctr_pred)),
+                'rqs_pred': rqs_pred,
+                'rqs_pred_sq': (rqs_pred / 100) ** 2,
+                'rqs_pred_sigmoid': 1 / (1 + np.exp(-(rqs_pred - 50) / 10)),
+                'ctr_rqs_interaction': ctr_pred * (rqs_pred / 100),
+                'ctr_rqs_product': np.sqrt(max(0, ctr_pred * rqs_pred / 100)),
+                'log_age': np.log1p(video_data.get('age_days', 0)),
+                'log_age_sq': np.log1p(video_data.get('age_days', 0)) ** 2,
+                'log_subs': np.log1p(subs),
+                'ctr_subs_interaction': ctr_pred * np.log1p(subs)
+            }
+            
+            for col in self.feature_lists.get('views', []):
+                if col.startswith('genre_'):
+                    features[col] = 1.0 if col == f'genre_{genre}' else 0.0
+            
+            X_residual = pd.DataFrame([features])[self.feature_lists['views']]
+            X_scaled = self.scalers['views'].transform(X_residual)
+            residual_pred = self.models['views'].predict(X_scaled)[0]
+            
+            views_log = baseline_pred + residual_pred
+            views = np.expm1(views_log)
+            
+            # Apply guardrails
+            if self.guardrails:
+                log_subs = np.log1p(subs)
+                if log_subs < 6.9:
+                    subs_bucket = 0
+                elif log_subs < 9.2:
+                    subs_bucket = 1
+                elif log_subs < 11.5:
+                    subs_bucket = 2
+                elif log_subs < 13.8:
+                    subs_bucket = 3
+                else:
+                    subs_bucket = 4
+                
+                guardrail_key = f"{genre}|{subs_bucket}"
+                if guardrail_key in self.guardrails:
+                    max_views = self.guardrails[guardrail_key]
+                    views = min(views, max_views)
+            
+            return max(int(views), 10)
+            
+        except Exception as e:
+            print(f"Views prediction error: {e}")
+            return max(int(subs * ctr_pred), 10)
+    
     def predict_performance(self, title: str, genre: str, subscriber_count: int,
                           thumbnail_data: Optional[bytes] = None,
                           video_data: Optional[Dict] = None) -> Dict:
-        """Main prediction with realistic bounds"""
+        """Main prediction with validation feedback"""
+        
+        # Genre validation with transparency
+        valid_genres = ['gaming', 'education_science', 'challenge_stunts', 
+                       'catholic', 'kids_family', 'unknown']
+        warnings = []
+        
+        if genre not in valid_genres:
+            warnings.append(f"Invalid genre '{genre}' changed to 'unknown'. Valid options: {', '.join(valid_genres)}")
+            print(f"Warning: Invalid genre '{genre}' provided, using 'unknown'")
+            genre = 'unknown'
         
         # Process thumbnail
         if thumbnail_data:
@@ -518,14 +620,17 @@ class YouTubePredictionSystem:
         rqs_pred = self.predict_rqs(video_data, thumbnail_features)
         views_pred = self.predict_views(ctr_pred, rqs_pred, video_data)
         
-        # Calculate performance score (0-100)
-        ctr_score = min(ctr_pred / 0.05 * 100, 100)  # 5% CTR = 100 score
-        performance_score = (ctr_score * 0.3 + rqs_pred * 0.4 + min(views_pred / subscriber_count * 100, 100) * 0.3)
+        # Calculate performance score
+        ctr_percentage = ctr_pred * 100
+        ctr_score = min(ctr_pred / 0.2 * 100, 100)
+        performance_score = (ctr_score * 0.3 + rqs_pred * 0.4 + 
+                           min(views_pred / subscriber_count * 100, 100) * 0.3)
         
-        return {
+        result = {
             'predicted_views': views_pred,
             'predicted_rqs': rqs_pred,
             'predicted_ctr': ctr_pred,
+            'predicted_ctr_percentage': ctr_percentage,
             'performance_score': performance_score,
             'thumbnail_analysis': {
                 'brightness': thumbnail_features.get('brightness', 128),
@@ -535,15 +640,23 @@ class YouTubePredictionSystem:
                 'color_variance': thumbnail_features.get('color_variance', 0),
                 'sharpness': thumbnail_features.get('sharpness', 0)
             },
-            'confidence_score': 0.85 if thumbnail_data else 0.65,
-            'model_version': '3.0'
+            'confidence_score': 0.85 if thumbnail_data and self.tfidf else 0.65,
+            'model_version': '3.1',
+            'guardrails_applied': bool(self.guardrails),
+            'embeddings_available': bool(self.tfidf)
         }
+        
+        if warnings:
+            result['warnings'] = warnings
+        
+        return result
+
 
 # Initialize system
 predictor = YouTubePredictionSystem()
 
 # FastAPI app
-app = FastAPI(title="YouTube Performance Predictor", version="3.0")
+app = FastAPI(title="YouTube Performance Predictor", version="3.1")
 
 app.add_middleware(
     CORSMiddleware,
@@ -561,14 +674,9 @@ async def predict_video_performance(
     thumbnail: Optional[UploadFile] = File(None),
     duration_seconds: Optional[int] = Form(None)
 ):
-    """Predict with realistic results"""
+    """Predict with optimized performance and transparency"""
     
     try:
-        valid_genres = ['gaming', 'education_science', 'challenge_stunts', 
-                       'catholic', 'kids_family', 'unknown']
-        if genre not in valid_genres:
-            genre = 'unknown'
-        
         video_data = {
             'duration_seconds': duration_seconds or 300,
         }
@@ -585,20 +693,51 @@ async def predict_video_performance(
             video_data=video_data
         )
         
+        # Add input metadata
+        predictions['input_data'] = {
+            'title': title,
+            'genre': genre,
+            'subscriber_count': subscriber_count,
+            'has_thumbnail': thumbnail is not None,
+            'prediction_date': datetime.now().isoformat()
+        }
+        
         return JSONResponse(content=predictions)
         
     except Exception as e:
         print(f"API error: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 async def root():
     return {
-        "service": "YouTube Predictor",
-        "version": "3.0",
-        "models_loaded": len(predictor.models)
+        "service": "YouTube Predictor API",
+        "version": "3.1",
+        "status": "active",
+        "models_loaded": len(predictor.models),
+        "embeddings_available": predictor.tfidf is not None,
+        "thumbnail_processor": "optimized"
+    }
+
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "models_loaded": len(predictor.models),
+        "embeddings_available": predictor.tfidf is not None,
+        "guardrails_loaded": bool(predictor.guardrails),
+        "timestamp": datetime.now().isoformat()
     }
 
 if __name__ == "__main__":
-    print("Starting YouTube Predictor API v3.0...")
+    print("Starting YouTube Predictor API v3.1 (Optimized)...")
+    print(f"Models loaded: {list(predictor.models.keys())}")
+    print(f"Embeddings available: {predictor.tfidf is not None}")
+    if not predictor.tfidf:
+        print("⚠️ WARNING: TF-IDF models not found. For best accuracy:")
+        print("   1. Re-run training to save TF-IDF/SVD models")
+        print("   2. Place them in the models/ directory")
+    print("Ready for predictions!")
     uvicorn.run(app, host="0.0.0.0", port=8002)
