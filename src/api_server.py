@@ -592,25 +592,6 @@ async def get_comment_data():
             "message": f"Error loading comment data: {str(e)}",
             "total": 0
         }
-        
-    except Exception as e:
-        print(f"❌ Error in get_comment_data: {e}")
-        import traceback
-        traceback.print_exc()
-        return {
-            "comments": [],
-            "message": f"Error loading comment data: {str(e)}",
-        }
-        
-    except Exception as e:
-        print(f"❌ Error in get_comment_data: {e}")
-        import traceback
-        traceback.print_exc()
-        return {
-            "comments": [],
-            "message": f"Error loading comment data: {str(e)}",
-            "total": 0
-        }
 
 @app.post("/api/refresh")
 async def refresh_data():
