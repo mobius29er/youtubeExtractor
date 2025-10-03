@@ -372,7 +372,7 @@ const VideoPerformancePredictor = ({ darkMode }) => {
                 {predictions.predicted_ctr_percentage ? `${predictions.predicted_ctr_percentage}%` : 'N/A'}
               </div>
               <div className={`text-xs mt-1 ${
-                predictions.predicted_ctr 
+                predictions.predicted_ctr_percentage 
                   ? getConfidenceColor(predictions.confidence?.ctr)
                   : 'text-gray-400'
               }`}>
