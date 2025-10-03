@@ -6,9 +6,9 @@ python-multipart==0.0.20
 python-dotenv==1.0.1
 requests==2.31.0
 
-# Essential data handling
+# Essential data handling - UPDATED for model compatibility
 pandas==2.2.2
-numpy==1.26.4
+numpy==2.2.6
 
 # ML libraries for predictions - UPDATED for model compatibility
 scikit-learn==1.7.0
