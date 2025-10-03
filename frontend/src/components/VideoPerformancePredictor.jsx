@@ -382,14 +382,14 @@ const VideoPerformancePredictor = ({ darkMode }) => {
           </div>
           
           {/* Recommended Tags */}
-          {predictions.recommended_tags && predictions.recommended_tags.length > 0 && (
+          {predictions.input_data?.recommended_tags && predictions.input_data.recommended_tags.length > 0 && (
             <div className={`p-4 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-yellow-50 border-yellow-200'}`}>
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="w-5 h-5 text-yellow-500" />
                 <span className="font-medium">🏷️ Recommended Tags</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {predictions.recommended_tags.map((tag, index) => (
+                {predictions.input_data.recommended_tags.map((tag, index) => (
                   <span
                     key={index}
                     className={`px-3 py-1 rounded-full text-xs font-medium ${
