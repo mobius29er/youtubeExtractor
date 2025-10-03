@@ -6,15 +6,15 @@ python-multipart==0.0.20
 python-dotenv==1.0.1
 requests==2.31.0
 
-# Essential data handling - UPDATED for model compatibility
+# Essential data handling - COMPATIBLE with modern OpenCV
 pandas==2.2.2
-numpy==2.2.6
+numpy==2.1.0
 
-# ML libraries for predictions - UPDATED for model compatibility
-scikit-learn==1.7.0
+# ML libraries for predictions - COMPATIBLE with NumPy 2.1.0
+scikit-learn==1.6.0
 joblib==1.3.2
 pillow==10.3.0
-opencv-python-headless==4.9.0.80
+opencv-python-headless==4.10.0.84
 
 # Logging
 rich==13.7.1
