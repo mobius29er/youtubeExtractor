@@ -707,7 +707,10 @@ async def predict_video_performance(
             raise HTTPException(status_code=503, detail="Prediction system not initialized")
         
         video_data = {
-            'duration_seconds': duration_seconds or 300,
+            'title': title,
+            'genre': genre,
+            'subscriber_count': subscriber_count,
+            'duration_seconds': duration_seconds or 480,  # 8 minutes - more typical for YouTube
         }
         
         thumbnail_data = None

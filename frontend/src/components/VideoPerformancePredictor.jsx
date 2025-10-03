@@ -5,7 +5,8 @@ const VideoPerformancePredictor = ({ darkMode }) => {
   const [formData, setFormData] = useState({
     title: '',
     genre: '',
-    subscriberCount: ''
+    subscriberCount: '',
+    durationMinutes: '8'
   });
   
   const [thumbnail, setThumbnail] = useState(null);
@@ -56,6 +57,7 @@ const VideoPerformancePredictor = ({ darkMode }) => {
       formDataToSend.append('title', formData.title);
       formDataToSend.append('genre', formData.genre);
       formDataToSend.append('subscriber_count', formData.subscriberCount);
+      formDataToSend.append('duration_seconds', Math.round(parseFloat(formData.durationMinutes || 8) * 60));
       
       if (thumbnail) {
         formDataToSend.append('thumbnail', thumbnail);
@@ -197,6 +199,31 @@ const VideoPerformancePredictor = ({ darkMode }) => {
           />
           <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             {formData.subscriberCount ? `${formatNumber(parseInt(formData.subscriberCount))} subscribers` : 'Enter your channel subscriber count'}
+          </p>
+        </div>
+        
+        {/* Video Duration */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            ⏱️ Video Duration (Minutes)
+          </label>
+          <input
+            type="number"
+            name="durationMinutes"
+            value={formData.durationMinutes}
+            onChange={handleInputChange}
+            placeholder="e.g., 8"
+            min="0.5"
+            max="600"
+            step="0.5"
+            className={`w-full p-3 rounded-lg border transition-colors ${
+              darkMode 
+                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+            } focus:ring-2 focus:ring-purple-500 focus:border-transparent`}
+          />
+          <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            {formData.durationMinutes ? `${formData.durationMinutes} minutes (${Math.round(parseFloat(formData.durationMinutes || 8) * 60)} seconds)` : 'Duration affects predictions - 8 minutes is typical'}
           </p>
         </div>
         
