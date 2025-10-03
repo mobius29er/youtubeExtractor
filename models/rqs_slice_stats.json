@@ -1,0 +1,146 @@
+{
+  "weights": {
+    "like_ratio": 0.3,
+    "comment_ratio": 0.2,
+    "views_per_subs": 0.2,
+    "sentiment_score": 0.15,
+    "comment_depth": 0.15
+  },
+  "slices": {
+    "unknown|0": {
+      "like_ratio": {
+        "center": 0.045864542237049874,
+        "scale": 0.03646358263113028,
+        "count": 200
+      },
+      "comment_ratio": {
+        "center": 0.0070335234151909665,
+        "scale": 0.008131430398707132,
+        "count": 200
+      },
+      "views_per_subs": {
+        "center": 0.1408344017094017,
+        "scale": 0.19490302333606108,
+        "count": 200
+      },
+      "sentiment_score": {
+        "center": 0.5964640198511166,
+        "scale": 0.14301755583126552,
+        "count": 200
+      },
+      "comment_depth": {
+        "center": 0.0010353374087482938,
+        "scale": 0.0015349912422102203,
+        "count": 200
+      }
+    },
+    "unknown|1": {
+      "like_ratio": {
+        "center": 0.021105817491618016,
+        "scale": 0.01863145947601643,
+        "count": 200
+      },
+      "comment_ratio": {
+        "center": 0.0006098207495710631,
+        "scale": 0.000904120243314058,
+        "count": 200
+      },
+      "views_per_subs": {
+        "center": 0.27023989586593367,
+        "scale": 0.38225879493039217,
+        "count": 200
+      },
+      "sentiment_score": {
+        "center": 0.6100000000000001,
+        "scale": 0.16308600000000015,
+        "count": 200
+      },
+      "comment_depth": {
+        "center": 0.012611188596751538,
+        "scale": 0.018697348213543828,
+        "count": 200
+      }
+    },
+    "unknown|2": {
+      "like_ratio": {
+        "center": 0.03129189890490282,
+        "scale": 0.021070495697044316,
+        "count": 200
+      },
+      "comment_ratio": {
+        "center": 0.002142527341165556,
+        "scale": 0.0016045629460422648,
+        "count": 200
+      },
+      "views_per_subs": {
+        "center": 0.04960549268547544,
+        "scale": 0.07244082207617554,
+        "count": 200
+      },
+      "sentiment_score": {
+        "center": 0.64375,
+        "scale": 0.21312375000000006,
+        "count": 200
+      },
+      "comment_depth": {
+        "center": 0.018699198765505368,
+        "scale": 0.027723432089738258,
+        "count": 200
+      }
+    },
+    "unknown|3": {
+      "like_ratio": {
+        "center": 0.02097357047161201,
+        "scale": 0.016335028219674384,
+        "count": 200
+      },
+      "comment_ratio": {
+        "center": 0.0012620174249337957,
+        "scale": 0.0015515012763542945,
+        "count": 200
+      },
+      "views_per_subs": {
+        "center": 0.3010429007966823,
+        "scale": 0.43966976575697275,
+        "count": 200
+      },
+      "sentiment_score": {
+        "center": 0.5175,
+        "scale": 0.09822225,
+        "count": 200
+      },
+      "comment_depth": {
+        "center": 0.05458913882129503,
+        "scale": 0.08093385721645201,
+        "count": 200
+      }
+    },
+    "unknown|4": {
+      "like_ratio": {
+        "center": 0.01019539156836972,
+        "scale": 0.01407531094257698,
+        "count": 200
+      },
+      "comment_ratio": {
+        "center": 9.74876296277368e-05,
+        "scale": 0.00014453515968608258,
+        "count": 200
+      },
+      "views_per_subs": {
+        "center": 0.049834168181818184,
+        "scale": 0.07379664032275253,
+        "count": 200
+      },
+      "sentiment_score": {
+        "center": 0.5,
+        "scale": 0.027798750000000025,
+        "count": 200
+      },
+      "comment_depth": {
+        "center": 0.000294783073179417,
+        "scale": 0.0004370453842958037,
+        "count": 200
+      }
+    }
+  }
+}
