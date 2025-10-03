@@ -87,7 +87,12 @@ class ThumbnailProcessor:
         try:
             # Use PIL's built-in quantization (much faster than KMeans)
             # Reduce to 5 colors
-            quantized = img_pil.quantize(colors=5, method=Image.Resampling.FASTOCTREE)
+            # Use compatible quantization method
+            try:
+                quantized = img_pil.quantize(colors=5, method=Image.Resampling.FASTOCTREE)
+            except AttributeError:
+                # Fallback for older PIL versions
+                quantized = img_pil.quantize(colors=5)
             palette = quantized.getpalette()
             
             # Extract dominant colors from palette
