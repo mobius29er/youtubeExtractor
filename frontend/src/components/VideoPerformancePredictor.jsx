@@ -368,11 +368,11 @@ const VideoPerformancePredictor = ({ darkMode }) => {
                 <TrendingUp className={`w-5 h-5 ${predictions.predicted_ctr ? 'text-purple-500' : 'text-gray-400'}`} />
                 <span className="font-medium">Click-Through Rate</span>
               </div>
-              <div className={`text-2xl font-bold ${predictions.predicted_ctr ? 'text-purple-600' : 'text-gray-400'}`}>
-                {predictions.predicted_ctr ? `${predictions.predicted_ctr}%` : 'N/A'}
+              <div className={`text-2xl font-bold ${predictions.predicted_ctr_percentage ? 'text-purple-600' : 'text-gray-400'}`}>
+                {predictions.predicted_ctr_percentage ? `${predictions.predicted_ctr_percentage}%` : 'N/A'}
               </div>
               <div className={`text-xs mt-1 ${
-                predictions.predicted_ctr 
+                predictions.predicted_ctr_percentage 
                   ? getConfidenceColor(predictions.confidence?.ctr)
                   : 'text-gray-400'
               }`}>

@@ -449,16 +449,18 @@ class YouTubePredictionSystem:
         
         return pd.DataFrame([features])[feature_list]
     
-    def prepare_baseline_features(self, video_data: Dict) -> pd.DataFrame:
-        """Prepare baseline features"""
+    def prepare_baseline_features(self, video_data: Dict, model_type: str = 'ctr') -> pd.DataFrame:
+        """Prepare baseline features for CTR or Views model"""
         features = {
             'log_subs': np.log1p(video_data.get('channel_subscriber_count', 1000)),
             'log_age': np.log1p(video_data.get('age_days', 0))
         }
         
-        # Add log_duration if needed
-        if any('log_duration' in col for col in self.feature_lists.get('ctr_baseline', [])):
-            features['log_duration'] = np.log1p(video_data.get('duration_seconds', 300))
+        # Add log_duration only for CTR baseline (not Views baseline)
+        feature_list_key = f'{model_type}_baseline'
+        if feature_list_key in self.feature_lists:
+            if any('log_duration' in col for col in self.feature_lists[feature_list_key]):
+                features['log_duration'] = np.log1p(video_data.get('duration_seconds', 300))
         
         # Add genre encoding
         genre = video_data.get('genre', 'unknown')
@@ -466,8 +468,8 @@ class YouTubePredictionSystem:
             features[f'genre_{g}'] = 1.0 if genre == g else 0.0
         
         # Use appropriate feature list
-        if 'ctr_baseline' in self.feature_lists:
-            feature_cols = self.feature_lists['ctr_baseline']
+        if feature_list_key in self.feature_lists:
+            feature_cols = self.feature_lists[feature_list_key]
         else:
             feature_cols = list(features.keys())
         
@@ -488,7 +490,7 @@ class YouTubePredictionSystem:
             else:
                 residual_pred = 0.0
             
-            X_baseline = self.prepare_baseline_features(video_data)
+            X_baseline = self.prepare_baseline_features(video_data, 'ctr')
             baseline_pred = self.baseline_models['ctr'].predict(X_baseline)[0]
             
             ctr_log = baseline_pred + residual_pred
@@ -532,7 +534,7 @@ class YouTubePredictionSystem:
             return max(int(subs * ctr_pred), 10)
         
         try:
-            X_baseline = self.prepare_baseline_features(video_data)
+            X_baseline = self.prepare_baseline_features(video_data, 'views')
             baseline_pred = self.baseline_models['views'].predict(X_baseline)[0]
             
             # Prepare residual features
