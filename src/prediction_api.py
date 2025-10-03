@@ -691,6 +691,11 @@ class YouTubePredictionSystem:
                 'sharpness': thumbnail_features.get('sharpness', 0)
             },
             'confidence_score': 0.85 if thumbnail_data and self.tfidf else 0.65,
+            'confidence': {
+                'views': 'High' if thumbnail_data and self.tfidf else 'Medium',
+                'rqs': 'High' if thumbnail_data and self.tfidf else 'Medium', 
+                'ctr': 'High' if thumbnail_data and self.tfidf else 'Medium'
+            },
             'model_version': '3.1',
             'guardrails_applied': bool(self.guardrails),
             'embeddings_available': bool(self.tfidf)
