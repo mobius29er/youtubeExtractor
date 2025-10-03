@@ -1,4 +1,4 @@
-# Requirements for ML Prediction Service
+# Requirements for ML Prediction Service v3.1
 # Core web framework
 fastapi==0.104.1
 uvicorn==0.24.0
@@ -10,8 +10,8 @@ requests==2.31.0
 pandas==2.2.2
 numpy==1.26.4
 
-# ML libraries for predictions
-scikit-learn==1.4.2
+# ML libraries for predictions - UPDATED for model compatibility
+scikit-learn==1.7.0
 joblib==1.3.2
 pillow==10.3.0
 opencv-python-headless==4.9.0.80
