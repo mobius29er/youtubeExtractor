@@ -654,8 +654,22 @@ class YouTubePredictionSystem:
         return result
 
 
-# Initialize system
-predictor = YouTubePredictionSystem()
+# Global predictor instance (will be initialized on startup)
+predictor = None
+
+def initialize_predictor():
+    """Initialize the prediction system with error handling"""
+    global predictor
+    try:
+        print("🔄 Initializing prediction system...")
+        predictor = YouTubePredictionSystem()
+        print("✅ Prediction system initialized successfully!")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to initialize prediction system: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 # FastAPI app
 app = FastAPI(title="YouTube Performance Predictor", version="3.1")
@@ -668,6 +682,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.on_event("startup")
+async def startup_event():
+    """Initialize predictor on app startup"""
+    success = initialize_predictor()
+    if not success:
+        print("⚠️ Running with fallback predictions only")
+
 @app.post("/api/predict")
 async def predict_video_performance(
     title: str = Form(...),
@@ -679,6 +700,9 @@ async def predict_video_performance(
     """Predict with optimized performance and transparency"""
     
     try:
+        if predictor is None:
+            raise HTTPException(status_code=503, detail="Prediction system not initialized")
+        
         video_data = {
             'duration_seconds': duration_seconds or 300,
         }
@@ -717,14 +741,27 @@ async def root():
     return {
         "service": "YouTube Predictor API",
         "version": "3.1",
-        "status": "active",
-        "models_loaded": len(predictor.models),
-        "embeddings_available": predictor.tfidf is not None,
-        "thumbnail_processor": "optimized"
+        "status": "active" if predictor else "initializing",
+        "models_loaded": len(predictor.models) if predictor else 0,
+        "embeddings_available": predictor.tfidf is not None if predictor else False,
+        "thumbnail_processor": "optimized" if predictor else "unavailable"
     }
 
 @app.get("/api/health")
 async def health_check():
+    if predictor is None:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "initializing",
+                "models_loaded": 0,
+                "embeddings_available": False,
+                "guardrails_loaded": False,
+                "timestamp": datetime.now().isoformat(),
+                "message": "Prediction system still initializing"
+            }
+        )
+    
     return {
         "status": "healthy",
         "models_loaded": len(predictor.models),
@@ -734,12 +771,22 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    print("Starting YouTube Predictor API v3.1 (Optimized)...")
-    print(f"Models loaded: {list(predictor.models.keys())}")
-    print(f"Embeddings available: {predictor.tfidf is not None}")
-    if not predictor.tfidf:
-        print("⚠️ WARNING: TF-IDF models not found. For best accuracy:")
-        print("   1. Re-run training to save TF-IDF/SVD models")
-        print("   2. Place them in the models/ directory")
-    print("Ready for predictions!")
+    print("🚀 Starting YouTube Predictor API v3.1 (Optimized)...")
+    
+    # Initialize prediction system
+    success = initialize_predictor()
+    
+    if predictor:
+        print(f"✅ Models loaded: {list(predictor.models.keys())}")
+        print(f"✅ Embeddings available: {predictor.tfidf is not None}")
+        if not predictor.tfidf:
+            print("⚠️ WARNING: TF-IDF models not found. For best accuracy:")
+            print("   1. Re-run training to save TF-IDF/SVD models")
+            print("   2. Place them in the models/ directory")
+        print("🎯 Ready for predictions!")
+    else:
+        print("⚠️ Running with limited functionality - some models failed to load")
+    
+    # Start server regardless
+    print(f"🌐 Starting server on port 8002...")
     uvicorn.run(app, host="0.0.0.0", port=8002)
