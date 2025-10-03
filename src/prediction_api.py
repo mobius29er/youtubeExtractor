@@ -619,7 +619,7 @@ class YouTubePredictionSystem:
             tags.extend(['tips', 'life hacks', 'pro tips'])
             
         if any(word in title_lower for word in ['2024', '2025']):
-            tags.append('2025')
+            tags.append(str(datetime.now().year))
             
         # Remove duplicates and limit to 8 tags
         unique_tags = list(dict.fromkeys(tags))  # Preserves order while removing duplicates
