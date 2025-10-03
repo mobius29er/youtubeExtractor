@@ -55,4 +55,4 @@ CMD echo "🚀 Starting prediction API server..." && \
     echo "Python path: $PYTHONPATH" && \
     ls -la src/ && \
     echo "Starting server..." && \
-    python src/prediction_api.py || (echo "❌ Server failed to start" && sleep 30)
+    exec python src/prediction_api.py || (echo "❌ Server failed to start" && sleep infinity)
