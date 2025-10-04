@@ -852,7 +852,11 @@ const getGlobalTier = (channelName) => {
         <StatCard
           icon={Database}
           title="Data Quality"
-          value={`${safeDisplayData.healthScore || 100}%`}
+          value={
+            safeDisplayData.healthScore !== undefined && safeDisplayData.healthScore !== null
+              ? `${safeDisplayData.healthScore}%`
+              : 'N/A'
+          }
           subtitle="Verification passed"
           color="green"
           onClick={() => openModalWithFilter('total-videos')}
