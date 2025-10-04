@@ -6,34 +6,10 @@ import {
   Clock, 
   Database,
   RefreshCw,
-  Download,
-  Play,
-  Pause,
   Shield
 } from 'lucide-react';
 
 const ExtractionStatus = ({ data, loading, darkMode, onRefresh }) => {
-  const [realTimeStats, setRealTimeStats] = useState({
-    isRunning: false,
-    currentChannel: null,
-    videosProcessed: 0,
-    estimatedTimeRemaining: null
-  });
-
-  useEffect(() => {
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      if (realTimeStats.isRunning) {
-        setRealTimeStats(prev => ({
-          ...prev,
-          videosProcessed: prev.videosProcessed + Math.floor(Math.random() * 3)
-        }));
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [realTimeStats.isRunning]);
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -126,27 +102,14 @@ const ExtractionStatus = ({ data, loading, darkMode, onRefresh }) => {
           <Database className="w-5 h-5 mr-2 text-blue-500" />
           Extraction Progress
         </h3>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setRealTimeStats(prev => ({ ...prev, isRunning: !prev.isRunning }))}
-            className={`p-2 rounded-lg transition-colors ${
-              darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-            }`}
-          >
-            {realTimeStats.isRunning ? 
-              <Pause className="w-4 h-4" /> : 
-              <Play className="w-4 h-4" />
-            }
-          </button>
-          <button
-            onClick={onRefresh}
-            className={`p-2 rounded-lg transition-colors ${
-              darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-            }`}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
+        <button
+          onClick={onRefresh}
+          className={`p-2 rounded-lg transition-colors ${
+            darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+          }`}
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
       </div>
 
       <div className="space-y-4">
@@ -160,18 +123,6 @@ const ExtractionStatus = ({ data, loading, darkMode, onRefresh }) => {
           total={25} 
           label="Channels Processed" 
         />
-        
-        {realTimeStats.isRunning && (
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <div className="flex items-center space-x-2 mb-2">
-              <Activity className="w-4 h-4 text-blue-600 animate-pulse" />
-              <span className="font-medium">Extraction in progress...</span>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-300">
-              Processing videos: {realTimeStats.videosProcessed} completed
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -202,50 +153,6 @@ const ExtractionStatus = ({ data, loading, darkMode, onRefresh }) => {
     </div>
   );
 
-  const DataExport = () => (
-    <div className={`${darkMode ? 'card-dark' : 'card'}`}>
-      <h3 className="text-xl font-semibold mb-4 flex items-center">
-        <Download className="w-5 h-5 mr-2 text-green-500" />
-        Data Export
-      </h3>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className={`p-4 rounded-lg border text-center ${
-          darkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
-          <div className="text-lg font-semibold mb-2">JSON</div>
-          <div className="text-sm text-gray-500 mb-3">Complete dataset</div>
-          <button className="btn-primary w-full">
-            <Download className="w-4 h-4 mr-1" />
-            Download
-          </button>
-        </div>
-        
-        <div className={`p-4 rounded-lg border text-center ${
-          darkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
-          <div className="text-lg font-semibold mb-2">CSV</div>
-          <div className="text-sm text-gray-500 mb-3">ML-ready format</div>
-          <button className="btn-primary w-full">
-            <Download className="w-4 h-4 mr-1" />
-            Download
-          </button>
-        </div>
-        
-        <div className={`p-4 rounded-lg border text-center ${
-          darkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
-          <div className="text-lg font-semibold mb-2">Report</div>
-          <div className="text-sm text-gray-500 mb-3">Analysis summary</div>
-          <button className="btn-secondary w-full">
-            <Download className="w-4 h-4 mr-1" />
-            Generate
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -261,7 +168,6 @@ const ExtractionStatus = ({ data, loading, darkMode, onRefresh }) => {
       <SystemStatus />
       <ExtractionProgress />
       <ChannelStatus />
-      <DataExport />
     </div>
   );
 };

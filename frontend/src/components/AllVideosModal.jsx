@@ -5,16 +5,39 @@ import { getRQSColor } from '../utils/rqsUtils';
 // Constants
 const DEFAULT_RQS_SCORE = 75; // Default RQS score for videos without data
 
-const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
+const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode, filterConfig = null }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('views'); // views, rqs, engagement, likes, comments
-  const [sortOrder, setSortOrder] = useState('desc'); // asc, desc
+  const [sortBy, setSortBy] = useState(filterConfig?.sortBy || 'views');
+  const [sortOrder, setSortOrder] = useState(filterConfig?.sortOrder || 'desc');
   const [showFilters, setShowFilters] = useState(false);
   const [rqsFilter, setRqsFilter] = useState({ min: '', max: '' });
   const [viewsFilter, setViewsFilter] = useState({ min: '', max: '' });
   const [likesFilter, setLikesFilter] = useState({ min: '', max: '' });
   const [commentsFilter, setCommentsFilter] = useState({ min: '', max: '' });
   const [engagementFilter, setEngagementFilter] = useState({ min: '', max: '' });
+
+  // Apply filter config when modal opens
+  React.useEffect(() => {
+    if (isOpen && filterConfig) {
+      setSortBy(filterConfig.sortBy || 'views');
+      setSortOrder(filterConfig.sortOrder || 'desc');
+      setSearchTerm(filterConfig.searchTerm || '');
+      
+      // Apply specific filters based on config
+      if (filterConfig.channelFilter) {
+        setSearchTerm(filterConfig.channelFilter);
+      }
+      if (filterConfig.viewsRange) {
+        setViewsFilter(filterConfig.viewsRange);
+      }
+      if (filterConfig.likesRange) {
+        setLikesFilter(filterConfig.likesRange);
+      }
+      if (filterConfig.commentsRange) {
+        setCommentsFilter(filterConfig.commentsRange);
+      }
+    }
+  }, [isOpen, filterConfig]);
 
   // Process and filter videos
   const processedVideos = useMemo(() => {
@@ -33,6 +56,45 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
       if (searchTerm && !video.title?.toLowerCase().includes(searchTerm.toLowerCase()) &&
           !video.channel_name?.toLowerCase().includes(searchTerm.toLowerCase())) {
         return false;
+      }
+
+      // Genre filter (from filter config)
+      if (filterConfig?.genreFilter && filterConfig.genreFilter.length > 0) {
+        const channelGenres = {
+          'Cocomelon': 'Kids/Family',
+          'Kids Roma Show': 'Kids/Family', 
+          'Sheriff Labrador - Kids Cartoon': 'Kids/Family',
+          'VeggieTales Official': 'Kids/Family',
+          'Miss Honey Bear - Speech Therapist - Read Aloud': 'Kids/Family',
+          'MrBeast': 'Challenge/Stunts',
+          'Zach King': 'Challenge/Stunts',
+          'Ryan Trahan': 'Challenge/Stunts',
+          'Hangtime': 'Challenge/Stunts',
+          'Ed Pratt': 'Challenge/Stunts',
+          'Ascension Presents': 'Catholic',
+          'Bishop Robert Barron': 'Catholic',
+          'The Catholic Talk Show': 'Catholic',
+          'The Father Leo Show': 'Catholic',
+          'Cameron Riecker': 'Catholic',
+          'Kurzgesagt': 'Education',
+          'Veritasium': 'Education',
+          'SciShow': 'Education',
+          'Fun Science': 'Education',
+          'Up and Atom': 'Education',
+          'PewdiePie': 'Gaming',
+          'PewDiePie': 'Gaming',
+          'Jacksepticeye': 'Gaming',
+          'JackSepticEye': 'Gaming',
+          'Call Me Kevin': 'Gaming',
+          'CallMeKevin': 'Gaming',
+          'Floydson': 'Gaming',
+          'Lizz': 'Gaming'
+        };
+        
+        const videoGenre = channelGenres[video.channel_name];
+        if (!filterConfig.genreFilter.includes(videoGenre)) {
+          return false;
+        }
       }
 
       // RQS filter
@@ -103,6 +165,49 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
     return `${rate.toFixed(2)}%`;
   };
 
+  // Parse ISO 8601 duration format (PT3M6S) and convert to readable format
+  const formatDuration = (duration) => {
+    if (!duration) return 'N/A';
+    
+    // Handle if it's already in seconds format
+    if (typeof duration === 'number') {
+      const hours = Math.floor(duration / 3600);
+      const minutes = Math.floor((duration % 3600) / 60);
+      const secs = duration % 60;
+      
+      if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+      return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // Handle ISO 8601 format (PT3M6S, PT38M32S, etc.)
+    if (typeof duration === 'string' && duration.startsWith('PT')) {
+      try {
+        const timeMatch = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (timeMatch) {
+          const hours = parseInt(timeMatch[1]) || 0;
+          const minutes = parseInt(timeMatch[2]) || 0;
+          const seconds = parseInt(timeMatch[3]) || 0;
+          
+          if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          }
+          return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+      } catch (error) {
+        console.warn('Error parsing duration:', duration, error);
+      }
+    }
+    
+    // If it's already in readable format, return as is
+    if (typeof duration === 'string' && duration.includes(':')) {
+      return duration;
+    }
+    
+    return 'N/A';
+  };
+
   const clearAllFilters = () => {
     setRqsFilter({ min: '', max: '' });
     setViewsFilter({ min: '', max: '' });
@@ -125,9 +230,12 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <h2 id="all-videos-modal-title" className="text-2xl font-bold">All Videos</h2>
+            <h2 id="all-videos-modal-title" className="text-2xl font-bold">
+              {filterConfig?.title || 'All Videos'}
+            </h2>
             <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               {filteredAndSortedVideos.length} videos shown
+              {filterConfig?.subtitle && ` • ${filterConfig.subtitle}`}
             </p>
           </div>
           <button
@@ -342,7 +450,7 @@ const AllVideosModal = ({ isOpen, onClose, allVideos, darkMode }) => {
                           {video.title || 'No Title'}
                         </p>
                         <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-                          {video.duration || 'N/A'}
+                          {formatDuration(video.duration)}
                         </p>
                       </div>
                     </td>

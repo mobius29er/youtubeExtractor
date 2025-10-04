@@ -2589,6 +2589,111 @@ const DataVisualization = ({ data, loading, darkMode }) => {
     { id: 'titles', label: 'Title Analysis', icon: Type },
   ];
 
+  // Get chart-specific information for dynamic content
+  const getChartInfo = (chartId) => {
+    const chartDefinitions = {
+      'engagement': {
+        title: 'Channel Engagement Analysis',
+        factors: {
+          'Views': 'Total video views across all channel content',
+          'Subscribers': 'Current subscriber count for the channel',
+          'Engagement Rate': 'Ratio of likes, comments, shares to total views',
+          'RQS (Retention Quality Score)': 'Composite metric measuring audience retention and content quality',
+          'Average Views': 'Mean views per video for the channel'
+        },
+        purpose: 'Identify high-performing channels and engagement patterns',
+        takeaway: 'Use this to benchmark your content against successful channels in your niche and identify engagement optimization opportunities.',
+        dataSource: 'Real-time metrics from YouTube Analytics API'
+      },
+      'genres': {
+        title: 'Genre Performance Comparison',
+        factors: {
+          'Challenge/Stunts': 'Entertainment content featuring challenges and creative stunts',
+          'Education': 'Science, learning, and educational content',
+          'Kids/Family': 'Child-friendly and family-oriented content',
+          'Gaming': 'Video game content, reviews, and gaming commentary',
+          'Catholic': 'Religious and faith-based content'
+        },
+        purpose: 'Compare performance metrics across different content categories',
+        takeaway: 'Understand which content genres perform best for specific metrics like CTR or retention to inform your content strategy.',
+        dataSource: 'Categorized channel performance data'
+      },
+      'tiers': {
+        title: 'Channel Tier Analysis',
+        factors: {
+          'Mega (50M+)': 'Channels with over 50 million subscribers',
+          'Large (10M-50M)': 'Channels with 10-50 million subscribers',
+          'Mid (1M-10M)': 'Channels with 1-10 million subscribers',
+          'Small (100K-1M)': 'Channels with 100K-1 million subscribers',
+          'New (<100K)': 'Emerging channels with under 100K subscribers'
+        },
+        purpose: 'Analyze performance patterns across different channel sizes',
+        takeaway: 'Understand how channel size affects engagement rates and identify growth strategies suitable for your current tier.',
+        dataSource: 'Subscriber count and performance correlation analysis'
+      },
+      'sentiment': {
+        title: 'Comment Sentiment Analysis',
+        factors: {
+          'Positive Sentiment': 'Comments expressing positive emotions and reactions',
+          'Negative Sentiment': 'Comments expressing criticism or negative feedback',
+          'Neutral Sentiment': 'Balanced or informational comments without strong emotion',
+          'Sentiment Score': 'AI-processed emotion analysis from comment text',
+          'Comment Volume': 'Total number of comments per video or channel'
+        },
+        purpose: 'Understand audience emotional response to content',
+        takeaway: 'Identify content types that generate positive audience reactions and avoid patterns that lead to negative sentiment.',
+        dataSource: 'AI-processed comment analysis using natural language processing'
+      },
+      'correlation': {
+        title: 'Performance Correlation Matrix',
+        factors: {
+          'CTR (Click-Through Rate)': 'Percentage of impressions that result in clicks',
+          'View Duration': 'Average time viewers spend watching videos',
+          'Engagement Rate': 'Combined metric of likes, comments, and shares',
+          'Upload Frequency': 'How often channels publish new content',
+          'Title Length': 'Character count of video titles'
+        },
+        purpose: 'Discover relationships between different performance metrics',
+        takeaway: 'Find which factors most strongly predict success to optimize your content creation and publishing strategy.',
+        dataSource: 'Statistical correlation analysis of multiple performance metrics'
+      },
+      'thumbnails': {
+        title: 'Thumbnail Effectiveness Analysis',
+        factors: {
+          'Click-Through Rate': 'Percentage of impressions converted to clicks via thumbnail',
+          'Color Dominance': 'Primary colors used in thumbnail design',
+          'Face Detection': 'Presence and prominence of human faces',
+          'Text Overlay': 'Use of text elements in thumbnail design',
+          'Brightness/Contrast': 'Visual appeal metrics of thumbnail images'
+        },
+        purpose: 'Optimize thumbnail design for maximum click-through rates',
+        takeaway: 'Design thumbnails using proven visual elements that drive clicks and improve video discoverability.',
+        dataSource: 'Computer vision analysis of thumbnail images and performance correlation'
+      },
+      'titles': {
+        title: 'Title Optimization Analysis',
+        factors: {
+          'Title Length': 'Character count and word count of video titles',
+          'Keyword Density': 'Frequency of relevant search terms',
+          'Emotional Words': 'Use of action words and emotional triggers',
+          'Question Format': 'Titles formatted as questions vs statements',
+          'All Caps Usage': 'Frequency of capitalized words for emphasis'
+        },
+        purpose: 'Optimize video titles for search and click-through rates',
+        takeaway: 'Craft compelling titles using proven length, keywords, and emotional triggers that improve video discovery and clicks.',
+        dataSource: 'Natural language processing analysis of title text and performance correlation'
+      }
+    };
+    
+    return chartDefinitions[chartId] || {
+      title: 'Data Analysis',
+      factors: {},
+      purpose: 'Analyze performance data',
+      takeaway: 'Use insights to improve content strategy',
+      dataSource: 'Performance analytics data'
+    };
+  };
+
   // Helper function to determine channel genre based on exact channel configuration
   const getChannelGenre = (channelName) => {
     // Exact mapping based on your actual channel configuration
@@ -9017,6 +9122,9 @@ const DataVisualization = ({ data, loading, darkMode }) => {
       </div>
 
       {/* Insights */}
+    <div className={`${darkMode ? 'card-dark' : 'card'}`}>
+      <h3 className="text-xl font-semibold mb-4">Analysis Insights</h3>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className={`${darkMode ? 'card-dark' : 'card'}`}>
           <h4 className="font-semibold mb-2 flex items-center">
@@ -9029,25 +9137,48 @@ const DataVisualization = ({ data, loading, darkMode }) => {
         </div>
 
         <div className={`${darkMode ? 'card-dark' : 'card'}`}>
-          <h4 className="font-semibold mb-2 flex items-center">
+          <h4 className="font-semibold mb-3 flex items-center">
             <BarChart3 className="w-5 h-5 mr-2 text-blue-500" />
-            Chart Data
+            Chart Data: {getChartInfo(activeChart).title}
           </h4>
-          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Charts update automatically when you change filters. Try selecting different genres or view tiers!
-          </p>
+          <div className="space-y-2">
+            <p className={`text-xs font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'} uppercase tracking-wide`}>
+              Key Factors:
+            </p>
+            <div className="space-y-1">
+              {Object.entries(getChartInfo(activeChart).factors).slice(0, 3).map(([term, definition]) => (
+                <div key={term} className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  <span className="font-medium text-blue-600">{term}:</span> {definition}
+                </div>
+              ))}
+              {Object.keys(getChartInfo(activeChart).factors).length > 3 && (
+                <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} italic`}>
+                  +{Object.keys(getChartInfo(activeChart).factors).length - 3} more factors...
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className={`${darkMode ? 'card-dark' : 'card'}`}>
-          <h4 className="font-semibold mb-2 flex items-center">
+          <h4 className="font-semibold mb-3 flex items-center">
             <PieIcon className="w-5 h-5 mr-2 text-purple-500" />
-            Current View
+            Current View: {charts.find(c => c.id === activeChart)?.label}
           </h4>
-          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Currently viewing: <span className="font-medium">{charts.find(c => c.id === activeChart)?.label}</span>
-          </p>
+          <div className="space-y-2">
+            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <span className="font-medium">Purpose:</span> {getChartInfo(activeChart).purpose}
+            </div>
+            <div className={`text-xs ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <span className="font-medium">Actionable Insight:</span> {getChartInfo(activeChart).takeaway}
+            </div>
+            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} italic mt-2`}>
+              Data: {getChartInfo(activeChart).dataSource}
+            </div>
+          </div>
         </div>
       </div>
+    </div>
     </div>
   );
 };

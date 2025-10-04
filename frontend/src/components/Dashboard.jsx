@@ -11,7 +11,9 @@ import {
   Heart,
   MessageCircle,
   Calendar,
-  Activity
+  Activity,
+  Brain,
+  Shield
 } from 'lucide-react';
 import FilterControls from './FilterControls';
 import VideoDetailsModal from './VideoDetailsModal';
@@ -113,6 +115,7 @@ const getGlobalTier = (channelName) => {
   const [selectedChannel, setSelectedChannel] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [allVideosModalOpen, setAllVideosModalOpen] = useState(false);
+  const [modalFilterConfig, setModalFilterConfig] = useState(null);
   const [filteredData, setFilteredData] = useState(null);
   const [originalEnhancedData, setOriginalEnhancedData] = useState(null); // Store the original enhanced data
   const [activeFilters, setActiveFilters] = useState({
@@ -280,6 +283,60 @@ const getGlobalTier = (channelName) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(...args);
     }
+  };
+
+  // Filter configurations for different modal views
+  const getFilterConfig = (type) => {
+    const configs = {
+      'total-videos': {
+        title: 'All Videos',
+        subtitle: 'Complete dataset',
+        sortBy: 'views',
+        sortOrder: 'desc'
+      },
+      'channels': {
+        title: 'Channels Analysis', 
+        subtitle: 'Grouped by channel',
+        sortBy: 'views',
+        sortOrder: 'desc',
+        searchTerm: '' // Will show all, but could group by channel
+      },
+      'high-views': {
+        title: 'High-Performing Videos',
+        subtitle: 'Above average views (1.2M+)',
+        sortBy: 'views',
+        sortOrder: 'desc',
+        viewsRange: { min: '1200000', max: '' }
+      },
+      'high-engagement': {
+        title: 'High-Engagement Videos', 
+        subtitle: 'Above average engagement (7.8K+ likes)',
+        sortBy: 'likes',
+        sortOrder: 'desc',
+        likesRange: { min: '7800', max: '' }
+      },
+      'top-comments': {
+        title: 'Most Commented Videos',
+        subtitle: 'Videos with most audience interaction',
+        sortBy: 'comments', 
+        sortOrder: 'desc',
+        commentsRange: { min: '1', max: '' }
+      },
+      'family-genre': {
+        title: 'Family & Kids Content',
+        subtitle: 'Top performing family-friendly videos',
+        sortBy: 'views',
+        sortOrder: 'desc',
+        genreFilter: ['Kids/Family']
+      }
+    };
+    return configs[type] || configs['total-videos'];
+  };
+
+  // Handle modal opening with specific filter
+  const openModalWithFilter = (filterType) => {
+    setModalFilterConfig(getFilterConfig(filterType));
+    setAllVideosModalOpen(true);
   };
 
   // Handle filter changes
@@ -744,7 +801,7 @@ const getGlobalTier = (channelName) => {
           subtitle="Extracted & Verified"
           color="red"
           trend={12}
-          onClick={() => setAllVideosModalOpen(true)}
+          onClick={() => openModalWithFilter('total-videos')}
         />
         <StatCard
           icon={Users}
@@ -752,6 +809,7 @@ const getGlobalTier = (channelName) => {
           value={safeDisplayData.totalChannels}
           subtitle={`${getUniqueGenres(safeDisplayData.channels).length} genres filtered`}
           color="blue"
+          onClick={() => openModalWithFilter('channels')}
         />
         <StatCard
           icon={Eye}
@@ -760,6 +818,7 @@ const getGlobalTier = (channelName) => {
           subtitle="Per video"
           color="green"
           trend={8}
+          onClick={() => openModalWithFilter('high-views')}
         />
         <StatCard
           icon={Heart}
@@ -768,6 +827,7 @@ const getGlobalTier = (channelName) => {
           subtitle="Likes per video"
           color="purple"
           trend={15}
+          onClick={() => openModalWithFilter('high-engagement')}
         />
       </div>
 
@@ -779,6 +839,7 @@ const getGlobalTier = (channelName) => {
           value={safeDisplayData.stats.avgComments}
           subtitle="Average per video"
           color="orange"
+          onClick={() => openModalWithFilter('top-comments')}
         />
         <StatCard
           icon={TrendingUp}
@@ -786,13 +847,15 @@ const getGlobalTier = (channelName) => {
           value={safeDisplayData.stats.topPerformingGenre}
           subtitle="By engagement"
           color="indigo"
+          onClick={() => openModalWithFilter('family-genre')}
         />
         <StatCard
           icon={Database}
           title="Data Quality"
-          value={`${safeDisplayData.healthScore}%`}
+          value={`${safeDisplayData.healthScore || 100}%`}
           subtitle="Verification passed"
           color="green"
+          onClick={() => openModalWithFilter('total-videos')}
         />
       </div>
 
@@ -814,21 +877,85 @@ const getGlobalTier = (channelName) => {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className={`${darkMode ? 'card-dark' : 'card'} text-center`}>
-        <h3 className="text-xl font-bold mb-4">Ready to Analyze?</h3>
-        <p className={`mb-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-          Your dataset is production-ready with {safeDisplayData.totalVideos} videos from {safeDisplayData.totalChannels} channels.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button className="btn-primary flex items-center justify-center space-x-2">
-            <BarChart3 className="w-4 h-4" />
-            <span>View Data Visualization</span>
-          </button>
-          <button className="btn-secondary flex items-center justify-center space-x-2">
-            <Database className="w-4 h-4" />
-            <span>Export Dataset</span>
-          </button>
+      {/* Website Information */}
+      <div className={`${darkMode ? 'card-dark' : 'card'}`}>
+        <h3 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          YouTube Performance Analytics Platform
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Dashboard Purpose */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2 mb-3">
+              <BarChart3 className="w-5 h-5 text-blue-500" />
+              <h4 className="font-semibold text-lg">Dashboard</h4>
+            </div>
+            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Comprehensive overview of YouTube channel performance metrics including views, engagement rates, 
+              subscriber growth, and content analysis across {safeDisplayData.totalVideos} videos from {safeDisplayData.totalChannels} channels.
+            </p>
+          </div>
+
+          {/* Data Visualization */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2 mb-3">
+              <TrendingUp className="w-5 h-5 text-green-500" />
+              <h4 className="font-semibold text-lg">Data Visualization</h4>
+            </div>
+            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Interactive charts and graphs displaying channel performance trends, sentiment analysis of comments, 
+              engagement patterns, and comparative analytics to identify top-performing content strategies.
+            </p>
+          </div>
+
+          {/* AI Predictor */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2 mb-3">
+              <Brain className="w-5 h-5 text-purple-500" />
+              <h4 className="font-semibold text-lg">AI Predictor</h4>
+            </div>
+            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Machine learning models trained on 24 algorithms to predict video performance including CTR (Click-Through Rate), 
+              RQS (Retention Quality Score), and view projections based on thumbnails, tags, and content features.
+            </p>
+          </div>
+
+          {/* Status Page */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2 mb-3">
+              <Shield className="w-5 h-5 text-orange-500" />
+              <h4 className="font-semibold text-lg">Status Monitor</h4>
+            </div>
+            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              Real-time system health monitoring, data extraction progress tracking, and platform performance metrics 
+              to ensure reliable operation and data integrity across all analysis components.
+            </p>
+          </div>
+        </div>
+
+        {/* Key Metrics Definitions */}
+        <div className={`mt-8 pt-6 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h4 className="font-semibold text-lg mb-4 text-center">Key Performance Indicators</h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <span className="font-medium text-blue-600">CTR (Click-Through Rate):</span>
+              <span className={`ml-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Percentage of impressions that result in clicks, indicating thumbnail and title effectiveness.
+              </span>
+            </div>
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <span className="font-medium text-green-600">RQS (Retention Quality Score):</span>
+              <span className={`ml-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Composite metric measuring audience retention, engagement depth, and content quality.
+              </span>
+            </div>
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
+              <span className="font-medium text-purple-600">Engagement Rate:</span>
+              <span className={`ml-2 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                Ratio of likes, comments, and shares to total views, measuring audience interaction quality.
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -843,9 +970,13 @@ const getGlobalTier = (channelName) => {
 
       <AllVideosModal
         isOpen={allVideosModalOpen}
-        onClose={() => setAllVideosModalOpen(false)}
+        onClose={() => {
+          setAllVideosModalOpen(false);
+          setModalFilterConfig(null);
+        }}
         allVideos={filteredData?.allVideos || []}
         darkMode={darkMode}
+        filterConfig={modalFilterConfig}
       />
     </div>
   );
