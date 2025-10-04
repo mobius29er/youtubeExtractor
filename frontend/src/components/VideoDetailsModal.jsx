@@ -41,16 +41,46 @@ const VideoDetailsModal = ({
     return num.toLocaleString();
   };
 
-  const formatDuration = (seconds) => {
-    if (!seconds) return 'N/A';
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+  const formatDuration = (duration) => {
+    if (!duration) return 'N/A';
     
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    // Handle if it's already in seconds format (number)
+    if (typeof duration === 'number') {
+      const hours = Math.floor(duration / 3600);
+      const minutes = Math.floor((duration % 3600) / 60);
+      const secs = duration % 60;
+      
+      if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+      return `${minutes}:${secs.toString().padStart(2, '0')}`;
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+    
+    // Handle ISO 8601 format (PT3M6S, PT38M32S, etc.)
+    if (typeof duration === 'string' && duration.startsWith('PT')) {
+      try {
+        const timeMatch = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (timeMatch) {
+          const hours = parseInt(timeMatch[1]) || 0;
+          const minutes = parseInt(timeMatch[2]) || 0;
+          const seconds = parseInt(timeMatch[3]) || 0;
+          
+          if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+          }
+          return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+      } catch (error) {
+        console.warn('Error parsing duration:', duration, error);
+      }
+    }
+    
+    // If it's already in readable format, return as is
+    if (typeof duration === 'string' && duration.includes(':')) {
+      return duration;
+    }
+    
+    return 'N/A';
   };
 
   const getEngagementRate = (video) => {
