@@ -1,12 +1,207 @@
 # 🎯 YouTube Performance Predictor — AI-Powered Creator Analytics
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20Now-brightgreen)](https://virtuous-insight-production-cc49.up.railway.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20Now-brightgreen)](https://youtubeextractor-production.up.railway.app/)
 [![ML Models](https://img.shields.io/badge/ML%20Models-24%20Trained-blue)](#ml-architecture)
 [![Tech Stack](https://img.shields.io/badge/Stack-FastAPI%20%2B%20React%20%2B%20Docker-orange)](#technology-stack)
 
 > **Predict YouTube video performance before you publish.** Get AI-powered insights on CTR, retention scores, and view predictions using advanced machine learning and computer vision.
 
-**🚀 [Try the Live Demo](https://virtuous-insight-production-cc49.up.railway.app/)**
+**🚀 [Try the Live Demo](https://youtubeextractor-production.up.railway.app/)**
+
+---
+
+# YouTube Performance Prediction Using Pre-Publication Features
+
+## Problem Statement
+
+The goal of this project was to determine whether the success of a YouTube video can be predicted using only its pre-publication features. Specifically, the research asks:
+
+**Can the success of a YouTube video, measured by normalized viewership and a custom-developed Retention Quality Score (RQS), be predicted and replicated by analyzing patterns in its metadata, thumbnail, and text-based content?**
+
+The motivation behind this study is the inconsistency and unpredictability of success on YouTube. Many creators invest substantial time, creativity, and resources into videos that fail to perform, while others achieve viral reach. This research seeks to identify and quantify the underlying structural and visual factors that contribute to a video’s success, allowing creators to make data-informed decisions before uploading content.
+
+The potential benefit is a predictive framework that enables video creators to optimize their titles, thumbnails, and tags for engagement and retention, rather than relying on guesswork or anecdotal strategies.
+
+---
+
+## Model Outcomes or Predictions
+
+The project focused on **regression-based supervised learning** to predict quantitative performance metrics rather than categorical labels. Three core predictive models were developed:
+
+1. **Retention Quality Score (RQS) Model** – Predicts the strength of audience retention based on sentiment, metadata, and textual embeddings.  
+2. **Views Model** – Predicts total view counts, using a two-stage residual fitting method that first explains core variance through physics-like features and then models residual variance through non-linear relationships.  
+3. **CTR (Click-Through Rate) Model** – Estimates the likelihood of viewer engagement at the impression level, informed by metadata and embedding signals.
+
+These models together create a holistic framework capable of forecasting both engagement (CTR) and sustained attention (RQS), which in turn drive total views.
+
+---
+
+## Data Acquisition
+
+The dataset consisted of approximately **1,000 YouTube videos** drawn from **25 creators across five genres**:
+
+- Challenge/Stunts  
+- Christian  
+- Education/Science  
+- Gaming  
+- Kids/Family  
+
+Each creator contributed **40 videos**:
+
+- 10 top-performing by view count  
+- 10 low-performing  
+- 20 randomly sampled  
+
+All data were sourced from **public YouTube pages**, including:
+
+- **Video metadata:** title, tags, description, views, likes, comments, duration, and publish date  
+- **Channel data:** subscriber count (for normalization)  
+- **Thumbnails:** processed for color, facial detection, and textual overlays  
+- **Textual content:** extracted embeddings from titles, descriptions, captions, and tags (when available)  
+
+This structure ensured a balanced, genre-diverse dataset capable of modeling both high- and low-performance dynamics while mitigating outlier bias.
+
+---
+
+## Data Preprocessing and Preparation
+
+Data preparation included several key stages to ensure clean and usable inputs for modeling:
+
+- **Cleaning and Normalization:** Removed missing or corrupted records, standardized numerical metrics, and normalized by subscriber count to reduce channel-size bias.  
+- **Feature Engineering:** Constructed a comprehensive feature matrix including:  
+  - **RQS components** (like ratio, comment ratio, sentiment score, comment depth, and timestamp density)  
+  - **Visual features** (average RGB values, dominant color clusters, face detection area, and brightness)  
+  - **Text embeddings** from titles, descriptions, captions, and tags  
+- **Splitting:** The data were divided into training and testing sets using stratified sampling to preserve performance category representation.  
+- **Encoding:** All categorical and text-based features were embedded using high-dimensional numerical representations to capture semantic relationships.  
+
+This preparation yielded over **160 total features**, forming a multi-modal dataset that integrates language, image, and engagement metrics.
+
+---
+
+## Modeling
+
+### Unsupervised Learning
+
+- **Principal Component Analysis (PCA):** PCA was applied to reduce feature dimensionality and reveal the dominant sources of variance within the dataset. This allowed the most meaningful numerical and textual signals to emerge without noise inflation.  
+- **K-Means Clustering:** K-Means grouped the dataset into **five distinct clusters**, each representing a unique content archetype based on metadata, thumbnail composition, and engagement ratios. Cluster interpretation provided qualitative insight into how certain feature combinations correspond to higher viewer interest or specific genre styles.
+
+### Supervised Learning
+
+#### 1. Raw Views Prediction
+- Predicting raw view counts was initially difficult due to the heavy-tailed nature of YouTube data. Early models performed worse than a simple mean predictor, resulting in negative R² values.  
+- Applying a **logarithmic transformation** to the target variable stabilized the variance and significantly improved performance, with **Gradient Boosting** and **Random Forest** achieving R² values between **0.94 and 0.97** after inverse transformation.  
+- The **Random Forest model on log-transformed views** proved most reliable, balancing complexity and generalization while capturing the nonlinear patterns of audience scale and exposure.
+
+#### 2. Views per Subscriber Prediction
+- Predicting normalized success (views per subscriber) achieved consistent results, with both Gradient Boosting and Random Forest models reaching **R² values around 0.83 to 0.85**.  
+- This model focused on engagement-driven metrics rather than raw exposure, identifying how viewer loyalty, content tone, and thumbnail quality predict proportional success.
+
+#### 3. Retention Quality Score (RQS) Model
+- The RQS model achieved a strong and valid **R² of 0.7859**, making it the foundation of this system.  
+- RQS was designed to **mirror the internal logic of the YouTube recommendation algorithm**, which prioritizes videos that sustain viewer attention and evoke strong emotional engagement.  
+- The model replicates this mechanism by integrating **five weighted components**:
+
+  1. **Like Ratio (30%)** – Measures satisfaction and perceived content quality.  
+  2. **Comment Ratio (20%)** – Reflects active viewer engagement and emotional response.  
+  3. **Views per Subscriber (25%)** – Normalizes reach relative to audience size.  
+  4. **Sentiment Score (15%)** – Captures the emotional polarity of comments, serving as a proxy for audience resonance.  
+  5. **Comment Depth and Timestamp Density (10%)** – Estimates retention through the presence of detailed or time-stamped feedback.  
+
+- Together, these components emulate how YouTube’s algorithm balances click performance, retention, and satisfaction signals when recommending content.  
+- Feature importance analysis confirmed that **sentiment_score** is the dominant variable, followed by textual embeddings from the description and captions. This indicates that emotional tone and linguistic clarity drive sustained watch behavior, much like how YouTube’s engagement-weighted ranking system prioritizes emotionally compelling and clear communication.
+
+#### 4. CTR (Click-Through Rate) Model
+- The CTR model achieved **R² = 0.4742**, reflecting moderate but actionable predictive power.  
+- The strongest predictor was the **predicted RQS**, implying that users are more likely to click on content they subconsciously associate with high retention quality.  
+- Embeddings from titles, tags, and thumbnail text further refined the model, capturing the importance of linguistic framing and presentation in generating clicks.
+
+---
+
+## Model Evaluation
+
+Evaluation relied primarily on **R²**, **MAE**, and **RMSE** metrics to quantify accuracy and generalization.
+
+| Model | Final R² | Core Predictors | Interpretation |
+|-------|-----------|----------------|----------------|
+| **RQS Model** | 0.7859 | sentiment_score, description/caption embeddings | Emotional tone predicts retention strength |
+| **Views Model** | 0.6974 | ctr_subs_interaction, rqs_pred, log_subs | Engagement and audience size synergy drives views |
+| **CTR Model** | 0.4742 | rqs_pred, tag/title embeddings | Retention and textual clarity influence click rate |
+| **Log Views (Raw)** | 0.94–0.97 | subscriber normalization, engagement ratios | Log transformation enables stable high accuracy |
+| **Views per Subscriber** | 0.83–0.85 | engagement ratios, performance category, thumbnail colors | Normalized success captured effectively |
+
+### Key Findings
+
+- The **logarithmic transformation** was critical for modeling raw views due to the heavy-tailed distribution of the data.  
+- **Engagement metrics** (like_ratio, comment_ratio, sentiment_score) and **metadata embeddings** consistently ranked among the most important predictors.  
+- **Thumbnail color composition** correlated with performance, suggesting visual tonality may play a subconscious role in attracting viewers.  
+- **High RQS videos** tended to share “success signatures” of emotional positivity, strong early engagement, and well-composed thumbnails.
+
+---
+
+## Conclusions and Future Work
+
+This research successfully demonstrated that YouTube video success can be predicted using pre-publication features alone. The combination of textual, visual, and engagement-based signals produces a coherent framework capable of forecasting retention, engagement, and viewership before a video is released.
+
+The **RQS model** not only serves as the most generalizable predictor of performance but also **reconstructs the fundamental logic of YouTube’s recommendation system**. Just as YouTube optimizes for viewer satisfaction and sustained attention, the RQS model captures the same dynamics through sentiment, engagement ratios, and audience normalization. In this sense, the model acts as a transparent external approximation of how the platform’s opaque ranking algorithm likely prioritizes content.
+
+The **log-views model** offers precision forecasting for reach, while the **CTR model** contextualizes pre-click interest with post-click retention. Together, they form a scalable framework that can forecast outcomes and guide optimization before a video ever goes live.
+
+### Future Development Priorities
+
+1. Incorporating full video transcripts and hook analysis to better quantify narrative quality.  
+2. Refining the RQS formula using additional sentiment layers and long-tail engagement metrics.   
+
+Ultimately, this project lays the groundwork for a **predictive YouTube optimization platform** that transforms the art of content creation into a measurable, data-informed science, while offering a rare external mirror to the platform’s own engagement logic.
+
+---
+
+## Application Implementation and Visualization Layer
+
+Following model development, the complete web application titled **YouTube Extractor** was built to operationalize the findings. The app provides a **production-grade dashboard and ML interface** that allows creators, researchers, and analysts to interact with the trained models and visualize performance data.
+
+### Platform Overview
+
+The system is hosted at [youtubeextractor-production.up.railway.app](https://youtubeextractor-production.up.railway.app) and integrates all core modules:
+
+- **Dashboard:** Overview of extracted data (1,000 videos across 25 channels) with real-time health scoring and data verification metrics.  
+- **Data Visualization:** Interactive insights across genre, engagement tier, sentiment, correlation, and thumbnail color analytics.  
+- **AI Predictor:** User-facing form that allows prediction of view counts, RQS, and engagement by inputting title, genre, subscriber count, duration, and optional thumbnail upload.  
+- **Status Module:** Real-time monitoring of system uptime, channel extraction completion, and dataset integrity.
+
+### Key Visualization Modules
+
+#### 1. Genre and Tier Analysis
+- Displays comparative engagement and RQS metrics across genres such as Kids/Family, Gaming, Challenge/Stunts, Education, and Catholic content.  
+- Channel tier segmentation (Mega, Large, Mid, Small, New) reveals how scale interacts with engagement efficiency.
+
+#### 2. Sentiment Analysis Dashboard
+- Visualizes positive, neutral, and negative comment distributions and generates corresponding word clouds.  
+- Demonstrates that positive sentiment words (“Jesus,” “Catholic,” “bless,” “pray”) correlate strongly with higher RQS outcomes.
+
+#### 3. Thumbnail Analysis Suite
+- Extracts and ranks dominant thumbnail colors, face detection percentages, and composition ratios.  
+- Identifies high-performing color combinations such as **Black + White + Red-Orange**, which achieved top RQS values (~22.0).  
+- Face detection analysis revealed that thumbnails with **0% face presence** performed best for large-scale Kids and Family content, highlighting genre-dependent optimization.
+
+#### 4. Title Analysis Engine
+- Evaluates over 1,000 titles, identifying optimal structures and lengths.  
+- The highest RQS performance occurred for **titles between 40–49 characters** and “How to {skill}” structures, with “Catholic” emerging as the single most performance-boosting word (+40%).  
+- Word cloud and leaderboard features quantify which linguistic features statistically improve retention and engagement.
+
+#### 5. Correlation and Engagement Tools
+- The correlation matrix plots relationships between engagement ratios (like_ratio, comment_ratio), RQS, and views per subscriber.  
+- Provides actionable insights into which metrics most strongly predict success, validated visually through scatter and bar plots.
+
+### Operational Impact
+
+This application moves the research beyond theory. It **translates the model suite into a dynamic visual intelligence platform** capable of:
+
+- Running **live predictions** through trained ML models.  
+- Generating **AI-driven insights** on thumbnails, titles, and engagement factors.  
+- Offering creators a **replicable success framework** by identifying high-performing “signatures” across visual and textual elements.
+
+The **YouTube Extractor** thus serves as both a **machine learning research artifact** and a **working prototype for an AI-powered creator analytics platform**, bridging the gap between academic modeling and practical industry application.
 
 ---
 
@@ -239,9 +434,9 @@ docker run -p 8002:8002 youtube-predictor
 ## 📈 Model Performance
 
 ### Prediction Accuracy
-- **CTR Model**: R² = 0.67, MAE = 0.12
-- **RQS Model**: R² = 0.58, MAE = 89 points
-- **Views Model**: R² = 0.72, MAE = 8,901 views
+- **CTR Model**: R² = 0.4742
+- **RQS Model**: R² = 0.7859
+- **Views Model**: R² = 0.6974
 
 ### Feature Importance
 1. **Text Embeddings** (40%): Title, description, tags
@@ -315,7 +510,7 @@ thumbnail: file (optional)
 - [ ] **User Accounts**: Save prediction history
 - [ ] **Batch Processing**: Multiple video analysis
 - [ ] **Model Metrics**: Display accuracy statistics
-- [ ] **Export Features**: CSV/JSON download
+- [ ] **Monetization**: Premium features and API access
 
 ### Medium Term (2026)
 - [ ] **Real-Time Training**: User feedback improves models
@@ -327,7 +522,6 @@ thumbnail: file (optional)
 - [ ] **YouTube Studio Integration**: Official plugin
 - [ ] **Multi-Platform Support**: TikTok, Instagram predictions
 - [ ] **Advanced CV**: Thumbnail generation suggestions
-- [ ] **Monetization**: Premium features and API access
 
 ---
 
@@ -370,20 +564,9 @@ comments_raw/               # Sentiment analysis data
 
 ## 📄 License
 
-**MIT License** - Use this project for commercial and non-commercial purposes.
-
 ```
 Copyright (c) 2025 Jeremy Foxx
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
 ```
 
 ---
@@ -393,7 +576,7 @@ copies or substantial portions of the Software.
 ### Inspiration
 - **MrBeast**: Data-driven content creation philosophy
 - **Creator Economy**: The need for better prediction tools
-- **Open Source ML**: Standing on the shoulders of giants
+- **Open Source ML**: Providing all the frameworks to help me complete this project
 
 ### Technology Credits
 - **scikit-learn**: Machine learning framework
@@ -409,13 +592,13 @@ copies or substantial portions of the Software.
 **Jeremy Foxx**  
 *Creator • Engineer • Catholic*
 
-- 🌐 **Live Demo**: [YouTube Performance Predictor](https://virtuous-insight-production-cc49.up.railway.app/)
-- 📧 **Contact**: [Your Email]
-- 💼 **LinkedIn**: [Your Profile]
-- 🐦 **Twitter**: [Your Handle]
+- 🌐 **Live Demo**: [YouTube Performance Predictor](https://youtubeextractor-production.up.railway.app/)
+- 📧 **Contact**: jeremy@foxxception.com
+- 💼 **LinkedIn**: https://www.linkedin.com/in/jeremyfoxx/
+- 🐦 **Twitter**: https://x.com/jeremydfoxx
 
 ---
 
-⭐ **Star this repository** if you believe creators deserve AI-powered tools instead of guesswork!
+⭐ **Star this repository** if you believe creators deserve AI-powered tools!
 
-*Built with ❤️ for the creator economy*
+*Built for the creator economy*
