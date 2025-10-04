@@ -17,6 +17,16 @@
 The goal of this project was to determine whether the success of a YouTube video can be predicted using only its pre-publication features. Specifically, the research asks:
 
 **Can the success of a YouTube video, measured by normalized viewership and a custom-developed Retention Quality Score (RQS), be predicted and replicated by analyzing patterns in its metadata, thumbnail, and text-based content?**
+> “Why do some creators go viral while others fade?”  
+> This project analyzes the top 25 YouTube creators across 5 major genres to find out.
+
+Using intelligent sampling, structured metadata extraction, and optional sentiment/thumbnail/transcript analysis, we build a clean, exportable dataset for downstream machine learning tasks like:
+- 📊 Retention modeling
+- 🎯 Thumbnail impact on CTR
+- 🧠 Hook/pacing analysis
+- 🗣️ Comment sentiment scoring
+- 🤖 K-Means clustering & PCA visualization
+
 
 The motivation behind this study is the inconsistency and unpredictability of success on YouTube. Many creators invest substantial time, creativity, and resources into videos that fail to perform, while others achieve viral reach. This research seeks to identify and quantify the underlying structural and visual factors that contribute to a video’s success, allowing creators to make data-informed decisions before uploading content.
 
@@ -38,13 +48,19 @@ These models together create a holistic framework capable of forecasting both en
 
 ## Data Acquisition
 
-The dataset consisted of approximately **1,000 YouTube videos** drawn from **25 creators across five genres**:
+The dataset consisted of approximately **1,000 YouTube videos** drawn from **25 creators across five genres** from New channels to "Mega" channels:
 
-- Challenge/Stunts  
-- Christian  
-- Education/Science  
-- Gaming  
-- Kids/Family  
+- **Challenge/Stunts**: MrBeast, Zach King, Ryan Trahan, etc.
+- **Catholic**: Ascension Presents, Bishop Barron, etc.
+- **Education/Science**: Kurzgesagt, Veritasium, SciShow, etc.
+- **Gaming**: Jacksepticeye, Call Me Kevin, RTGame, etc.
+- **Kids/Family**: Cocomelon, Diana and Roma, Vlad and Niki, etc.
+
+- **Mega**: >50 million subs
+- **Large**: >10 million subs
+- **Mid**: >1 million subs
+- **Small**: >100,000 subs
+- **New**: <100,000 subs
 
 Each creator contributed **40 videos**:
 
@@ -399,32 +415,111 @@ Git LFS:         # Large model file storage
 
 ## 🚀 Quick Start
 
-### 1. Try the Live Demo
+### Try the Live Demo
 Visit **[YouTube Performance Predictor](https://virtuous-insight-production-cc49.up.railway.app/)** to test immediately.
 
-### 2. Local Development
-```bash
-# Clone repository
+## 🛠️ Installation & Setup
+
+### 1. Quick Installation
+```
 git clone https://github.com/mobius29er/youtubeExtractor.git
 cd youtubeExtractor
-
-# Backend setup
-pip install -r requirements-prediction.txt
-python src/prediction_api.py
-
-# Frontend setup (new terminal)
-cd frontend
-npm install
-npm run dev
-
-# Access at:
-# API: http://localhost:8002
-# Frontend: http://localhost:3000
+python -m venv venv
+source venv/bin/activate  # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
 ```
 
+Create a `.env` file:
+```
+YOUTUBE_API_KEY=your-api-key-here
+```
+
+### 2. Local Development
+
+#### Prerequisites
+- **Python 3.11+** (recommended - avoid 3.13+ due to compatibility issues)
+- **Node.js 18+** and npm
+- **YouTube Data API v3 Key** (get from [Google Cloud Console](https://console.cloud.google.com/))
+
+#### Complete Setup
+##### 1. Clone repository
+```
+git clone https://github.com/mobius29er/youtubeExtractor.git
+cd youtubeExtractor
+```
+##### 2. Backend setup
+##### Create virtual environment (recommended)
+```
+python -m venv venv
+```
+##### Windows:
+```
+venv\Scripts\activate
+```
+##### macOS/Linux:
+```
+source venv/bin/activate
+```
+
+##### Install dependencies
+```
+pip install -r requirements.txt
+```
+##### 3. Environment configuration
+##### Copy and configure environment files
+```
+cp .env.prediction .env
+```
+##### Edit .env and add your YouTube API key:
+```
+YOUTUBE_API_KEY=your_api_key_here
+PORT=8000
+CORS_ORIGINS=http://localhost:3000
+```
+
+##### 4. Data setup (optional - for full functionality)
+##### If you have extracted data, place it in extracted_data/
+##### Or run data extraction first:
+```
+python src/corrected_data_extractor.py
+```
+##### 5. Start backend API server
+```
+python src/api_server.py
+```
+##### Alternative for ML predictions:
+```
+python src/prediction_api.py
+```
+##### 6. Frontend setup (new terminal)
+```
+cd frontend
+npm install
+```
+
+##### Create local environment file
+```
+echo "VITE_API_BASE_URL=http://localhost:8000" > .env.local
+```
+##### Start frontend development server
+```
+npm run dev
+```
+##### 7. Access your application:
+##### Main API: http://localhost:8000
+##### ML Prediction API: http://localhost:8002  
+##### Frontend Dashboard: http://localhost:3000
+
+
+#### Troubleshooting
+- **Port conflicts**: Change ports in `.env` files if needed
+- **CORS issues**: Ensure backend CORS_ORIGINS includes `http://localhost:3000`
+- **Missing data**: Run data extraction or use sample data from `extracted_data/`
+- **API key**: Verify YouTube Data API v3 is enabled in Google Cloud Console
+
 ### 3. Docker Deployment
-```bash
 # Build and run prediction service
+```
 docker build -f Dockerfile.prediction -t youtube-predictor .
 docker run -p 8002:8002 youtube-predictor
 ```
