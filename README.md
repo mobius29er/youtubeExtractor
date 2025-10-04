@@ -416,7 +416,7 @@ Git LFS:         # Large model file storage
 ## 🚀 Quick Start
 
 ### Try the Live Demo
-Visit **[YouTube Performance Predictor](https://virtuous-insight-production-cc49.up.railway.app/)** to test immediately.
+Visit **[YouTube Performance Predictor](https://youtubeextractor-production.up.railway.app/)** to test immediately.
 
 ## 🛠️ Installation & Setup
 
