@@ -494,6 +494,8 @@ class YouTubePredictionSystem:
             baseline_pred = self.baseline_models['ctr'].predict(X_baseline)[0]
             
             ctr_log = baseline_pred + residual_pred
+            # Convert log-space prediction back to original scale using np.expm1,
+            # which is the inverse of np.log1p. This recovers the predicted CTR.
             ctr = np.expm1(ctr_log)
             
             return np.clip(ctr, 0.01, 2.0)

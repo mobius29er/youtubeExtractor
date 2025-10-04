@@ -859,8 +859,13 @@ async def catch_all(full_path: str):
 if __name__ == "__main__":
     import uvicorn
     
-    # Get port from Railway environment or default to 8000
-    port = int(os.environ.get("PORT", 8000))
+    # Get port from Railway environment or default to 8000, with validation
+    port_str = os.environ.get("PORT", "8000")
+    try:
+        port = int(port_str)
+    except ValueError:
+        print(f"⚠️  Invalid PORT environment variable value: '{port_str}'. Falling back to default port 8000.", file=sys.stderr)
+        port = 8000
     
     print("🚀 Starting YouTube Extractor API server...")
     print(f"📊 Dashboard will be available at: http://0.0.0.0:{port}")
