@@ -686,7 +686,7 @@ class YouTubePredictionSystem:
             'performance_score': round(performance_score, 1),
             'thumbnail_analysis': {
                 'brightness': thumbnail_features.get('brightness', 128),
-                'has_faces': thumbnail_features.get('face_area_percentage', 0) > 0,
+                'has_faces': bool(thumbnail_features.get('face_area_percentage', 0) > 0),
                 'face_percentage': thumbnail_features.get('face_area_percentage', 0),
                 'has_text': bool(thumbnail_features.get('has_text', 0)),
                 'color_variance': thumbnail_features.get('color_variance', 0),
@@ -787,7 +787,7 @@ async def predict_video_performance(
             'subscriber_count': subscriber_count,
             'duration_minutes': (duration_seconds or 480) / 60,
             'recommended_tags': video_data['tags'],
-            'has_thumbnail': thumbnail is not None,
+            'has_thumbnail': bool(thumbnail is not None),
             'prediction_date': datetime.now().isoformat()
         }
         
