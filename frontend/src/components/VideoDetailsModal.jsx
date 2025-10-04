@@ -59,11 +59,11 @@ const VideoDetailsModal = ({
     // Handle ISO 8601 format (PT3M6S, PT38M32S, etc.)
     if (typeof duration === 'string' && duration.startsWith('PT')) {
       try {
-        const timeMatch = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        const timeMatch = duration.match(/PT(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?/);
         if (timeMatch) {
-          const hours = parseInt(timeMatch[1]) || 0;
-          const minutes = parseInt(timeMatch[2]) || 0;
-          const seconds = parseInt(timeMatch[3]) || 0;
+          const hours = parseInt(timeMatch[1], 10) || 0;
+          const minutes = parseInt(timeMatch[2], 10) || 0;
+          const seconds = parseInt(timeMatch[3], 10) || 0;
           
           if (hours > 0) {
             return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
