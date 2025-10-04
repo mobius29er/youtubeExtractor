@@ -7,6 +7,7 @@ Provides API endpoints for data visualization and real-time status updates.
 import json
 import os
 import sys
+import pandas as pd
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -562,8 +563,56 @@ async def get_comment_data():
                 comments = video.get('comments', [])
                 
                 if comments and len(comments) > 0:
-                    # Calculate a basic sentiment score (we could enhance this later)
+                    # Get sentiment score from processed data if available (AI-generated scores)
                     sentiment_score = 0.5  # Default neutral
+                    
+                    if data_loader.processed_data is not None and not data_loader.processed_data.empty:
+                        video_row = data_loader.processed_data[data_loader.processed_data['video_id'] == video_id]
+                        if not video_row.empty and 'sentiment_score' in video_row.columns:
+                            ai_sentiment = video_row['sentiment_score'].iloc[0]
+                            if pd.notna(ai_sentiment):  # Check if not NaN
+                                sentiment_score = float(ai_sentiment)
+                                print(f"📊 Using AI sentiment score {sentiment_score:.3f} for video {video_id}")
+                            else:
+                                print(f"⚠️ NaN sentiment score for video {video_id}, using fallback")
+                        else:
+                            print(f"⚠️ No sentiment score found for video {video_id}")
+                    
+                    # Fallback to keyword-based sentiment if no AI score available
+                    if sentiment_score == 0.5 and data_loader.processed_data is None:
+                        def calculate_video_sentiment(comments):
+                            positive_words = ['love', 'amazing', 'awesome', 'great', 'best', 'perfect', 'excellent', 
+                                            'wonderful', 'fantastic', 'incredible', 'beautiful', 'good', 'nice', 
+                                            'thank', 'thanks', 'bless', 'blessed', 'holy', 'faith', 'prayer', 'pray']
+                            negative_words = ['hate', 'terrible', 'awful', 'worst', 'bad', 'horrible', 'disgusting',
+                                            'stupid', 'dumb', 'sucks', 'boring', 'annoying', 'wrong', 'false', 'lies']
+                            
+                            total_score = 0
+                            scored_comments = 0
+                            
+                            for comment in comments[:10]:  # Sample first 10 comments for performance
+                                comment_text = (comment.get('text', '') if isinstance(comment, dict) else str(comment)).lower()
+                                if not comment_text or len(comment_text) < 3:
+                                    continue
+                                    
+                                comment_score = 0.5  # Start neutral
+                                
+                                # Count positive/negative words
+                                positive_count = sum(1 for word in positive_words if word in comment_text)
+                                negative_count = sum(1 for word in negative_words if word in comment_text)
+                                
+                                # Adjust score based on word sentiment
+                                if positive_count > negative_count:
+                                    comment_score = min(0.9, 0.5 + (positive_count * 0.15))
+                                elif negative_count > positive_count:
+                                    comment_score = max(0.1, 0.5 - (negative_count * 0.15))
+                                
+                                total_score += comment_score
+                                scored_comments += 1
+                            
+                            return total_score / scored_comments if scored_comments > 0 else 0.5
+                        
+                        sentiment_score = calculate_video_sentiment(comments)
                     
                     comment_data.append({
                         "video_id": video_id,
