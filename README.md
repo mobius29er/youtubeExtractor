@@ -32,6 +32,8 @@ The motivation behind this study is the inconsistency and unpredictability of su
 
 The potential benefit is a predictive framework that enables video creators to optimize their titles, thumbnails, and tags for engagement and retention, rather than relying on guesswork or anecdotal strategies.
 
+**📓 [ Open Main Jupyter Notebook](https://github.com/mobius29er/youtubeExtractor/blob/main/notebooks/YoutubeExtractorAnalysis.ipynb)**
+
 ---
 
 ## Model Outcomes or Predictions
