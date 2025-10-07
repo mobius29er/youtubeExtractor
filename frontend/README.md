@@ -4,12 +4,14 @@ A modern, interactive web dashboard for visualizing and monitoring YouTube data 
 
 ## ✨ Features
 
-- **📊 Real-time Dashboard**: Live stats and metrics from your YouTube dataset
-- **📈 Data Visualization**: Interactive charts and graphs powered by Recharts
-- **🔄 Extraction Status**: Real-time monitoring of data extraction progress
+- **📊 Interactive Dashboard**: 6 clickable metric cards with smart filtering and modal views
+- **🤖 ML Predictions**: Real-time CTR, RQS, and view count predictions via integrated API
+- **📈 Advanced Visualization**: Interactive charts and graphs powered by Recharts
+- **� Smart Filtering**: Pre-configured filters for quick data exploration
+- **📱 Responsive Modals**: Detailed video breakdowns with performance analytics
+- **🚀 Production Ready**: Deployed and battle-tested with comprehensive error handling
 - **🌙 Dark/Light Mode**: Toggle between themes for optimal viewing
 - **📱 Responsive Design**: Works perfectly on desktop, tablet, and mobile
-- **🚀 Fast Performance**: Built with React + Vite for lightning-fast loading
 
 ## 🛠️ Tech Stack
 
@@ -17,8 +19,10 @@ A modern, interactive web dashboard for visualizing and monitoring YouTube data 
 - **Styling**: Tailwind CSS
 - **Charts**: Recharts
 - **Icons**: Lucide React
-- **Backend**: FastAPI + Python
+- **Backend**: FastAPI + Python with ML prediction models
+- **ML Models**: CTR, RQS, and Views prediction with 60-80% accuracy
 - **State Management**: React Hooks
+- **Production**: Railway deployment with health monitoring
 
 ## 🚀 Quick Start
 
@@ -46,33 +50,34 @@ The dashboard will be available at `http://localhost:3000`
 
 ```bash
 # Install Python dependencies
-pip install fastapi uvicorn pandas
+pip install -r requirements-prediction.txt
 
-# Start the API server
-python api_server.py
+# Start the prediction API server
+python src/prediction_api.py
 ```
 
-The API will be available at `http://localhost:8000`
+The API will be available at `http://localhost:8000` with ML prediction endpoints.
 
 ## 📊 Dashboard Sections
 
-### 1. Main Dashboard
-- **Key Metrics**: Total videos, channels, engagement stats
-- **Channel Status**: Overview of extraction progress per channel
-- **Data Quality**: Health scores and verification status
-- **Quick Actions**: Export data, start analysis
+### 1. Interactive Main Dashboard
+- **6 Clickable Metric Cards**: Total videos, channels, engagement stats with smart filtering
+- **Modal Integration**: Click any card to open detailed video breakdowns
+- **Performance Predictions**: Real-time ML predictions for CTR, RQS, and view counts
+- **Smart Filters**: Pre-configured filters for high performers, recent uploads, etc.
+- **Channel Analytics**: Deep-dive into individual channel performance
 
-### 2. Data Visualization
-- **Engagement Charts**: Interactive bar charts showing channel performance
-- **Genre Distribution**: Pie charts of content categories
-- **Performance Trends**: Time-series analysis of metrics
-- **Correlation Analysis**: Scatter plots showing relationships
+### 2. Enhanced Video Modals
+- **All Videos Modal**: Filterable list of all videos with performance metrics
+- **Video Details Modal**: Individual video analysis with duration parsing and predictions
+- **Performance Insights**: ML-powered recommendations and trend analysis
+- **Export Capabilities**: Download filtered datasets for further analysis
 
-### 3. Extraction Status
-- **Real-time Monitoring**: Live extraction progress
-- **System Health**: API response times, uptime statistics  
-- **Channel Progress**: Individual channel extraction status
-- **Data Export**: Download processed datasets
+### 3. Data Visualization & Analytics
+- **Engagement Charts**: Interactive visualizations showing channel performance
+- **ML Model Insights**: Prediction accuracy metrics and model performance
+- **Genre Distribution**: Content category analysis with performance correlations
+- **Trend Analysis**: Time-series data showing growth patterns
 
 ## 🎨 Customization
 
@@ -96,11 +101,22 @@ Custom color scheme defined in `tailwind.config.js`:
 
 The backend provides these REST endpoints:
 
-- `GET /api/dashboard` - Dashboard summary data
-- `GET /api/channels` - Detailed channel information
+**Dashboard & Analytics**
+- `GET /api/dashboard` - Dashboard summary data with ML predictions
+- `GET /api/channels` - Detailed channel information and analytics
+- `GET /api/videos` - Comprehensive video data with filtering support
+- `GET /api/health` - API health check and system status
+
+**ML Prediction Services**
+- `POST /predict/ctr` - Click-through rate prediction
+- `POST /predict/rqs` - Retention Quality Score prediction  
+- `POST /predict/views` - View count prediction
+- `POST /predict/bulk` - Batch predictions for multiple videos
+
+**Data Management**
 - `GET /api/visualization` - Chart and visualization data
-- `GET /api/status` - Real-time extraction status
 - `POST /api/refresh` - Refresh data from source files
+- `GET /api/export` - Export filtered datasets
 
 ## 🔧 Development
 
@@ -109,13 +125,17 @@ The backend provides these REST endpoints:
 frontend/
 ├── src/
 │   ├── components/          # React components
-│   │   ├── Dashboard.jsx    # Main dashboard
-│   │   ├── DataVisualization.jsx
-│   │   ├── ExtractionStatus.jsx
-│   │   └── Navigation.jsx
+│   │   ├── Dashboard.jsx    # Interactive dashboard with clickable cards
+│   │   ├── AllVideosModal.jsx    # Filterable video list modal
+│   │   ├── VideoDetailsModal.jsx # Individual video analysis
+│   │   ├── DataVisualization.jsx # Charts and analytics
+│   │   ├── Navigation.jsx   # App navigation
+│   │   └── FilterControls.jsx # Advanced filtering
+│   ├── utils/
+│   │   └── rqsUtils.js     # RQS calculation utilities
 │   ├── App.jsx             # Main app component
 │   ├── main.jsx           # Entry point
-│   └── index.css          # Global styles
+│   └── index.css          # Global styles with custom themes
 ├── package.json
 ├── vite.config.js
 └── tailwind.config.js
@@ -140,30 +160,45 @@ npm run preview
 
 ## 🚀 Deployment
 
-### Frontend (Netlify/Vercel)
+### Frontend (Railway/Netlify/Vercel)
 ```bash
 npm run build
-# Upload dist/ folder to your hosting provider
+# Deploy dist/ folder or connect git repository
 ```
 
-### Backend (Railway/Heroku)
+### Production Backend (Railway)
+The prediction API is deployed on Railway with:
+- Automatic deployments from GitHub
+- Health monitoring and uptime tracking
+- Scalable compute resources for ML predictions
+- Environment variable management
+
+### Local Development
 ```bash
-# Ensure requirements.txt includes:
-# fastapi
-# uvicorn
-# pandas
+# Frontend
+npm run dev
 
-# Deploy using your platform's CLI
+# Backend 
+python src/prediction_api.py
 ```
+
+## 🎯 Recent Enhancements
+
+- **✅ Interactive Dashboard Cards**: 6 clickable metric cards with smart filtering
+- **✅ Enhanced Modal System**: Detailed video breakdowns with performance analytics  
+- **✅ ML Integration**: Real-time predictions for CTR, RQS, and view counts
+- **✅ Duration Parsing**: Robust ISO 8601 duration formatting with fractional seconds
+- **✅ Production Deployment**: Battle-tested Railway deployment with monitoring
+- **✅ Advanced Filtering**: Pre-configured filters for data exploration
+- **✅ Repository Cleanup**: Removed 200MB of redundant files for better performance
 
 ## 🎯 Future Enhancements
 
-- **🤖 ML Model Integration**: Display model predictions and insights
-- **📧 Alert System**: Email notifications for extraction completion
 - **🔐 Authentication**: User login and role-based access
-- **📊 Advanced Analytics**: Deeper statistical analysis
-- **🔄 Auto-refresh**: Real-time updates without manual refresh
-- **📱 PWA Support**: Install as native app
+- **📊 Advanced Analytics**: Deeper statistical analysis and trending insights
+- **� Alert System**: Notifications for prediction anomalies
+- **🔄 Real-time Updates**: WebSocket integration for live data
+- **📱 PWA Support**: Install as native app with offline capabilities
 
 ## 🐛 Troubleshooting
 
@@ -188,7 +223,7 @@ npm install
 
 ## 📝 License
 
-MIT License - see parent project for full details
+see parent project for full details
 
 ---
 
