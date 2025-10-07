@@ -64,13 +64,14 @@ Used to predict continuous performance outcomes such as:
 
 ### Output
 Each model produces a numerical prediction aligned to measurable YouTube metrics:
-| Model                  | Learning Type | Output               | Description                                     |
-| ---------------------- | ------------- | -------------------- | ----------------------------------------------- |
-| **K-Means Clustering** | Unsupervised  | Cluster label (1–5)  | Groups similar content patterns                 |
-| **PCA**                | Unsupervised  | Principal components | Identifies dominant variance sources            |
-| **RQS Model**          | Regression    | RQS score (0–100)    | Predicts retention and engagement quality       |
-| **CTR Model**          | Regression    | CTR percentage       | Predicts likelihood of viewer click-through     |
-| **Views Model**        | Regression    | Predicted view count | Forecasts reach based on RQS, CTR, and metadata |
+| Model                  | Description                                     | Learning Type | Inference Inputs                                               | Output               | Training Target                              |
+| ---------------------- | ----------------------------------------------- | ------------- | -------------------------------------------------------------- | -------------------- | -------------------------------------------- |
+| **K-Means Clustering** | Groups similar content patterns                 | Unsupervised  | 160+ engineered features                                       | Cluster label (1–5)  | —                                            |
+| **PCA**                | Identifies dominant variance sources            | Unsupervised  | 160+ engineered features                                       | Principal components | —                                            |
+| **CTR Model**          | Predicts likelihood of viewer click-through     | Regression    | Title/desc/tag embeddings, thumbnail CV, duration, subs, genre | CTR predicted (%)         | CTR label or CTR_proxy (see CTR target note) |
+| **RQS Model**          | Predicts retention and engagement quality       | Regression    | Pre-publish inputs only                                        | RQS predicted (0–100)     | RQS (post-publish index)                |
+| **Views Model**        | Forecasts reach based on RQS, CTR, and metadata | Regression    | CTR_pred, RQS_pred, subs, metadata; log residual + guardrails  | Views predicted           | log(Views)                                   |
+
 
 ### Summary
 The unsupervised learning provides insight into how the factors of the data collected interact between genres and channel sizes. This provided the framework and confirmation for the supervised learning portion which is built to provide pre-publication analysis of the thumbnail and title.  These models together create a holistic framework capable of forecasting both engagement (CTR) and viewer retention (RQS), which in turn drive the algorithm to show the video to more people increasing total views.
@@ -205,7 +206,7 @@ First up for FE we have comment analysis where we process the thousands upon tho
   - Mapped 1–5 stars → [-1, 1], and average per video to get sentiment_score. Empty/malformed comment sets return 0.0 safely (applicable to family/kids genre which didn't have comments due to YouTube Policy).
 
 ### 4. Feature Engineering - Retention Quality Score (RQS)
-RQS is my own metric I am developing here and for me the most important I want to use for testing as it provides us a recreation of the YouTube algorithm hopefully (spoiler R² is 0.7859). Now it is important to distinguish RQS here where we are calculating it and in the web app when we process it isn't calculating the RQS for the video but rather presenting the predicted RQS which should help us determine the potential views.
+RQS is my own metric I am developing here and for me the most important I want to use for testing as it provides us a recreation of the YouTube algorithm. Now it is important to distinguish RQS here where we are calculating it and in the web app when we process it isn't calculating the RQS for the video but rather presenting the predicted RQS which should help us determine the potential views.
 - Calculated the custom RQS based on a weighted combination of normalized metrics.
 - Normalized the component metrics (like_ratio, comment_ratio, views_per_subs, sentiment_score, average_comment_length) using Min-Max scaling and then calculated the RQS using predefined weights.
 - Weights for RQS components:
@@ -253,6 +254,10 @@ Prepared the engineered features and target variables for machine learning model
   - Test set size: 0.2 (20%)
   - Random state for reproducibility: 42
 
+<img width="841" height="547" alt="image" src="https://github.com/user-attachments/assets/883e6b3d-e99a-4732-bcdb-904a7836ccb4" />
+
+*Figure 7: Raw Views Log Transformed*
+
 ---
 
 ## Modeling
@@ -273,13 +278,15 @@ Prepared the engineered features and target variables for machine learning model
 - Applying a **logarithmic transformation** to the target variable stabilized the variance and significantly improved performance, with **Gradient Boosting** and **Random Forest** achieving R² values between **0.94 and 0.97** after inverse transformation.  
 - The **Random Forest model on log-transformed views** proved most reliable, balancing complexity and generalization while capturing the nonlinear patterns of audience scale and exposure.
 
-<img width="841" height="547" alt="image" src="https://github.com/user-attachments/assets/883e6b3d-e99a-4732-bcdb-904a7836ccb4" />
-
-*Figure 7: Raw Views Log Transformed*
-
-#### 2. Views per Subscriber Prediction
-- Predicting normalized success (views per subscriber) achieved consistent results, with both Gradient Boosting and Random Forest models reaching **R² values around 0.83 to 0.85**.  
-- This model focused on engagement-driven metrics rather than raw exposure, identifying how viewer loyalty, content tone, and thumbnail quality predict proportional success.
+#### 2. CTR (Click-Through Rate) Model
+- The CTR model achieved **R² = 0.4742**, reflecting moderate but actionable predictive power.  
+- The strongest predictor was the **predicted RQS**, implying that users are more likely to click on content they subconsciously associate with high retention quality.  
+- Embeddings from titles, tags, and thumbnail text further refined the model, capturing the importance of linguistic framing and presentation in generating clicks.
+- Description: train_ctr_standalone.py builds a model to predict the Click-Through Rate.
+- Learning Type: The script uses Ridge, RandomForestRegressor, and GradientBoostingRegressor, which are all Regression models.
+- Inference Inputs: The script uses a feature set (ctr_features) that includes embeddings, thumbnail/visual features, and duration. It also uses subscriber count and genre as part of the baseline model, so the final prediction incorporates all the inputs mentioned.
+- Output: The script calculates and saves ctr_predicted, which is the predicted CTR proxy.
+- Training Target: The target is ctr_log (defined as np.log1p(views / subs)), which is an excellent proxy for CTR. The model cleverly predicts the residual from a baseline, which is an advanced and robust technique.
 
 #### 3. Retention Quality Score (RQS) Model
 - The RQS model achieved a strong and valid **R² of 0.7859**, making it the foundation of this system.  
@@ -294,11 +301,20 @@ Prepared the engineered features and target variables for machine learning model
 
 - Together, these components emulate how YouTube’s algorithm balances click performance, retention, and satisfaction signals when recommending content.  
 - Feature importance analysis confirmed that **sentiment_score** is the dominant variable, followed by textual embeddings from the description and captions. This indicates that emotional tone and linguistic clarity drive sustained watch behavior, much like how YouTube’s engagement-weighted ranking system prioritizes emotionally compelling and clear communication.
+- Description: train_rqs_standalone.py predicts the Retention Quality Score.
+- Learning Type: It uses the same set of Regression models as the CTR script.
+- Inference Inputs: The script explicitly creates a feature set (rqs_features) that excludes post-publish data (views, likes, etc.), matching the "Pre-publish inputs only" description perfectly.
+- Output: The script calculates and saves rqs_predicted. The RQS score itself is normalized to a 0-100 scale using a sigmoid function, just as the table implies.
+- Training Target: The target is the rqs_score, which is calculated from post-publish engagement metrics like like ratio and comment depth. This perfectly matches the "RQS_true (post-publish index)" description.
 
-#### 4. CTR (Click-Through Rate) Model
-- The CTR model achieved **R² = 0.4742**, reflecting moderate but actionable predictive power.  
-- The strongest predictor was the **predicted RQS**, implying that users are more likely to click on content they subconsciously associate with high retention quality.  
-- Embeddings from titles, tags, and thumbnail text further refined the model, capturing the importance of linguistic framing and presentation in generating clicks.
+#### 4. Views per Subscriber Prediction
+- Predicting normalized success (views per subscriber) achieved consistent results, with both Gradient Boosting and Random Forest models reaching **R² values around 0.83 to 0.85**.  
+- This model focused on engagement-driven metrics rather than raw exposure, identifying how viewer loyalty, content tone, and thumbnail quality predict proportional success.
+- Description: train_views_standalone.py forecasts video views.
+- Learning Type: It uses the same set of Regression models.
+- Inference Inputs: The script's primary features are the predictions from the other two models (ctr_oof_predictions, rqs_oof), along with subscriber count (log_subs) and other metadata. It also uses a log residual approach and calculates guardrails, matching your table's description with high fidelity.
+- Output: The script calculates and saves views_predicted.
+- Training Target: The training target is explicitly set as the log-transformed view count (y_views_log), which is then winsorized.
 
 ---
 
@@ -306,13 +322,11 @@ Prepared the engineered features and target variables for machine learning model
 
 Evaluation relied primarily on **R²**, **MAE**, and **RMSE** metrics to quantify accuracy and generalization.
 
-| Model | Final R² | Core Predictors | Interpretation |
-|-------|-----------|----------------|----------------|
-| **RQS Model** | 0.7859 | sentiment_score, description/caption embeddings | Emotional tone predicts retention strength |
-| **Views Model** | 0.6974 | ctr_subs_interaction, rqs_pred, log_subs | Engagement and audience size synergy drives views |
-| **CTR Model** | 0.4742 | rqs_pred, tag/title embeddings | Retention and textual clarity influence click rate |
-| **Log Views (Raw)** | 0.94–0.97 | subscriber normalization, engagement ratios | Log transformation enables stable high accuracy |
-| **Views per Subscriber** | 0.83–0.85 | engagement ratios, performance category, thumbnail colors | Normalized success captured effectively |
+| Model | Final R² | MAE | RMSE | Core Predictors | Interpretation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **RQS Model** | 0.7859 | 5.01 | 6.60 | sentiment_score, description/caption embeddings | Emotional tone predicts retention strength |
+| **Views Model** | 0.7061 | 1.48 (log-scale) | 1.98 (log-scale) | ctr_subs_interaction, rqs_pred, log_subs | Engagement and audience size synergy drives views |
+| **CTR Model** | 0.4700 | 0.32 | 0.51 | rqs_pred, tag/title embeddings | Retention and textual clarity influence click rate |
 
 ### Key Findings
 
@@ -393,7 +407,7 @@ The **YouTube Extractor** thus serves as both a **machine learning research arti
 
 Transform your video ideas into data-driven decisions:
 
-- **🎯 CTR Prediction**: Forecast click-through rates with 20%+ accuracy
+- **🎯 CTR Prediction**: Forecast click-through rates with validated R² of 0.47
 - **📈 View Forecasting**: Predict expected views based on your channel size
 - **🏆 RQS Scoring**: Get retention quality scores (0-100)
 - **🖼️ Thumbnail Analysis**: Computer vision insights on colors, faces, text
@@ -423,9 +437,9 @@ Video Data → CTR Model → RQS Model → Views Model → Performance Score
 ```
 
 ### Model Details
-- **CTR Model**: 131 features including text embeddings, thumbnail analysis, duration
-- **RQS Model**: 131 features for retention quality prediction
-- **Views Model**: 13 features using CTR/RQS predictions + channel metrics
+- **CTR Model**: 411 features including text embeddings, thumbnail analysis, duration
+- **RQS Model**: 411 features for retention quality prediction
+- **Views Model**: 17 features using CTR/RQS predictions + channel metrics
 - **Computer Vision**: OpenCV pipeline for face detection, color analysis
 - **Text Processing**: TF-IDF + SVD embeddings for titles, descriptions, tags
 
@@ -697,9 +711,9 @@ docker run -p 8002:8002 YouTube-predictor
 ## 📈 Model Performance
 
 ### Prediction Accuracy
-- **CTR Model**: R² = 0.4742
+- **CTR Model**: R² = 0.4700
 - **RQS Model**: R² = 0.7859
-- **Views Model**: R² = 0.6974
+- **Views Model**: R² = 0.7061
 
 ### Feature Importance
 1. **Text Embeddings** (40%): Title, description, tags
