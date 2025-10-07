@@ -19,7 +19,7 @@ The YouTube algorithm drives reach from a few different metrics including the CT
 ### What drives the CTR?
 The thumbnail and the title of the video along with, to a much smaller degree since YouTube now relies on the transcript more, the videos "tags" (key phrases you can add to your video's description). So for a video to perform well we need to have a good CTR rate (>4%), AVD, and engagement.  
 
-I however don't have access to other channels YouTube studio/Analytics so I reversed engineered the YouTube algorithm and formed what I call the Retention Quality Score (RQS).  The engagement portion (like, comments, number of subscribers for the channel not per video), thumbnails, titles, descriptions, and video durations (longer videos have a higher AVD which means a better YouTube algorithm score) I am able to grab from YouTube via its API. So I have all of this, but what am I trying to do with all these metrics and information?  
+I however don't have access to other channels YouTube studio/Analytics so I reverse engineered the YouTube algorithm and formed what I call the Retention Quality Score (RQS).  The engagement portion (like, comments, number of subscribers for the channel not per video), thumbnails, titles, descriptions, and video durations (longer videos have a higher AVD which means a better YouTube algorithm score) I am able to grab from YouTube via its API. So I have all of this, but what am I trying to do with all these metrics and information?  
 
 The goal of this project was to determine whether the success of a YouTube video can be predicted using only its pre-publication features. Specifically, the research asks:
 ### Research Question
@@ -165,30 +165,93 @@ You can full data visualization here:
 ## Data Preprocessing and Preparation
 
 Data preparation included several key stages to ensure clean and usable inputs for modeling:
-### 1. Data Loading and Initial Exploration:
-- Loaded the raw data from a JSON file and transformed it into a structured pandas DataFrame for easier manipulation. 
-- Read the JSON file, normalized the nested 'data' column to extract channel and video information, and extracted video details into a separate DataFrame (videos_df). This preserved the original data and allowed me to perform the cleaning and later operations (which later I also make another copy as well to provide for further analysis so I wouldn't have to recreate this one in case I made a mistake I could just reload this (videos_df).
-- The primary parameter is the path to the JSON file (https://github.com/mobius29er/youtubeExtractor/blob/main/extracted_data/api_only_complete_data.json).
-
-### 2. Data Cleaning and Feature Engineering - Basic Metrics
-- Cleaned the data by converting data types and calculating basic performance ratios.
-- Did this by converting the (published_at) column to datetime objects allowing for better time-based analyses such as calculations, time series analysis, filtering/sorting, and feature engineering
-- Converted numerical columns (view_count, like_count, comment_count) to numeric types, filling missing values with 0.
-- Extracted channel subscriber counts from the normalized data and maps them to the (videos_df).
-- Calculated ratios needed for RQS (used division by zero safeguards replacing ±∞ with 0; fill NaN with 0):
-  - (like_ratio) = (like_count)/(view_count)
-  - (comment_ratio) = (comment_count)/(view_count)
-  - (views_per_subs)= (view_count)/ (channel_subs)
-
 - **Cleaning and Normalization:** Removed missing or corrupted records, standardized numerical metrics, and normalized by subscriber count to reduce channel-size bias.  
 - **Feature Engineering:** Constructed a comprehensive feature matrix including:  
   - **RQS components** (like ratio, comment ratio, sentiment score, comment depth, and timestamp density)  
   - **Visual features** (average RGB values, dominant color clusters, face detection area, and brightness)  
   - **Text embeddings** from titles, descriptions, captions, and tags  
 - **Splitting:** The data were divided into training and testing sets using stratified sampling to preserve performance category representation.  
-- **Encoding:** All categorical and text-based features were embedded using high-dimensional numerical representations to capture semantic relationships.  
+- **Encoding:** All categorical and text-based features were embedded using high-dimensional numerical representations to capture semantic relationships.
+- **Modeling:** Conducted supervised learning by running analysis for the CTR, RQS, and views with different methods, optimizing and outputing the best performing model for the web application.
 
-This preparation yielded over **160 total features**, forming a multi-modal dataset that integrates language, image, and engagement metrics.
+This preparation yielded over **160 total features**, forming a multi-modal dataset that integrates language, image, and engagement metrics. Here are the details:
+
+### 1. Data Loading and Initial Exploration:
+To start we need to load the data we collected and ensure we have the information there we want.
+- Loaded the raw data from a JSON file and transformed it into a structured pandas DataFrame for easier manipulation. 
+- Read the JSON file, normalized the nested 'data' column to extract channel and video information, and extracted video details into a separate DataFrame (videos_df). This preserved the original data and allowed me to perform the cleaning and later operations (which later I also make another copy as well to provide for further analysis so I wouldn't have to recreate this one in case I made a mistake I could just reload this (videos_df).
+- The primary parameter is the path to the JSON file (https://github.com/mobius29er/youtubeExtractor/blob/main/extracted_data/api_only_complete_data.json).
+
+### 2. Data Cleaning and Feature Engineering - Basic Metrics
+Now that we have loaded the data we need to clean it and prepare it for our future work.
+- Cleaned the data by converting data types and calculating basic performance ratios.
+- Converted the (published_at) column to datetime objects allowing for better time-based analyses such as calculations, time series analysis, filtering/sorting, and feature engineering
+- Converted numerical columns (view_count, like_count, comment_count) to numeric types, filling missing values with 0.
+- Extracted channel subscriber counts from the normalized data and maps them to the (videos_df).
+- Calculated ratios needed for RQS (used division by zero safeguards replacing ±∞ with 0; fill NaN with 0):
+  - (like_ratio) = (like_count)/(view_count)
+  - (comment_ratio) = (comment_count)/(view_count)
+  - (views_per_subs)= (view_count)/ (channel_subs)
+ 
+### 3. Feature Engineering - Comment Analysis
+First up for FE we have comment analysis where we process the thousands upon thousands of comments and generate sentiment scores we will use later.
+- Comment text extraction: Extracted and analyzed comment data, including text and sentiment.
+- Note: The maximum sequence length for comment processing is set to 512.
+- Average comment length: Extracted the comment text from the nested 'comments' structure and calculate the average_comment_length for each video.
+- Sentiment Scoring:
+  - Preprocessed comments by changing to lowercase, stripping (URLS, punctuations, etc.)
+  - Installed necessary libraries (transformers, torch) and then use a pre-trained multilingual sentiment analysis model (nlptown/bert-base-multilingual-uncased-sentiment) to calculate a sentiment score for the comments of each video.
+    - Used the BERT based due to its ability to handle multilingual support which was critical for this project along with being readily available and designed for sentiment analysis that I was wanting anyways.
+  - Mapped 1–5 stars → [-1, 1], and average per video to get sentiment_score. Empty/malformed comment sets return 0.0 safely (applicable to family/kids genre which didn't have comments due to YouTube Policy).
+
+### 4. Feature Engineering - Retention Quality Score (RQS)
+RQS is my own metric I am developing here and for me the most important I want to use for testing as it provides us a recreation of the YouTube algorithm hopefully (spoiler R² is 0.7859). Now it is important to distinguish RQS here where we are calculating it and in the web app when we process it isn't calculating the RQS for the video but rather presenting the predicted RQS which should help us determine the potential views.
+- Calculated the custom RQS based on a weighted combination of normalized metrics.
+- Normalized the component metrics (like_ratio, comment_ratio, views_per_subs, sentiment_score, average_comment_length) using Min-Max scaling and then calculated the RQS using predefined weights.
+- Weights for RQS components:
+  - like_ratio (0.30)
+  - comment_ratio (0.20)
+  - views_per_subs (0.25)
+  - sentiment_score (0.15)
+  - average_comment_length (0.10)
+ 
+### 5. Feature Engineering - Thumbnail Image Analysis
+From research and my own trial and error color, color palettes, and color combinations can have an impact on CTR, so we will extract visual features from thumbnail images, including face presence (as a % of the thumbnail), dominant colors, and color palette.
+- Located the thumbnail image files based on the video_id and installed opencv-python.
+- Used a Haar Cascade classifier (haarcascade_frontalface_default.xml) to detect faces in the thumbnails and calculates the percentage of the image area covered by faces.
+  - Used this one due to the speed and efficiency especially since most thumbnails have well lit/frontal faces like Haar Cascade Classifier excels at.
+  - Haar Cascade is also lightweight enough to be used on our Predictor in the web application so the same one used for analysis and model generation is used for doing the prediction.
+- Loaded the thumbnail images using PIL and use K-Means clustering to extract dominant colors and a color palette, and calculate the average RGB values.
+
+### 6. Feature Engineering - Thumbnail Text Extraction
+Since text is sometimes embedded into the thumbnails we will extract them for analysis as well to see if it impacts the CTR.
+- Extracted text content from thumbnail images using Optical Character Recognition (OCR).
+- Installed Tesseract OCR and pytesseract, and then use pytesseract's image_to_string function to extract text from the thumbnail images.
+- Relies on the Tesseract OCR engine installed on the system. OCR process involves:
+  - Image Preprocessing: Cleaning up the image to improve text visibility (e.g., adjusting brightness, contrast, or removing noise).
+  - Text Detection: Identifying areas within the image that contain text.
+  - Character Recognition: Analyzing the detected text areas to identify individual characters.
+  - Post-processing: Using language models and dictionaries to correct errors and improve the accuracy of the extracted text.
+ 
+### 7. Feature Engineering - Text Embeddings
+The title and the thumbnail are the biggest drivers for CTR so we will look at the title and tags next.
+- Generated numerical representations (embeddings) for text features (title, tags, thumbnail_text) using a pre-trained language model.
+  - Text embeddings generate numerical representations of text. This is necessary because machine learning models work with numbers, not raw text strings.
+  - These numerical embeddings capture semantic meaning and relationships between words and phrases, allowing the models to understand the content of titles, tags, and thumbnail text.
+- Installed sentence-transformers, loaded a multilingual model (paraphrase-multilingual-MiniLM-L12-v2), and then generated embeddings for the text columns.
+  - Chose paraphrase-multilingual-MiniLM-L12-v2 because:
+    - Multilingual Capability: As the dataset includes metadata in various languages this is model captures meaning across 50+ different languages.
+    - Effectiveness for Semantic Similarity: This model is specifically fine-tuned for paraphrase identification and semantic similarity tasks. This means it's good at generating embeddings where texts with similar meanings are close together in the embedding space, even if they use different wording. This is valuable for understanding the content and themes of titles, tags, and thumbnail text.  This is shown in our title analysis later in the web application where we provide the top title structure.
+    - "Mini" Model Efficiency: "MiniLM" indicates it's a smaller, more efficient version of larger language models. While powerful, larger models can be computationally expensive and require significant memory. A "Mini" version provides a good balance between performance and resource usage, making it more practical for generating embeddings for a dataset of this size within a Colab environment and in our web application.
+    - Good Performance: Despite being smaller, MiniLM-L12-v2 models have been shown to perform well on various downstream tasks, including semantic similarity and information retrieval.
+
+### 8. Data Preparation for Modeling
+Prepared the engineered features and target variables for machine learning models.
+- Selected numerical features for clustering, handled potential NaN values.
+- Defined the target variables (view_count and views_per_subs) and selects predictor features.
+- Split the data into training and testing sets (80% train, 20% test).
+  - Test set size: 0.2 (20%)
+  - Random state for reproducibility: 42
 
 ---
 
@@ -201,6 +264,7 @@ This preparation yielded over **160 total features**, forming a multi-modal data
 
 <img width="846" height="547" alt="image" src="https://github.com/user-attachments/assets/3a8a4b69-fb99-465d-a521-887c1c355543" />
 
+*Figure 7: PCA analysis*
 
 ### Supervised Learning
 
@@ -211,6 +275,7 @@ This preparation yielded over **160 total features**, forming a multi-modal data
 
 <img width="841" height="547" alt="image" src="https://github.com/user-attachments/assets/883e6b3d-e99a-4732-bcdb-904a7836ccb4" />
 
+*Figure 7: Raw Views Log Transformed*
 
 #### 2. Views per Subscriber Prediction
 - Predicting normalized success (views per subscriber) achieved consistent results, with both Gradient Boosting and Random Forest models reaching **R² values around 0.83 to 0.85**.  
@@ -472,7 +537,7 @@ Git LFS:         # Large model file storage
 │   └── verification/                  # Data validation tools
 ├── �🐳 Docker & Deployment             # Container & hosting config
 │   ├── Dockerfile.prediction          # ML prediction service
-│   ├── Dockerfile.dashboard           # Dashboard service
+│   ├── Dockerfile                     # Dashboard service, Frontend and Data Visualization
 │   ├── railway.toml                   # Railway deployment config
 │   ├── Procfile                       # Process definitions
 │   └── deploy-railway.sh/.bat         # Deployment scripts
