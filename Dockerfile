@@ -3,16 +3,13 @@ FROM node:20-slim as frontend-builder
 
 WORKDIR /app
 
-# Copy package files
-COPY frontend/package*.json ./
+# Copy frontend package files
+COPY frontend/package*.json ./frontend/
+WORKDIR /app/frontend
+RUN npm install
 
-# Install dependencies
-RUN npm ci --only=production
-
-# Copy frontend source
+# Copy frontend source and build
 COPY frontend/ .
-
-# Build frontend
 RUN npm run build && echo "✅ Frontend build successful" || (echo "❌ Frontend build failed" && exit 1)
 
 # Python stage for dashboard API
@@ -38,12 +35,12 @@ RUN echo "Copied extracted_data directory for dashboard"
 RUN ls -la extracted_data/ | head -10
 
 # Copy built frontend from frontend-builder stage
-COPY --from=frontend-builder /app/dist ./dist
-RUN echo "✅ Frontend copied to dist/"
-RUN ls -la dist/ | head -5
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+RUN echo "✅ Frontend copied to frontend/dist/"
+RUN ls -la frontend/dist/ | head -5
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+# Health check - give more time for startup
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD curl --fail http://localhost:8000/api/health || exit 1
 
 # Expose port
