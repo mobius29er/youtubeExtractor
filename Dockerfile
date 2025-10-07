@@ -4,9 +4,9 @@ FROM node:20-slim as frontend-builder
 WORKDIR /app
 
 # Copy frontend package files
-COPY frontend/package*.json ./frontend/
 WORKDIR /app/frontend
-RUN npm install
+COPY frontend/package*.json ./
+RUN npm ci --only=production
 
 # Copy frontend source and build
 COPY frontend/ .
@@ -39,8 +39,8 @@ COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
 RUN echo "✅ Frontend copied to frontend/dist/"
 RUN ls -la frontend/dist/ | head -5
 
-# Health check - give more time for startup
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# Health check - use a reasonable startup period
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD curl --fail http://localhost:8000/api/health || exit 1
 
 # Expose port
