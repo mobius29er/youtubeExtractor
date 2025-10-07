@@ -1,68 +1,126 @@
 # 🎯 YouTube Performance Predictor — AI-Powered Creator Analytics
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20Now-brightgreen)](https://youtubeextractor-production.up.railway.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20Now-brightgreen)](https://YouTubeextractor-production.up.railway.app/)
 [![ML Models](https://img.shields.io/badge/ML%20Models-24%20Trained-blue)](#ml-architecture)
 [![Tech Stack](https://img.shields.io/badge/Stack-FastAPI%20%2B%20React%20%2B%20Docker-orange)](#technology-stack)
 
 > **Predict YouTube video performance before you publish.** Get AI-powered insights on CTR, retention scores, and view predictions using advanced machine learning and computer vision.
 
-**🚀 [Try the Live Demo](https://youtubeextractor-production.up.railway.app/)**
+**🚀 [Try the Live Demo](https://YouTubeextractor-production.up.railway.app/)**
 
 ---
 
 # YouTube Performance Prediction Using Pre-Publication Features
 
 ## Problem Statement
+Imagine you are a YouTube creator and you invest substantial time, creativity, and resources into a video. You made sure you have a great hook (introductory statement, question or event that grabs the viewers attention) with a video subject that you know a lot of people want to see, but yet your viewership gets stuck in a few hundred views or worse a few dozen.  You go to "YouTube Studio" (the analytics page for your channel) and you see a few things there: the views, reach (how many times YouTube shows your video to someone), and the click through rate (CTR: how many times someone clicks when they are shown the video).  That is when you see it the CTR is only 1%!  
+
+The YouTube algorithm drives reach from a few different metrics including the CTR, average video duration (AVD), and the engagement (likes, subscribes, comments). So you can have a great video with an AVD and engagement that is outperforming, but if the CTR is too low YouTube will stop showing your video to people.  First impressions really do matter, but
+### What drives the CTR?
+The thumbnail and the title of the video along with, to a much smaller degree since YouTube now relies on the transcript more, the videos "tags" (key phrases you can add to your video's description). So for a video to perform well we need to have a good CTR rate (>4%), AVD, and engagement.  
+
+I however don't have access to other channels YouTube studio/Analytics so I reverse engineered the YouTube algorithm and formed what I call the Retention Quality Score (RQS).  The engagement portion (like, comments, number of subscribers for the channel not per video), thumbnails, titles, descriptions, and video durations (longer videos have a higher AVD which means a better YouTube algorithm score) I am able to grab from YouTube via its API. So I have all of this, but what am I trying to do with all these metrics and information?  
 
 The goal of this project was to determine whether the success of a YouTube video can be predicted using only its pre-publication features. Specifically, the research asks:
-
+### Research Question
 **Can the success of a YouTube video, measured by normalized viewership and a custom-developed Retention Quality Score (RQS), be predicted and replicated by analyzing patterns in its metadata, thumbnail, and text-based content?**
-> “Why do some creators go viral while others fade?”  
-> This project analyzes the top 25 YouTube creators across 5 major genres to find out.
 
-Using intelligent sampling, structured metadata extraction, and optional sentiment/thumbnail/transcript analysis, we build a clean, exportable dataset for downstream machine learning tasks like:
-- 📊 Retention modeling
-- 🎯 Thumbnail impact on CTR
-- 🧠 Hook/pacing analysis
-- 🗣️ Comment sentiment scoring
-- 🤖 K-Means clustering & PCA visualization
+or more simply:
 
+**Why do some creators go viral while others fade?**
 
-The motivation behind this study is the inconsistency and unpredictability of success on YouTube. Many creators invest substantial time, creativity, and resources into videos that fail to perform, while others achieve viral reach. This research seeks to identify and quantify the underlying structural and visual factors that contribute to a video’s success, allowing creators to make data-informed decisions before uploading content.
+### What information to gather?
+So to ensure these models are robust 1000 videos across five genres and five different channel sizes are used pulling the top ten, bottom ten, and twenty random videos from each creator.  This provides a diverse spectrum of YouTube interactions and viewership to help provide the models robustness.
 
-The potential benefit is a predictive framework that enables video creators to optimize their titles, thumbnails, and tags for engagement and retention, rather than relying on guesswork or anecdotal strategies.
+### Project Artifacts and References
+The primary research and application assets for this project are available at the following locations:
 
-**📓 [Open Main Jupyter Notebook](https://github.com/mobius29er/youtubeExtractor/blob/main/notebooks/YoutubeExtractorAnalysisGenerator.ipynb)**
+For this project the unsupervised and supervised studies are conducted in this notebook (which is better viewed using an IDE):
+
+**📓 [Open Main Jupyter Notebook](https://github.com/mobius29er/YouTubeExtractor/blob/main/notebooks/YouTubeExtractorAnalysisGenerator.ipynb)**
+
+From this generated data and models they are used to build out the web app in this repo: 
+
+**📂 [Project Repo](https://github.com/mobius29er/YouTubeExtractor)**
+
+which can be viewed here:
+
+**🚀 [Try the Live Demo](https://YouTubeextractor-production.up.railway.app/)**
 
 ---
 
 ## Model Outcomes or Predictions
 
-The project focused on **regression-based supervised learning** to predict quantitative performance metrics rather than categorical labels. Three core predictive models were developed:
+The project combines **unsupervised** and **supervised learning** to predict YouTube video performance:
+### Unsupervised Learning (Clustering and Dimensionality Reduction):
+Applied to uncover structure and relationships in the dataset, including:
+- **K-Means Clustering** to group videos by performance archetype, thumbnail composition, and engagement ratios.
+- **Principal Component Analysis (PCA)** to reduce over 160 features into interpretable components highlighting dominant behavioral patterns.
+### Supervised Learning (Regression):
+Used to predict continuous performance outcomes such as:
+-  **CTR (Click-Through Rate) Model** – Estimates the likelihood of viewer clicking and watching the video.
+-  **Retention Quality Score (RQS) Model** – Estimates the engagement and retention of the viewer once they click.
+-  **Views Model** – Predicts total view counts, A regression-based forecast of total reach, modeled through a log-transformed, two-stage residual framework.  
 
-1. **Retention Quality Score (RQS) Model** – Predicts the strength of audience retention based on sentiment, metadata, and textual embeddings.  
-2. **Views Model** – Predicts total view counts, using a two-stage residual fitting method that first explains core variance through physics-like features and then models residual variance through non-linear relationships.  
-3. **CTR (Click-Through Rate) Model** – Estimates the likelihood of viewer engagement at the impression level, informed by metadata and embedding signals.
+### Output
+Each model produces a numerical prediction aligned to measurable YouTube metrics:
+| Model                  | Description                                     | Learning Type | Inference Inputs                                               | Output               | Training Target                              |
+| ---------------------- | ----------------------------------------------- | ------------- | -------------------------------------------------------------- | -------------------- | -------------------------------------------- |
+| **K-Means Clustering** | Groups similar content patterns                 | Unsupervised  | 160+ engineered features                                       | Cluster label (1–5)  | —                                            |
+| **PCA**                | Identifies dominant variance sources            | Unsupervised  | 160+ engineered features                                       | Principal components | —                                            |
+| **CTR Model**          | Predicts likelihood of viewer click-through     | Regression    | Title/desc/tag embeddings, thumbnail CV, duration, subs, genre | CTR predicted (%)         | CTR label or CTR_proxy (see CTR target note) |
+| **RQS Model**          | Predicts retention and engagement quality       | Regression    | Pre-publish inputs only                                        | RQS predicted (0–100)     | RQS (post-publish index)                |
+| **Views Model**        | Forecasts reach based on RQS, CTR, and metadata | Regression    | CTR_pred, RQS_pred, subs, metadata; log residual + guardrails  | Views predicted           | log(Views)                                   |
 
-These models together create a holistic framework capable of forecasting both engagement (CTR) and sustained attention (RQS), which in turn drive total views.
+
+### Summary
+The unsupervised learning provides insight into how the factors of the data collected interact between genres and channel sizes. This provided the framework and confirmation for the supervised learning portion which is built to provide pre-publication analysis of the thumbnail and title.  These models together create a holistic framework capable of forecasting both engagement (CTR) and viewer retention (RQS), which in turn drive the algorithm to show the video to more people increasing total views.
 
 ---
 
 ## Data Acquisition
 
-The dataset consisted of approximately **1,000 YouTube videos** drawn from **25 creators across five genres** from New channels to "Mega" channels:
+For Data Acquisition, I utilized the YouTube API within its rate limiting to collect the data (about 200-250 videos per day across 4-5 days).  
+This was done view the script found here:
+**[Extraction Script](https://github.com/mobius29er/youtubeExtractor/blob/main/src/corrected_data_extractor.py)**
+This data can be found here:
+**[Data Collected](https://github.com/mobius29er/youtubeExtractor/tree/main/extracted_data)**
 
+I originally used the scripts to pull the videos ID and sub counts, but found that this dramatically limited the number of videos I could do so I used this website **[Youtube Channel ID Finder](https://www.streamweasels.com/%20tools/youtube-channel-id-and-%20user-id-convertor/)** to look up the channels ID.  The channels display the YouTube handle in the URL rather than these IDs.  I could have used the handles and saved the time, but the handles are non-static meaning they could be changed or edited by the channel owner so I preferred to utilize the channel ID as the main resource for these API pulls.  The subscribers were easy enough to add while I was in there and as much items as I could easily prepopulate reduces my extraction runtime. If I had unlimited API then I would have just used all script instead of manually filling in this information.
+
+The dataset consisted of approximately **1,000 YouTube videos** drawn from **25 creators across five genres** from **5 tiers** from **New** channels to **Mega** channels:
+### Genres
 - **Challenge/Stunts**: MrBeast, Zach King, Ryan Trahan, etc.
+  - Has some of the highest subscriber and viewership with some of the biggest names
 - **Catholic**: Ascension Presents, Bishop Barron, etc.
+  - Is a very niche subject, however as we find out has an abnormally high engagement rate compared to more "mainstream" genres
 - **Education/Science**: Kurzgesagt, Veritasium, SciShow, etc.
+  - Also more niche, but a larger niche than Catholic
 - **Gaming**: Jacksepticeye, Call Me Kevin, RTGame, etc.
+  - Is one of the biggest if not the biggest genre with a wide variety of channels provides a good mix
 - **Kids/Family**: Cocomelon, Diana and Roma, Vlad and Niki, etc.
+  - Provides cases where comments are disabled and relies only on the thumbnail, title, likes, and AVD
+ 
+<img width="1514" height="734" alt="image" src="https://github.com/user-attachments/assets/86d52d64-ce12-4102-b0bc-0740b726df8a" />
 
+*Figure 1: RQS performance across genres.*
+
+### Tiers
+These different tiers each have their own challenges and goals:
 - **Mega**: >50 million subs
+  - Maintaining: Usually companies where sometimes hundreds of people rely on these channels to perform where a 1% CTR increase could mean a huge difference in employment
 - **Large**: >10 million subs
+  - Scaling: Mix of companies and individual creators looking to still grow, but at this point they are more dependent on viewership for sponsorships
 - **Mid**: >1 million subs
+  - Professional:  This is the threshold for when a channel really is a full time potential
 - **Small**: >100,000 subs
+  - Sponsorships: This is where creators really start to get offers for sponsorships and exposure.
 - **New**: <100,000 subs
+  - Building Trust: The hardest threshold to cross is the 1000 where you can start ad revenue then to 10k and finally 100k each have their own challenges to cross, but commonly really need solid engagement for the algorithm to trust them
+
+<img width="1533" height="751" alt="image" src="https://github.com/user-attachments/assets/0f091eab-a7c8-43f4-9d9c-cc8b9b2800dd" />
+
+*Figure 2: RQS performance across tiers.*
 
 Each creator contributed **40 videos**:
 
@@ -77,23 +135,128 @@ All data were sourced from **public YouTube pages**, including:
 - **Thumbnails:** processed for color, facial detection, and textual overlays  
 - **Textual content:** extracted embeddings from titles, descriptions, captions, and tags (when available)  
 
+<img width="1828" height="927" alt="image" src="https://github.com/user-attachments/assets/2291a777-1ec5-4d6e-9c8e-589cb9d93037" />
+
+*Figure 3: Impact of different color combinations used for the thumbnails.*
+
+<img width="1838" height="637" alt="image" src="https://github.com/user-attachments/assets/5bfaf8b8-f313-41c7-9156-ac30d2ec6ba4" />
+
+*Figure 4: Impact having a "face" in the thumbnail does on performance.*
+
+<img width="3785" height="1976" alt="image" src="https://github.com/user-attachments/assets/04f73278-bd7c-419b-ae64-c24df87e6c9a" />
+
+*Figure 5: Sentiment analysis of the comments for the videos.*
+
+<img width="3765" height="1893" alt="image" src="https://github.com/user-attachments/assets/69f8f8bd-b30d-4748-b188-294c35b3f40d" />
+
+*Figure 6: Title Analysis along with the winnning structure, length, and driving words (which ones increase/decrease performance.*
+
 This structure ensured a balanced, genre-diverse dataset capable of modeling both high- and low-performance dynamics while mitigating outlier bias.
+
+You can explore these channels and how they breakdown here:
+
+**[Dashboard](https://youtubeextractor-production.up.railway.app/)**
+
+You can full data visualization here:
+
+**[Visualization](https://youtubeextractor-production.up.railway.app/visualization)**
 
 ---
 
 ## Data Preprocessing and Preparation
 
 Data preparation included several key stages to ensure clean and usable inputs for modeling:
-
 - **Cleaning and Normalization:** Removed missing or corrupted records, standardized numerical metrics, and normalized by subscriber count to reduce channel-size bias.  
 - **Feature Engineering:** Constructed a comprehensive feature matrix including:  
   - **RQS components** (like ratio, comment ratio, sentiment score, comment depth, and timestamp density)  
   - **Visual features** (average RGB values, dominant color clusters, face detection area, and brightness)  
   - **Text embeddings** from titles, descriptions, captions, and tags  
 - **Splitting:** The data were divided into training and testing sets using stratified sampling to preserve performance category representation.  
-- **Encoding:** All categorical and text-based features were embedded using high-dimensional numerical representations to capture semantic relationships.  
+- **Encoding:** All categorical and text-based features were embedded using high-dimensional numerical representations to capture semantic relationships.
+- **Modeling:** Conducted supervised learning by running analysis for the CTR, RQS, and views with different methods, optimizing and outputing the best performing model for the web application.
 
-This preparation yielded over **160 total features**, forming a multi-modal dataset that integrates language, image, and engagement metrics.
+This preparation yielded over **160 total features**, forming a multi-modal dataset that integrates language, image, and engagement metrics. Here are the details:
+
+### 1. Data Loading and Initial Exploration:
+To start we need to load the data we collected and ensure we have the information there we want.
+- Loaded the raw data from a JSON file and transformed it into a structured pandas DataFrame for easier manipulation. 
+- Read the JSON file, normalized the nested 'data' column to extract channel and video information, and extracted video details into a separate DataFrame (videos_df). This preserved the original data and allowed me to perform the cleaning and later operations (which later I also make another copy as well to provide for further analysis so I wouldn't have to recreate this one in case I made a mistake I could just reload this (videos_df).
+- The primary parameter is the path to the JSON file (https://github.com/mobius29er/youtubeExtractor/blob/main/extracted_data/api_only_complete_data.json).
+
+### 2. Data Cleaning and Feature Engineering - Basic Metrics
+Now that we have loaded the data we need to clean it and prepare it for our future work.
+- Cleaned the data by converting data types and calculating basic performance ratios.
+- Converted the (published_at) column to datetime objects allowing for better time-based analyses such as calculations, time series analysis, filtering/sorting, and feature engineering
+- Converted numerical columns (view_count, like_count, comment_count) to numeric types, filling missing values with 0.
+- Extracted channel subscriber counts from the normalized data and maps them to the (videos_df).
+- Calculated ratios needed for RQS (used division by zero safeguards replacing ±∞ with 0; fill NaN with 0):
+  - (like_ratio) = (like_count)/(view_count)
+  - (comment_ratio) = (comment_count)/(view_count)
+  - (views_per_subs)= (view_count)/ (channel_subs)
+ 
+### 3. Feature Engineering - Comment Analysis
+First up for FE we have comment analysis where we process the thousands upon thousands of comments and generate sentiment scores we will use later.
+- Comment text extraction: Extracted and analyzed comment data, including text and sentiment.
+- Note: The maximum sequence length for comment processing is set to 512.
+- Average comment length: Extracted the comment text from the nested 'comments' structure and calculate the average_comment_length for each video.
+- Sentiment Scoring:
+  - Preprocessed comments by changing to lowercase, stripping (URLS, punctuations, etc.)
+  - Installed necessary libraries (transformers, torch) and then use a pre-trained multilingual sentiment analysis model (nlptown/bert-base-multilingual-uncased-sentiment) to calculate a sentiment score for the comments of each video.
+    - Used the BERT based due to its ability to handle multilingual support which was critical for this project along with being readily available and designed for sentiment analysis that I was wanting anyways.
+  - Mapped 1–5 stars → [-1, 1], and average per video to get sentiment_score. Empty/malformed comment sets return 0.0 safely (applicable to family/kids genre which didn't have comments due to YouTube Policy).
+
+### 4. Feature Engineering - Retention Quality Score (RQS)
+RQS is my own metric I am developing here and for me the most important I want to use for testing as it provides us a recreation of the YouTube algorithm. Now it is important to distinguish RQS here where we are calculating it and in the web app when we process it isn't calculating the RQS for the video but rather presenting the predicted RQS which should help us determine the potential views.
+- Calculated the custom RQS based on a weighted combination of normalized metrics.
+- Normalized the component metrics (like_ratio, comment_ratio, views_per_subs, sentiment_score, average_comment_length) using Min-Max scaling and then calculated the RQS using predefined weights.
+- Weights for RQS components:
+  - like_ratio (0.30)
+  - comment_ratio (0.20)
+  - views_per_subs (0.25)
+  - sentiment_score (0.15)
+  - average_comment_length (0.10)
+ 
+### 5. Feature Engineering - Thumbnail Image Analysis
+From research and my own trial and error color, color palettes, and color combinations can have an impact on CTR, so we will extract visual features from thumbnail images, including face presence (as a % of the thumbnail), dominant colors, and color palette.
+- Located the thumbnail image files based on the video_id and installed opencv-python.
+- Used a Haar Cascade classifier (haarcascade_frontalface_default.xml) to detect faces in the thumbnails and calculates the percentage of the image area covered by faces.
+  - Used this one due to the speed and efficiency especially since most thumbnails have well lit/frontal faces like Haar Cascade Classifier excels at.
+  - Haar Cascade is also lightweight enough to be used on our Predictor in the web application so the same one used for analysis and model generation is used for doing the prediction.
+- Loaded the thumbnail images using PIL and use K-Means clustering to extract dominant colors and a color palette, and calculate the average RGB values.
+
+### 6. Feature Engineering - Thumbnail Text Extraction
+Since text is sometimes embedded into the thumbnails we will extract them for analysis as well to see if it impacts the CTR.
+- Extracted text content from thumbnail images using Optical Character Recognition (OCR).
+- Installed Tesseract OCR and pytesseract, and then use pytesseract's image_to_string function to extract text from the thumbnail images.
+- Relies on the Tesseract OCR engine installed on the system. OCR process involves:
+  - Image Preprocessing: Cleaning up the image to improve text visibility (e.g., adjusting brightness, contrast, or removing noise).
+  - Text Detection: Identifying areas within the image that contain text.
+  - Character Recognition: Analyzing the detected text areas to identify individual characters.
+  - Post-processing: Using language models and dictionaries to correct errors and improve the accuracy of the extracted text.
+ 
+### 7. Feature Engineering - Text Embeddings
+The title and the thumbnail are the biggest drivers for CTR so we will look at the title and tags next.
+- Generated numerical representations (embeddings) for text features (title, tags, thumbnail_text) using a pre-trained language model.
+  - Text embeddings generate numerical representations of text. This is necessary because machine learning models work with numbers, not raw text strings.
+  - These numerical embeddings capture semantic meaning and relationships between words and phrases, allowing the models to understand the content of titles, tags, and thumbnail text.
+- Installed sentence-transformers, loaded a multilingual model (paraphrase-multilingual-MiniLM-L12-v2), and then generated embeddings for the text columns.
+  - Chose paraphrase-multilingual-MiniLM-L12-v2 because:
+    - Multilingual Capability: As the dataset includes metadata in various languages this is model captures meaning across 50+ different languages.
+    - Effectiveness for Semantic Similarity: This model is specifically fine-tuned for paraphrase identification and semantic similarity tasks. This means it's good at generating embeddings where texts with similar meanings are close together in the embedding space, even if they use different wording. This is valuable for understanding the content and themes of titles, tags, and thumbnail text.  This is shown in our title analysis later in the web application where we provide the top title structure.
+    - "Mini" Model Efficiency: "MiniLM" indicates it's a smaller, more efficient version of larger language models. While powerful, larger models can be computationally expensive and require significant memory. A "Mini" version provides a good balance between performance and resource usage, making it more practical for generating embeddings for a dataset of this size within a Colab environment and in our web application.
+    - Good Performance: Despite being smaller, MiniLM-L12-v2 models have been shown to perform well on various downstream tasks, including semantic similarity and information retrieval.
+
+### 8. Data Preparation for Modeling
+Prepared the engineered features and target variables for machine learning models.
+- Selected numerical features for clustering, handled potential NaN values.
+- Defined the target variables (view_count and views_per_subs) and selects predictor features.
+- Split the data into training and testing sets (80% train, 20% test).
+  - Test set size: 0.2 (20%)
+  - Random state for reproducibility: 42
+
+<img width="841" height="547" alt="image" src="https://github.com/user-attachments/assets/883e6b3d-e99a-4732-bcdb-904a7836ccb4" />
+
+*Figure 7: Raw Views Log Transformed*
 
 ---
 
@@ -104,6 +267,10 @@ This preparation yielded over **160 total features**, forming a multi-modal data
 - **Principal Component Analysis (PCA):** PCA was applied to reduce feature dimensionality and reveal the dominant sources of variance within the dataset. This allowed the most meaningful numerical and textual signals to emerge without noise inflation.  
 - **K-Means Clustering:** K-Means grouped the dataset into **five distinct clusters**, each representing a unique content archetype based on metadata, thumbnail composition, and engagement ratios. Cluster interpretation provided qualitative insight into how certain feature combinations correspond to higher viewer interest or specific genre styles.
 
+<img width="846" height="547" alt="image" src="https://github.com/user-attachments/assets/3a8a4b69-fb99-465d-a521-887c1c355543" />
+
+*Figure 7: PCA analysis*
+
 ### Supervised Learning
 
 #### 1. Raw Views Prediction
@@ -111,9 +278,15 @@ This preparation yielded over **160 total features**, forming a multi-modal data
 - Applying a **logarithmic transformation** to the target variable stabilized the variance and significantly improved performance, with **Gradient Boosting** and **Random Forest** achieving R² values between **0.94 and 0.97** after inverse transformation.  
 - The **Random Forest model on log-transformed views** proved most reliable, balancing complexity and generalization while capturing the nonlinear patterns of audience scale and exposure.
 
-#### 2. Views per Subscriber Prediction
-- Predicting normalized success (views per subscriber) achieved consistent results, with both Gradient Boosting and Random Forest models reaching **R² values around 0.83 to 0.85**.  
-- This model focused on engagement-driven metrics rather than raw exposure, identifying how viewer loyalty, content tone, and thumbnail quality predict proportional success.
+#### 2. CTR (Click-Through Rate) Model
+- The CTR model achieved **R² = 0.4742**, reflecting moderate but actionable predictive power.  
+- The strongest predictor was the **predicted RQS**, implying that users are more likely to click on content they subconsciously associate with high retention quality.  
+- Embeddings from titles, tags, and thumbnail text further refined the model, capturing the importance of linguistic framing and presentation in generating clicks.
+- Description: train_ctr_standalone.py builds a model to predict the Click-Through Rate.
+- Learning Type: The script uses Ridge, RandomForestRegressor, and GradientBoostingRegressor, which are all Regression models.
+- Inference Inputs: The script uses a feature set (ctr_features) that includes embeddings, thumbnail/visual features, and duration. It also uses subscriber count and genre as part of the baseline model, so the final prediction incorporates all the inputs mentioned.
+- Output: The script calculates and saves ctr_predicted, which is the predicted CTR proxy.
+- Training Target: The target is ctr_log (defined as np.log1p(views / subs)), which is an excellent proxy for CTR. The model cleverly predicts the residual from a baseline, which is an advanced and robust technique.
 
 #### 3. Retention Quality Score (RQS) Model
 - The RQS model achieved a strong and valid **R² of 0.7859**, making it the foundation of this system.  
@@ -128,11 +301,20 @@ This preparation yielded over **160 total features**, forming a multi-modal data
 
 - Together, these components emulate how YouTube’s algorithm balances click performance, retention, and satisfaction signals when recommending content.  
 - Feature importance analysis confirmed that **sentiment_score** is the dominant variable, followed by textual embeddings from the description and captions. This indicates that emotional tone and linguistic clarity drive sustained watch behavior, much like how YouTube’s engagement-weighted ranking system prioritizes emotionally compelling and clear communication.
+- Description: train_rqs_standalone.py predicts the Retention Quality Score.
+- Learning Type: It uses the same set of Regression models as the CTR script.
+- Inference Inputs: The script explicitly creates a feature set (rqs_features) that excludes post-publish data (views, likes, etc.), matching the "Pre-publish inputs only" description perfectly.
+- Output: The script calculates and saves rqs_predicted. The RQS score itself is normalized to a 0-100 scale using a sigmoid function, just as the table implies.
+- Training Target: The target is the rqs_score, which is calculated from post-publish engagement metrics like like ratio and comment depth. This perfectly matches the "RQS_true (post-publish index)" description.
 
-#### 4. CTR (Click-Through Rate) Model
-- The CTR model achieved **R² = 0.4742**, reflecting moderate but actionable predictive power.  
-- The strongest predictor was the **predicted RQS**, implying that users are more likely to click on content they subconsciously associate with high retention quality.  
-- Embeddings from titles, tags, and thumbnail text further refined the model, capturing the importance of linguistic framing and presentation in generating clicks.
+#### 4. Views per Subscriber Prediction
+- Predicting normalized success (views per subscriber) achieved consistent results, with both Gradient Boosting and Random Forest models reaching **R² values around 0.83 to 0.85**.  
+- This model focused on engagement-driven metrics rather than raw exposure, identifying how viewer loyalty, content tone, and thumbnail quality predict proportional success.
+- Description: train_views_standalone.py forecasts video views.
+- Learning Type: It uses the same set of Regression models.
+- Inference Inputs: The script's primary features are the predictions from the other two models (ctr_oof_predictions, rqs_oof), along with subscriber count (log_subs) and other metadata. It also uses a log residual approach and calculates guardrails, matching your table's description with high fidelity.
+- Output: The script calculates and saves views_predicted.
+- Training Target: The training target is explicitly set as the log-transformed view count (y_views_log), which is then winsorized.
 
 ---
 
@@ -140,13 +322,11 @@ This preparation yielded over **160 total features**, forming a multi-modal data
 
 Evaluation relied primarily on **R²**, **MAE**, and **RMSE** metrics to quantify accuracy and generalization.
 
-| Model | Final R² | Core Predictors | Interpretation |
-|-------|-----------|----------------|----------------|
-| **RQS Model** | 0.7859 | sentiment_score, description/caption embeddings | Emotional tone predicts retention strength |
-| **Views Model** | 0.6974 | ctr_subs_interaction, rqs_pred, log_subs | Engagement and audience size synergy drives views |
-| **CTR Model** | 0.4742 | rqs_pred, tag/title embeddings | Retention and textual clarity influence click rate |
-| **Log Views (Raw)** | 0.94–0.97 | subscriber normalization, engagement ratios | Log transformation enables stable high accuracy |
-| **Views per Subscriber** | 0.83–0.85 | engagement ratios, performance category, thumbnail colors | Normalized success captured effectively |
+| Model | Final R² | MAE | RMSE | Core Predictors | Interpretation |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **RQS Model** | 0.7859 | 5.01 | 6.60 | sentiment_score, description/caption embeddings | Emotional tone predicts retention strength |
+| **Views Model** | 0.7061 | 1.48 (log-scale) | 1.98 (log-scale) | ctr_subs_interaction, rqs_pred, log_subs | Engagement and audience size synergy drives views |
+| **CTR Model** | 0.4700 | 0.32 | 0.51 | rqs_pred, tag/title embeddings | Retention and textual clarity influence click rate |
 
 ### Key Findings
 
@@ -180,7 +360,7 @@ Following model development, the complete web application titled **YouTube Extra
 
 ### Platform Overview
 
-The system is hosted at [youtubeextractor-production.up.railway.app](https://youtubeextractor-production.up.railway.app) and integrates all core modules:
+The system is hosted at [YouTubeextractor-production.up.railway.app](https://YouTubeextractor-production.up.railway.app) and integrates all core modules:
 
 - **Dashboard:** Overview of extracted data (1,000 videos across 25 channels) with real-time health scoring and data verification metrics.  
 - **Data Visualization:** Interactive insights across genre, engagement tier, sentiment, correlation, and thumbnail color analytics.  
@@ -227,7 +407,7 @@ The **YouTube Extractor** thus serves as both a **machine learning research arti
 
 Transform your video ideas into data-driven decisions:
 
-- **🎯 CTR Prediction**: Forecast click-through rates with 20%+ accuracy
+- **🎯 CTR Prediction**: Forecast click-through rates with validated R² of 0.47
 - **📈 View Forecasting**: Predict expected views based on your channel size
 - **🏆 RQS Scoring**: Get retention quality scores (0-100)
 - **🖼️ Thumbnail Analysis**: Computer vision insights on colors, faces, text
@@ -257,9 +437,9 @@ Video Data → CTR Model → RQS Model → Views Model → Performance Score
 ```
 
 ### Model Details
-- **CTR Model**: 131 features including text embeddings, thumbnail analysis, duration
-- **RQS Model**: 131 features for retention quality prediction
-- **Views Model**: 13 features using CTR/RQS predictions + channel metrics
+- **CTR Model**: 411 features including text embeddings, thumbnail analysis, duration
+- **RQS Model**: 411 features for retention quality prediction
+- **Views Model**: 17 features using CTR/RQS predictions + channel metrics
 - **Computer Vision**: OpenCV pipeline for face detection, color analysis
 - **Text Processing**: TF-IDF + SVD embeddings for titles, descriptions, tags
 
@@ -359,7 +539,7 @@ Git LFS:         # Large model file storage
 │   └── public/                        # Static assets
 ├── � extracted_data/                 # Training datasets & outputs
 │   ├── api_only_ml_dataset.csv        # ML-ready training data
-│   ├── youtube_channel_data.json      # Channel metadata
+│   ├── YouTube_channel_data.json      # Channel metadata
 │   ├── metadata_only.json             # Video metadata
 │   ├── caption_availability_report.json # Caption analysis
 │   ├── thumbnails/                    # Downloaded thumbnail images
@@ -371,7 +551,7 @@ Git LFS:         # Large model file storage
 │   └── verification/                  # Data validation tools
 ├── �🐳 Docker & Deployment             # Container & hosting config
 │   ├── Dockerfile.prediction          # ML prediction service
-│   ├── Dockerfile.dashboard           # Dashboard service
+│   ├── Dockerfile                     # Dashboard service, Frontend and Data Visualization
 │   ├── railway.toml                   # Railway deployment config
 │   ├── Procfile                       # Process definitions
 │   └── deploy-railway.sh/.bat         # Deployment scripts
@@ -418,14 +598,14 @@ Git LFS:         # Large model file storage
 ## 🚀 Quick Start
 
 ### Try the Live Demo
-Visit **[YouTube Performance Predictor](https://youtubeextractor-production.up.railway.app/)** to test immediately.
+Visit **[YouTube Performance Predictor](https://YouTubeextractor-production.up.railway.app/)** to test immediately.
 
 ## 🛠️ Installation & Setup
 
 ### 1. Quick Installation
 ```
-git clone https://github.com/mobius29er/youtubeExtractor.git
-cd youtubeExtractor
+git clone https://github.com/mobius29er/YouTubeExtractor.git
+cd YouTubeExtractor
 python -m venv venv
 source venv/bin/activate  # or venv\Scripts\activate on Windows
 pip install -r requirements.txt
@@ -433,7 +613,7 @@ pip install -r requirements.txt
 
 Create a `.env` file:
 ```
-YOUTUBE_API_KEY=your-api-key-here
+YouTube_API_KEY=your-api-key-here
 ```
 
 ### 2. Local Development
@@ -446,8 +626,8 @@ YOUTUBE_API_KEY=your-api-key-here
 #### Complete Setup
 ##### 1. Clone repository
 ```
-git clone https://github.com/mobius29er/youtubeExtractor.git
-cd youtubeExtractor
+git clone https://github.com/mobius29er/YouTubeExtractor.git
+cd YouTubeExtractor
 ```
 ##### 2. Backend setup
 ##### Create virtual environment (recommended)
@@ -474,7 +654,7 @@ cp .env.prediction .env
 ```
 ##### Edit .env and add your YouTube API key:
 ```
-YOUTUBE_API_KEY=your_api_key_here
+YouTube_API_KEY=your_api_key_here
 PORT=8000
 CORS_ORIGINS=http://localhost:3000
 ```
@@ -522,8 +702,8 @@ npm run dev
 ### 3. Docker Deployment
 # Build and run prediction service
 ```
-docker build -f Dockerfile.prediction -t youtube-predictor .
-docker run -p 8002:8002 youtube-predictor
+docker build -f Dockerfile.prediction -t YouTube-predictor .
+docker run -p 8002:8002 YouTube-predictor
 ```
 
 ---
@@ -531,9 +711,9 @@ docker run -p 8002:8002 youtube-predictor
 ## 📈 Model Performance
 
 ### Prediction Accuracy
-- **CTR Model**: R² = 0.4742
+- **CTR Model**: R² = 0.4700
 - **RQS Model**: R² = 0.7859
-- **Views Model**: R² = 0.6974
+- **Views Model**: R² = 0.7061
 
 ### Feature Importance
 1. **Text Embeddings** (40%): Title, description, tags
@@ -646,7 +826,7 @@ If you're interested in the training process:
 ```bash
 # Training data available in extracted_data/
 api_only_ml_dataset.csv      # 1,000+ videos with features
-youtube_channel_data.json    # Raw channel metrics
+YouTube_channel_data.json    # Raw channel metrics
 thumbnails/                  # Image training data
 comments_raw/               # Sentiment analysis data
 ```
@@ -689,7 +869,7 @@ Copyright (c) 2025 Jeremy Foxx
 **Jeremy Foxx**  
 *Creator • Engineer • Catholic*
 
-- 🌐 **Live Demo**: [YouTube Performance Predictor](https://youtubeextractor-production.up.railway.app/)
+- 🌐 **Live Demo**: [YouTube Performance Predictor](https://YouTubeextractor-production.up.railway.app/)
 - 📧 **Contact**: jeremy@foxxception.com
 - 💼 **LinkedIn**: https://www.linkedin.com/in/jeremyfoxx/
 - 🐦 **Twitter**: https://x.com/jeremydfoxx
