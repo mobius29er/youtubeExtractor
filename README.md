@@ -6,7 +6,7 @@
 
 > **Predict YouTube video performance before you publish.** Get AI-powered insights on CTR, retention scores, and view predictions using advanced machine learning and computer vision.
 
-**🚀 [Try the Live Demo](https://YouTubeextractor-production.up.railway.app/)**
+**🚀 [Try the Live Website](https://YouTubeextractor-production.up.railway.app/)**
 
 ---
 
@@ -45,7 +45,7 @@ From this generated data and models they are used to build out the web app in th
 
 which can be viewed here:
 
-**🚀 [Try the Live Demo](https://YouTubeextractor-production.up.railway.app/)**
+**🚀 [Try the Live Website](https://YouTubeextractor-production.up.railway.app/)**
 
 ---
 
@@ -264,14 +264,35 @@ Prepared the engineered features and target variables for machine learning model
 
 ### Unsupervised Learning
 
-- **Principal Component Analysis (PCA):** PCA was applied to reduce feature dimensionality and reveal the dominant sources of variance within the dataset. This allowed the most meaningful numerical and textual signals to emerge without noise inflation.  
-- **K-Means Clustering:** K-Means grouped the dataset into **five distinct clusters**, each representing a unique content archetype based on metadata, thumbnail composition, and engagement ratios. Cluster interpretation provided qualitative insight into how certain feature combinations correspond to higher viewer interest or specific genre styles.
+- **Principal Component Analysis (PCA):** PCA was applied to reduce the number of features and reveal the dominant sources of patterns within the dataset. By selecting 311 principal components, I was able to capture 95% of the total variance in the scaled feature allowing the most important numerical and textual features while cutting through the noise.
 
 <img width="846" height="547" alt="image" src="https://github.com/user-attachments/assets/3a8a4b69-fb99-465d-a521-887c1c355543" />
 
-*Figure 7: PCA analysis*
+*Figure 8: PCA analysis: *
+
+- **K-Means Clustering:** K-Means grouped the dataset into **five distinct clusters**, each representing a unique content archetype based on metadata, thumbnail composition, and engagement ratios. The choice of 5 clusters was initially chosen since it was the number of genres and tiers I pulled for the dataset.  This provided a starting point for exploring distinct video groupings. Cluster interpretation provided qualitative insight into how certain feature combinations correspond to higher viewer interest or specific genre styles.
+- PC1 was most influenced by various thumbnail text embeddings and some tags embeddings.
+- PC2 was primarily influenced by tags embeddings and some description embeddings.
+- PC3 was also heavily influenced by tags embeddings and some description embeddings, but with different specific embedding dimensions being most important compared to PC2.
+
+<img width="853" height="701" alt="image" src="https://github.com/user-attachments/assets/6603ae7f-7cbd-4e02-a8a1-51cb5f3cc48d" />
+
+*Figure 9: K-Means Cluster Analysis: PC1 vs PC2*
+
+<img width="853" height="701" alt="image" src="https://github.com/user-attachments/assets/6e5eada9-a525-46ca-bbed-1b83ba788460" />
+
+*Figure 10: K-Means Cluster Analysis: PC1 vs PC3*
+
+<img width="853" height="701" alt="image" src="https://github.com/user-attachments/assets/61bc3183-bf6b-4908-9214-3367e05e6934" />
+
+*Figure 11: K-Means Cluster Analysis: PC2 vs PC2*
 
 ### Supervised Learning
+#### Process is the same for each of the three models:
+1. Original Model Idea: Starts with a certain type of model (in our case Ridge, RandomForestRegressor, and GradientBoostingRegressor). The script runs through and figures out which of the three has the best performance.
+2. Tuning with GridSearchCV: Next we tune this best case model using cross-validation to find the best hyperparameters for that model type for the training data.
+3. OOF Evaluation: Then the models trained with those best hyperparameters are used to generate predictions on the held-out data. The main outputs here are the OOF predictions themselves and a robust estimate of performance.
+4. The Final Model: After tuning and OOF, the model is saved and used for making predictions on new, unseen data (not part of the original dataset) is a new version of the chosen model type (one of the three from step 1). This new version is then trained on the entire dataset that was used for tuning and OOF (original complete training set).
 
 #### 1. CTR (Click-Through Rate) Model
 - Description: train_ctr_standalone.py builds a model to predict the Click-Through Rate.
@@ -295,6 +316,8 @@ Prepared the engineered features and target variables for machine learning model
 - Inference Inputs: The script's primary features are the predictions from the other two models (ctr_oof_predictions, rqs_oof), along with subscriber count (log_subs) and other metadata. It also uses a log residual approach and calculates guardrails, matching your table's description with high fidelity.
 - Output: The script calculates and saves views_predicted.
 - Training Target: The training target is explicitly set as the log-transformed view count (y_views_log), which is then winsorized.
+
+**🔮 [Try the Predictor](https://youtubeextractor-production.up.railway.app/predictor)**
 
 ---
 
@@ -340,24 +363,25 @@ Evaluation relied primarily on **R²**, **MAE**, and **RMSE** metrics to quantif
 
 ## Conclusions and Future Work
 
-This research successfully demonstrated that YouTube video success can be predicted using pre-publication features alone. The combination of textual, visual, and engagement-based signals produces a coherent framework capable of forecasting retention, engagement, and viewership before a video is released.
+This research successfully developed a model so a creator can predict a YouTube video's success using pre-publication features alone. The combination of textual, visual, and engagement-based features produced a coherent framework capable of forecasting retention, engagement, and viewership before a video is released.
 
-The **RQS model** not only serves as the most generalizable predictor of performance but also **reconstructs the fundamental logic of YouTube’s recommendation system**. Just as YouTube optimizes for viewer satisfaction and sustained attention, the RQS model captures the same dynamics through sentiment, engagement ratios, and audience normalization. In this sense, the model acts as a transparent external approximation of how the platform’s opaque ranking algorithm likely prioritizes content.
+The **RQS model** not only serves as the most correlative predictor of performance but also **approximates the fundamental logic of YouTube’s recommendation system/algorithm**. Just as YouTube optimizes for viewer satisfaction and sustained attention, the RQS model reproduces the algorithm through sentiment, engagement ratios, and audience (normalized by subscriber count). This score therefore can be used as a YouTube algorithm proxy ranking for videos and potentially entire channels.
 
-The **log-views model** offers precision forecasting for reach, while the **CTR model** contextualizes pre-click interest with post-click retention. Together, they form a scalable framework that can forecast outcomes and guide optimization before a video ever goes live.
+The **log-views model** offers predictions for reach, while the **CTR model** predicts pre-click interest with post-click retention and allows the user to modify and retest their titles and thumbnails for CTR optimization. Together, they form a framework that works across channels size of brand new all the way to "Mega" tiers of 50 million plus subscribers that can forecast outcomes and guide optimization before a video ever goes live.
 
 ### Future Development Priorities
 
 1. Incorporating full video transcripts and hook analysis to better quantify narrative quality.  
-2. Refining the RQS formula using additional sentiment layers and long-tail engagement metrics.   
+2. Refining the RQS formula using additional sentiment layers and long-tail engagement metrics.
+3. Providing for better optimization: generating titles, thumbnails, rapid iterations, etc.   
 
-Ultimately, this project lays the groundwork for a **predictive YouTube optimization platform** that transforms the art of content creation into a measurable, data-informed science, while offering a rare external mirror to the platform’s own engagement logic.
+Ultimately, this project lays the groundwork for a **predictive YouTube optimization platform** that transforms the art of content creation into a measurable, data-informed science, while offering a peak into the YouTube algorithm.  That way creators can focus more on writing their scripts and less about worrying about how their titles and thumbnails will perform as they will have a predictive performance before they even hit publish.
 
 ---
 
 ## Application Implementation and Visualization Layer
 
-Following model development, the complete web application titled **YouTube Extractor** was built to operationalize the findings. The app provides a **production-grade dashboard and ML interface** that allows creators, researchers, and analysts to interact with the trained models and visualize performance data.
+Following model development, the complete web application titled **YouTube Extractor** was built to operationalize the findings. The app provides a **user-friendly dashboard and ML interface** that allows creators, researchers, and analysts to interact with the trained models and visualize performance data.
 
 ### Platform Overview
 
@@ -395,12 +419,130 @@ The system is hosted at [YouTubeextractor-production.up.railway.app](https://You
 ### Operational Impact
 
 This application moves the research beyond theory. It **translates the model suite into a dynamic visual intelligence platform** capable of:
-
 - Running **live predictions** through trained ML models.  
 - Generating **AI-driven insights** on thumbnails, titles, and engagement factors.  
 - Offering creators a **replicable success framework** by identifying high-performing “signatures” across visual and textual elements.
 
-The **YouTube Extractor** thus serves as both a **machine learning research artifact** and a **working prototype for an AI-powered creator analytics platform**, bridging the gap between academic modeling and practical industry application.
+The **YouTube Extractor** serves as both a **machine learning research artifact** and a **working application for an AI-powered creator analytics platform**, bridging the gap between academic modeling and practical industry application.
+
+---
+
+### 🏗️ System Architecture Overview
+
+#### 🎯 Core Components
+##### 1. Frontend Layer (React + Vite)
+###### Why React/Vite?
+I chose React + Vite due to the ease of development and performance of this setup. React’s component model and hooks make it ideal for dynamic, data-driven UIs, while Vite’s lightning-fast bundler enables quick iteration during development. Combined it provides a modern, visually appealing look most people are accustomed to, which makes it user friendly.
+```
+📦 frontend/
+├── React 18 with modern hooks and components
+├── Vite build system for fast development
+├── Tailwind CSS for responsive styling
+├── Lucide React icons and interactive UI
+└── Real-time prediction interface
+```
+Key Components:
+- VideoPerformancePredictor.jsx: Main ML prediction interface
+- Dashboard.jsx: Data analytics and insights
+- DataVisualization.jsx: Charts and performance metrics
+- Navigation.jsx: App routing and user flow
+
+##### 2. Backend Services (Python/FastAPI)
+###### Why Python/FastAPI?
+I chose Python + FastAPI due to the ease of development and performance of this setup. It is fast and scalable and works well for processing data via machine learning and the ML stack (NumPy / Pandas / scikit-learn / OpenCV). 
+
+I split them into two different servers, which added to the complexity and effort to get to work seamlesslesly, to provide better performance, future development and scalability.  
+###### Service A: Dashboard API (Port 8000) – serves the React app and exposes read-only analytics/endpoints.
+The lightweight server for serving the fast-loading user interface and providing historical analytics data.
+
+src/api_server.py 
+- Data extraction and management
+- Static React frontend serving
+- YouTube Data API integration
+- Dataset analysis and reporting
+- Health monitoring endpoints
+
+###### Service B: ML Prediction API (Port 8002) – dedicated ML inference service.
+The heavy-duty, dedicated inference engine isolated to run complex Computer Vision and sequential ML models without delaying the user interface.
+
+src/prediction_api.py 
+- 24+ trained machine learning models
+- Real-time video performance prediction
+- Computer vision thumbnail analysis
+- Text processing and embeddings
+- Feature engineering pipeline
+
+This separation provides performance isolation (heavy ML calls can’t slowdown the dashboard), enables independent scaling and deployments, and keeps the codebases loosely coupled for future changes.  
+
+###### Scaling options: For higher throughput I can:
+- Add workers (Uvicorn/Gunicorn) and enable async I/O.
+- Introduce a message queue (Redis/NATS/RabbitMQ) for bursty inference.
+- Cache identical requests at the gateway (Redis) with short TTLs.
+
+###### Future Scaling
+As the prediction models becomes more sophisticated it could require changes to the database and even though I set them both up to run on python/FastAPI I could migrate the visualization/frontend/dashboard server to Elixir Phoenix for blazing fast performance at scale or Fastify/NestJS to keep it developer friendly with still great performance.  It also provides for better performance at scale having the two servers in the future (not an issue at all currently).  
+
+##### 3. Machine Learning Pipeline
+###### 🤖 ML Architecture (30+ Models)
+```
+├── CTR Models: Click-through rate prediction (R² = 0.47)
+├── RQS Models: Retention Quality Score (R² = 0.79)
+├── Views Models: View count forecasting (R² = 0.70)
+├── Text Embeddings: TF-IDF + SVD for titles/descriptions
+├── Computer Vision: Face detection, color analysis
+└── Feature Engineering: 131-dimensional feature space
+```
+
+###### 🔄 Data Flow & Processing
+```
+Prediction Pipeline
+User Input → Feature Engineering → ML Models → Results
+    ↓              ↓                 ↓         ↓
+Title/Genre → Text Embeddings → CTR Model → Performance Score
+Thumbnail → Computer Vision → RQS Model → Confidence Rating
+Channel → Normalization → Views Model → Final Predictions
+```
+##### 5. Data Layer
+###### 📊 Data Sources & Storage
+```
+├── extracted_data/: 1,000+ video training dataset
+├── models/: Serialized ML models (joblib format)
+├── thumbnails/: Computer vision training images
+├── comments_raw/: Sentiment analysis data
+└── YouTube Data API v3 integration
+```
+##### 6. 🐳 Deployment Architecture
+Multi-Stage Docker Strategy
+Docker was chosen for the YouTube Performance Predictor because it unifies complex dependencies across Python, Node.js, and ML models into a single, consistent environment. Main reason why I chose it was for its portability, having it built with Docker I can migrate easily to AWS, Azure, etc. from Railway.  Its multi-stage builds cut image size and speed up deployments, while containerization allows the React dashboard and heavy ML predictor to scale independently. Docker ensures version control for models, isolates environments, and guarantees that what works locally works in production. With caching, health checks, and platform portability, it provides a fast, reliable, and reproducible foundation that makes the project scalable, maintainable, and production-ready.   
+###### Dockerfile (Dashboard Service)
+```
+├── Stage 1: Node.js (React build)
+│   ├── npm ci (4 seconds with package-lock.json)
+│   ├── Vite build compilation
+│   └── Static asset generation
+└── Stage 2: Python runtime
+    ├── FastAPI backend
+    ├── Static file serving
+    └── Health checks
+```
+###### Dockerfile.prediction (ML Service)
+```
+├── Python 3.12 with ML dependencies
+├── OpenCV for computer vision
+├── 200MB+ model files
+├── Extended health check (180s startup)
+└── Isolated inference service
+```
+##### 7. Railway Cloud Deployment
+Railway was chosen for the YouTube Performance Predictor because it provides the simplest, fastest, and most cost-effective way to deploy Docker-based multi-service apps with zero-config Docker support, instant GitHub integration, and automatic health checks. It allows both the lightweight React dashboard and the heavy ML predictor to run independently with full reliability, which was a main requirement/need for the architecture I was designinig. Deployments take under 10 minutes, cost just $15–20 per month, and require no YAML or complex DevOps setup. Railway also offers real-time logs, auto-SSL, environment variable management, and easy rollback perfect for an MVP-stage project without vendor lock-in. Railway let me focus on building, not managing infrastructure.
+###### ☁️ Production Infrastructure
+```
+├── Automatic GitHub CI/CD
+├── Container orchestration
+├── Environment management
+├── Domain: youtubeextractor-production.up.railway.app
+└── Build time: 7 minutes (optimized from 11+)
+```
 
 ---
 
@@ -434,7 +576,7 @@ Output:
 Video Data → CTR Model → RQS Model → Views Model → Performance Score
      ↓           ↓           ↓           ↓
   Features   Baseline+    Advanced     Guardrails
-   (131)    Residual     Features      Applied
+   (411)    Residual     Features      Applied
 ```
 
 ### Model Details
