@@ -1005,6 +1005,11 @@ Copyright (c) 2025 Jeremy Foxx
 - **React**: Modern UI development
 - **Railway**: Seamless deployment platform
 
+### Dedication
+- **God** for granting me strenght to complete this even during illness
+- **My wife** for her support even during long work hours
+- **My family** for all their support of us and believing in me
+
 ---
 
 ## 🎯 Author
